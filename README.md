@@ -27,7 +27,7 @@ Grab the file for your system from the [latest release](https://github.com/leozh
 
 | You use | Download | Then |
 | --- | --- | --- |
-| macOS 13 or newer (Apple silicon and Intel) | `Yukio-0.2.1-macOS.zip` | Unzip, drag `Yukio.app` into Applications, allow it once (below) |
+| macOS 13 or newer (Apple silicon and Intel) | [Yukio-0.3.8-macOS.dmg](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.3.8/Yukio-0.3.8-macOS.dmg) | Open the DMG, drag `Yukio.app` onto Applications on the right, then launch it from Applications; first-launch steps below |
 | Windows 10 / 11, 64-bit | `Yukio-0.2.1-Windows.exe` | Double-click. Python and the artwork are packed inside |
 
 <details>
@@ -58,6 +58,8 @@ The exe is not code-signed. Click **More info**, then **Run anyway**. Windows as
 The SHA-256 of every file is on the release page if you want to check a download.
 
 Once running, Yukio appears in the bottom-right corner of the screen and a small avatar of her appears in the macOS menu bar or the Windows tray. On macOS, right-clicking Yukio opens Settings directly; click the menu-bar avatar or launch the app a second time for the full menu. Settings has a **Hide Yukio** button — or just press Space while Settings is open — to tuck her away and bring her back. Want a tour first? Pick **Play demo** from Settings or the menu and she walks through every state in 60 seconds. English is the default, 中文 is one click away in Settings, and the choice is remembered.
+
+See the [DMG packaging guide](docs/INSTALLER.md) for build dependencies and installer layout.
 
 ## What she does
 
@@ -119,7 +121,7 @@ swift test                      # 135 tests: routing, blink timing, classificati
 ./scripts/build-app.sh          # build/Yukio.app
 open build/Yukio.app
 cd ../YukioWin && pip3 install pillow && python3 scripts/prepare-windows-assets.py
-cd ../YukioPlayer && ./scripts/package-release.sh  # universal binary zip in dist/
+cd ../YukioPlayer && ./scripts/package-release.sh  # universal drag-to-install DMG in dist/
 ```
 
 **Windows** needs Python 3.9 or newer.

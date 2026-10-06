@@ -1,6 +1,7 @@
 #!/bin/sh
-# 打一个可以直接发给别人的压缩包：dist/Yukio-<版本>-macOS.zip（Apple 芯片 + Intel 通用二进制）。
-# 只需要 Xcode Command Line Tools。完整 Xcode 才支持 swift build --arch，所以这里分两次编译再用 lipo 合并。
+# 打一个拖拽安装的 DMG：dist/Yukio-<版本>-macOS.dmg（Apple 芯片 + Intel 通用二进制）。
+# 构建需 Xcode Command Line Tools 和 scripts/dmg-requirements.txt 中的打包工具。
+# 完整 Xcode 才支持 swift build --arch，所以这里分两次编译再用 lipo 合并。
 set -eu
 cd "$(dirname "$0")/.."
 
@@ -35,12 +36,9 @@ VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/
 
 test -f "$APP/Contents/Resources/Assets/motion/windows-pages/manifest.json"
 
-rm -rf dist
 mkdir -p dist
-ZIP="dist/Yukio-$VERSION-macOS.zip"
-# ditto 保留签名与符号链接；--keepParent 让别人解压后直接得到 Yukio.app
-ditto -c -k --sequesterRsrc --keepParent "$APP" "$ZIP"
-shasum -a 256 "$ZIP" | tee "$ZIP.sha256"
+DMG="dist/Yukio-$VERSION-macOS.dmg"
+sh ./scripts/package-macos-dmg.sh "$APP" "$DMG"
 
 codesign -v "$APP" && echo "签名自检通过（临时签名，别人下载后第一次打开仍需右键→打开）"
-echo "$ZIP"
+echo "$DMG"

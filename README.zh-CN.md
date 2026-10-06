@@ -27,7 +27,7 @@
 
 | 你用的是 | 下载 | 怎么开 |
 | --- | --- | --- |
-| macOS 13 或更新（Apple 芯片与 Intel 通用） | `Yukio-0.2.1-macOS.zip` | 解压，把 `Yukio.app` 拖进「应用程序」，第一次按下面放行一次 |
+| macOS 13 或更新（Apple 芯片与 Intel 通用） | [Yukio-0.3.8-macOS.dmg](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.3.8/Yukio-0.3.8-macOS.dmg) | 双击 DMG，在安装窗口把 `Yukio.app` 拖到右侧「应用程序 Applications」，然后从「应用程序」打开；首次放行见下方 |
 | Windows 10 / 11（64 位） | `Yukio-0.2.1-Windows.exe` | 双击就开。Python 和素材都打包在里面 |
 
 <details>
@@ -58,6 +58,8 @@ xattr -dr com.apple.quarantine /Applications/Yukio.app
 每个文件的 SHA-256 都写在发布页上，想核对的话对一下。
 
 打开后雪绪出现在屏幕右下角，macOS 的菜单栏、Windows 的托盘里多一个她的小头像。在 macOS 上，右键雪绪会直接打开设置；点菜单栏小头像或再打开一次应用可进入完整菜单。设置里有「收起雪绪」按钮，设置窗口开着时直接按空格也行，再按一下把她叫回来。界面默认英文，在设置里把「Language」切到「中文」即可，选择会记住。想先看看效果，可在设置或菜单里点「播放模拟演示」（英文界面下是 Play demo），60 秒走一遍所有动作。
+
+DMG 安装窗口与打包工具的构建方式见[安装包说明](docs/INSTALLER.md)。
 
 ## 她会做什么
 
