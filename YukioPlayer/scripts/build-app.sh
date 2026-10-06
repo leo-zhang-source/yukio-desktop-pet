@@ -16,7 +16,7 @@ else
   swift build -c release
   BIN="$(swift build -c release --show-bin-path)/YukioPlayer"
 fi
-APP="build/Yukio.app"
+APP="${YUKIO_APP_OUTPUT:-build/Yukio.app}"
 
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"

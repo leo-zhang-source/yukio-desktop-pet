@@ -15,6 +15,8 @@ from typing import List, Optional, Tuple
 from .catalog import AnimationCatalog, HELD_ID, SpriteTimeline, assets_root
 from .blink import BlinkClock
 from .chatlinks import ChatLinks
+from . import browser_open_chat
+from .router import provider_for_source
 from .demo import DEMO_DURATION_MS, demo_steps
 from .events import PetState
 from .l10n import set_language, tr
@@ -26,7 +28,7 @@ from .sprites import SpriteLibrary
 
 FRAME_MS = 33          # 约 30 Hz：小幅动作一帧 33–67 ms，眨眼 50–110 ms，都能按时换帧
 POLL_EVERY_TICKS = 8   # 约每 0.27 秒读一次会话记录
-OPEN_CHAT_EVERY_TICKS = 60   # 约每 2 秒看一次"此刻开着哪条聊天"
+OPEN_CHAT_EVERY_TICKS = 15   # Refresh the selected chat about every 0.5 seconds.
 #: 桌面版 Claude 的可执行文件名。它在最前面、且选中的就是那条聊天时，那条不举牌。
 CLAUDE_DESKTOP_EXE = "Claude.exe"
 BUBBLE_FADE_MS = 180.0
@@ -51,6 +53,14 @@ class PetApp:
         self.library = SpriteLibrary(self.catalog, root)
         self.sources = default_sources(self.settings.get("source"))
         self.links = ChatLinks()
+        from .codex_open_chat import CodexOpenChat
+        from concurrent.futures import ThreadPoolExecutor
+        self.codex_open_chat = CodexOpenChat()
+        self._open_chat_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="yukio-focus")
+        self._open_chat_future = None
+        self._open_chat_pid = None
+        self._open_chat_observed_at = float("-inf")
+
 
         start = now_ms()
         self.router = ActivityRouter(now=start)
@@ -745,27 +755,62 @@ class PetApp:
 
     # MARK: 主循环
 
-    def _refresh_open_chat(self) -> None:
-        """桌面版 Claude 就在最前面时，把它此刻选中的那条聊天告诉路由——那条不举牌。
+    def _read_visible_chats(self, pid, front, candidates):
+        started = now_ms()
+        documents = browser_open_chat.read(pid)
+        aliases = self.links.transcript_aliases() if any(d.provider == 'claude' for d in documents) else {}
+        visible = {session for session, provider in candidates
+                   if any(d.matches(session, provider, aliases) for d in documents)}
+        selected = None
+        if front == 'codex.exe' and not any(d.provider == 'gpt' for d in documents):
+            selected = self.codex_open_chat.focused_session(pid, now_ms())
+        elif front == 'claude.exe' and not documents:
+            selected = self.links.focused_session()
+        return selected, visible, started
 
-        人没在看 Claude 时直接给 None，连记录都不用翻。读记录是文件操作，所以两秒才做一次；
-        任何一步取不到就当"没开在眼前"，照常举牌。
-        """
+    def _clear_open_chat(self):
+        self.router.open_chat_session = None
+        self.router.visible_chat_sessions = set()
+
+    def _refresh_open_chat(self) -> None:
+        """Read visible documents/logs off the animation thread; discard stale results."""
         try:
             if os.name != "nt":
-                self.router.open_chat_session = None
+                self._clear_open_chat()
                 return
-            from .win32 import foreground_process_name
-            front = foreground_process_name()
-            if not front or front.lower() != CLAUDE_DESKTOP_EXE.lower():
-                self.router.open_chat_session = None
+            pid = self.win32.foreground_process_id()
+            if pid != self._open_chat_pid:
+                self._clear_open_chat()
+            if self._open_chat_future is not None:
+                if not self._open_chat_future.done():
+                    return
+                selected, visible, started = self._open_chat_future.result()
+                self._open_chat_future = None
+                if pid == self._open_chat_pid and 0 <= now_ms() - started < 1500:
+                    self.router.open_chat_session = selected
+                    self.router.visible_chat_sessions = visible
+                    self._open_chat_observed_at = started
+                else:
+                    self._clear_open_chat()
+            front = (self.win32.foreground_process_name() or "").lower()
+            if not pid or self.win32.foreground_process_id() != pid or front not in browser_open_chat.SUPPORTED_EXES:
+                self._clear_open_chat()
+                self._open_chat_pid = None
                 return
-            self.router.open_chat_session = self.links.focused_session()
+            self._open_chat_pid = pid
+            candidates = [(row.id, provider_for_source(self.router.session_source(row.id)))
+                          for row in self.router.session_summaries(now_ms())]
+            self._open_chat_future = self._open_chat_executor.submit(self._read_visible_chats, pid, front, candidates)
         except Exception:
-            self.router.open_chat_session = None
+            self._open_chat_future = None
+            self._clear_open_chat()
 
     def tick(self) -> None:
         now = now_ms()
+        if os.name == "nt" and (self.win32.foreground_process_id() != self._open_chat_pid
+                               or now - self._open_chat_observed_at > 1500):
+            self._clear_open_chat()
+
         self.tick_count += 1
         if self.tick_count % OPEN_CHAT_EVERY_TICKS == 0:
             self._refresh_open_chat()
@@ -844,6 +889,7 @@ class PetApp:
         return bool(box is not None and box.handle_message(msg))
 
     def shutdown(self) -> None:
+        self._open_chat_executor.shutdown(wait=False, cancel_futures=True)
         try:
             self.control.stop_timer()
             self.tray.remove()

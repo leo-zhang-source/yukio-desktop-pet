@@ -21,9 +21,9 @@ if (-not (Test-Path $venv)) {
 }
 $venvPython = Join-Path $venv "Scripts\python.exe"
 
-Write-Host "== 装依赖（pillow、pyinstaller）"
+Write-Host "== 装依赖（requirements.txt、pyinstaller）"
 & $venvPython -m pip install --upgrade pip | Out-Null
-& $venvPython -m pip install --upgrade pillow pyinstaller
+& $venvPython -m pip install --upgrade pyinstaller -r (Join-Path $root "requirements.txt")
 
 Write-Host "== 先跑一遍自测"
 & $venvPython run.py --selftest

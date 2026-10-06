@@ -1,2 +1,3 @@
-# 运行只需要 Pillow（解码 WebP 图条、画气泡）。窗口、托盘、菜单都用 ctypes 直接调 Windows API。
+# Pillow 用于图像；Windows UI Automation 用于只读识别当前聊天网页和扩展侧栏。
 pillow>=9.0
+uiautomation>=2.0,<3; sys_platform == "win32"

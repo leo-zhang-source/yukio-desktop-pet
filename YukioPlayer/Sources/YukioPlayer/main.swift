@@ -596,19 +596,28 @@ func runChatLink(session: String) -> Never {
     exit(0)
 }
 
-/// --open-chat：打印桌面版 Claude 此刻选中的那条聊天。
-/// 这条聊天答完时雪绪不举牌——人已经看着它了，再举一块只是挡路。
-/// 注意只有桌面版 Claude 在最前面时才算"开在眼前"，这里只查记录，不管谁在前台。
+/// Diagnose foreground chat identities without activating or typing in other apps.
 func runOpenChat() -> Never {
-    let links = ClaudeSessionLinks()
-    print("会话记录目录 \(links.sessionsDir.path)")
-    guard let session = links.focusedTranscriptSession() else {
-        print("认不出此刻开着哪条聊天：照常举牌")
-        exit(1)
+    let front = NSWorkspace.shared.frontmostApplication
+    let bundle = front?.bundleIdentifier ?? "-"
+    let session: String?
+    switch bundle {
+    case "com.openai.codex":
+        session = front.flatMap { CodexOpenChat().focusedSession(processID: $0.processIdentifier,
+                                    now: Date().timeIntervalSince1970 * 1000) }
+    case "com.anthropic.claudefordesktop":
+        session = ClaudeSessionLinks().focusedTranscriptSession()
+    default: session = nil
     }
-    print("此刻开着的聊天 \(session)")
-    let front = NSWorkspace.shared.frontmostApplication?.bundleIdentifier ?? "-"
-    print("最前面的应用 \(front)\(front == "com.anthropic.claudefordesktop" ? "（算开在眼前，这条不举牌）" : "（没在看 Claude，照常举牌）")")
+    print("最前面的应用 \(bundle)")
+    print("浏览器辅助功能权限 \(BrowserOpenChat.hasAccessibilityAccess ? "已允许" : "未允许（设置中可启用）")")
+    if BrowserOpenChat.supportedBundles.contains(bundle), let pid = front?.processIdentifier {
+        for document in BrowserOpenChat.read(processID: pid) {
+            print("可见聊天文档 \(document.provider.rawValue) / \(document.id)")
+        }
+    }
+    if let session { print("正在看的聊天 \(session)（这条不举完成牌）") }
+    else { print("无法确认正在看的聊天：保留完成提醒") }
     exit(0)
 }
 
@@ -735,6 +744,9 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let links = ClaudeSessionLinks()
     /// refreshOpenChat 的后台读取是否还在路上。
     private var openChatBusy = false
+    private let codexOpenChat = CodexOpenChat()
+    private var openChatProcessID: pid_t?
+    private var openChatObservedAt: Double = -.infinity
     private let defaults = UserDefaults.standard
 
     private var panel: PetPanel!
@@ -1109,30 +1121,53 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     // MARK: 主循环
 
-    /// 桌面版 Claude 就在最前面时，把它此刻选中的那条聊天告诉路由——那条不举牌。
-    /// 人没在看 Claude 时直接给 nil，连记录都不用翻。
-    ///
-    /// 翻记录是文件读取，放到后台做，别让 30 Hz 的动作掉帧；上一次还没回来就跳过这一轮。
+    /// Match visible chat documents and desktop selection only in the foreground app.
+    /// Read on the utility queue and discard results after focus changes or expiry.
     private func refreshOpenChat() {
-        let front = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
-        guard front == "com.anthropic.claudefordesktop" else {
+        let front = NSWorkspace.shared.frontmostApplication
+        let bundle = front?.bundleIdentifier
+        guard let bundle, BrowserOpenChat.supportedBundles.contains(bundle),
+              let pid = front?.processIdentifier else {
             router.openChatSession = nil
+            router.visibleChatSessions = []
+            openChatProcessID = nil
             return
         }
+        if openChatProcessID != pid {
+            router.openChatSession = nil
+            router.visibleChatSessions = []
+        }
         guard !openChatBusy else { return }
+        openChatProcessID = pid
         openChatBusy = true
         let links = self.links
+        let codex = codexOpenChat
+        let candidates = router.sessionSummaries(now: nowMs()).compactMap { row -> (String, AgentProvider)? in
+            guard let owner = AgentProvider.owner(ofSource: router.sourceOfSession(row.id) ?? "") else { return nil }
+            return (row.id, owner)
+        }
+        let started = nowMs()
         DispatchQueue.global(qos: .utility).async {
-            let session = links.focusedTranscriptSession()
+            let documents = BrowserOpenChat.read(processID: pid)
+            let aliases = documents.contains { $0.provider == .claude } ? links.transcriptAliases() : [:]
+            let visible = Set(candidates.filter { candidate in
+                documents.contains { $0.matches(session: candidate.0, provider: candidate.1, aliases: aliases) }
+            }.map { $0.0 })
+            let session: String?
+            if bundle == Self.codexBundleID, !documents.contains(where: { $0.provider == .gpt }) {
+                session = codex.focusedSession(processID: pid, now: Date().timeIntervalSince1970 * 1000)
+            } else if bundle == Self.claudeBundleID, documents.isEmpty {
+                session = links.focusedTranscriptSession()
+            } else { session = nil }
             DispatchQueue.main.async { [weak self] in
                 guard let self else { return }
                 self.openChatBusy = false
-                // 回来的路上人可能已经切走了，那就不算"开在眼前"。
-                if NSWorkspace.shared.frontmostApplication?.bundleIdentifier == "com.anthropic.claudefordesktop" {
-                    self.router.openChatSession = session
-                } else {
-                    self.router.openChatSession = nil
-                }
+                let current = NSWorkspace.shared.frontmostApplication
+                let valid = current?.processIdentifier == pid && current?.bundleIdentifier == bundle
+                    && nowMs() >= started && nowMs() - started < 1500
+                self.router.openChatSession = valid ? session : nil
+                self.router.visibleChatSessions = valid ? visible : []
+                self.openChatObservedAt = valid ? started : -.infinity
             }
         }
     }
@@ -1140,8 +1175,13 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func tick() {
         let now = nowMs()
         tickCount += 1
-        // 约每 2 秒看一次"此刻开着哪条聊天"。
-        if tickCount % 60 == 0 { refreshOpenChat() }
+        // Clear immediately when the user leaves the app; refresh selected chat every 0.5 s.
+        if NSWorkspace.shared.frontmostApplication?.processIdentifier != openChatProcessID
+            || now - openChatObservedAt > 1500 {
+            router.openChatSession = nil
+            router.visibleChatSessions = []
+        }
+        if tickCount % 15 == 0 { refreshOpenChat() }
         if tickCount % 8 == 0 {
             // 约每 0.27 秒读一次会话记录。事件始终进入路由器；暂停跟随只影响显示。
             for e in feeds.poll(now: now) { router.ingest(e, now: min(e.ts, now)) }
@@ -1824,6 +1864,8 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         case .language(let value):
             language = value
             updateStatusTitle()
+        case .browserChatPermission:
+            BrowserOpenChat.openPermissionSettings()
         case .toggleHidden:
             toggleHidden()
         case .resetPosition:

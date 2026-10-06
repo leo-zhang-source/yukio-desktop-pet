@@ -162,3 +162,5 @@ powershell -ExecutionPolicy Bypass -File scripts\build-exe.ps1    # 打出 dist\
 人物由 ChatGPT 的图像模型按同一套参考图生成，再由 `YukioPlayer/tools/` 里的 Python 脚本抠图、裁切、做成动作。动画有意不逐帧生成：每个状态只有一张定稿底图；手、笔、放大镜、纸这类要明显移动的部件抠成单独一层，平移旋转 2 到 5 像素，原位置补齐；头和眼睛用局部小幅变形；每一帧都会检查桌腿是否纹丝不动。做好的帧再用 Real-ESRGAN 的动画模型超分成 2 倍、描一圈细细的深色轮廓；1 倍时不动的地方，2 倍各帧也逐像素一致。
 
 如果雪绪让你敲键盘的日子好过了一点，点个 ⭐ 能让更多人找到她。
+
+网页、Chrome 扩展侧栏与 App 中打开对应聊天后自动放下完成牌，配置与支持范围见[浏览器聊天识别](docs/BROWSER-CHAT-VISIBILITY.md)。macOS 网页识别需在雪绪设置里启用辅助功能权限。

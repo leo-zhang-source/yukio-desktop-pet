@@ -28,6 +28,7 @@ enum SettingsChange {
     case toggleHidden
     case resetPosition
     case toggleDemo
+    case browserChatPermission
 }
 
 final class SettingsPanelController: NSWindowController, NSWindowDelegate, NSMenuDelegate {
@@ -60,6 +61,7 @@ final class SettingsPanelController: NSWindowController, NSWindowDelegate, NSMen
     private let resetButton = NSButton()
     private let demoButton = NSButton()
     private let doneButton = NSButton()
+    private let browserChatButton = NSButton()
 
     private let followingHeading = NSTextField(labelWithString: "")
     private let displayHeading = NSTextField(labelWithString: "")
@@ -71,7 +73,7 @@ final class SettingsPanelController: NSWindowController, NSWindowDelegate, NSMen
 
     init() {
         let panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 420, height: 500),
+            contentRect: NSRect(x: 0, y: 0, width: 420, height: 536),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
@@ -186,6 +188,13 @@ final class SettingsPanelController: NSWindowController, NSWindowDelegate, NSMen
         stack.addArrangedSubview(brandLabel)
         stack.addArrangedSubview(statusLabel)
         stack.setCustomSpacing(18, after: statusLabel)
+        browserChatButton.bezelStyle = .rounded
+        browserChatButton.target = self
+        browserChatButton.action = #selector(browserChatPermission)
+        browserChatButton.setAccessibilityIdentifier("browserChatPermissionButton")
+        stack.addArrangedSubview(browserChatButton)
+        stack.setCustomSpacing(14, after: browserChatButton)
+
 
         stack.addArrangedSubview(followingHeading)
         stack.addArrangedSubview(row(title: followTitle, control: followSwitch))
@@ -297,6 +306,12 @@ final class SettingsPanelController: NSWindowController, NSWindowDelegate, NSMen
         languageTitle.stringValue = tr("Language", "语言")
         resetButton.title = tr("Reset position", "复位位置")
         doneButton.title = tr("Done", "完成")
+        browserChatButton.title = BrowserOpenChat.hasAccessibilityAccess
+            ? tr("Browser auto-lower: enabled · Permissions…", "浏览器自动放牌：已启用 · 权限…")
+            : tr("Enable browser auto-lower…", "启用浏览器自动放牌…")
+        browserChatButton.toolTip = tr("Allow Accessibility to recognize the chat you are viewing in a web page or extension.",
+                                      "允许辅助功能访问，以识别网页或扩展中正在查看的聊天。")
+
 
         for heading in [followingHeading, displayHeading, interfaceHeading] {
             heading.font = .systemFont(ofSize: 11, weight: .semibold)
@@ -390,6 +405,7 @@ final class SettingsPanelController: NSWindowController, NSWindowDelegate, NSMen
     @objc private func toggleHidden() { onChange?(.toggleHidden) }
     @objc private func resetPosition() { onChange?(.resetPosition) }
     @objc private func toggleDemo() { onChange?(.toggleDemo) }
+    @objc private func browserChatPermission() { onChange?(.browserChatPermission) }
     @objc private func closePanel() { close() }
 }
 
