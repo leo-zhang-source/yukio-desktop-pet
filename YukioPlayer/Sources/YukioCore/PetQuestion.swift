@@ -23,12 +23,15 @@ public struct PetQuestion: Codable, Equatable, Sendable {
     public let options: [Option]
     /// 可以多选：送回去时把选中的几项用「、」连起来。
     public let multiSelect: Bool
+    /// Exact approval request fingerprint; nil for ordinary questions.
+    public let approval: String?
 
-    public init(header: String? = nil, text: String, options: [Option] = [], multiSelect: Bool = false) {
+    public init(header: String? = nil, text: String, options: [Option] = [], multiSelect: Bool = false, approval: String? = nil) {
         self.header = header
         self.text = text
         self.options = options
         self.multiSelect = multiSelect
+        self.approval = approval
     }
 
     /// 气泡和卡片上那一行短说明：有小标题用小标题，否则截问题正文。

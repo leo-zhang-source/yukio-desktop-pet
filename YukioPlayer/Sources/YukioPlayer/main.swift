@@ -747,6 +747,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// refreshOpenChat 的后台读取是否还在路上。
     private var openChatBusy = false
     private let codexOpenChat = CodexOpenChat()
+    private let codexApprovalMonitor = CodexApprovalMonitor()
     private let claudeAnswerBridge = ClaudeQuestionBridge()
     private var deepSeekInstaller: Process?
     private var openChatObservedAt: Double = -.infinity
@@ -1228,6 +1229,13 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
             for e in feeds.poll(now: now) { router.ingest(e, now: min(e.ts, now)) }
             for e in claudeAnswerBridge.poll(now: now, enabled: following && showQuestionCard && !petHidden
                  , providers: provider == .auto ? ["claude", "deepseek"] : [provider.rawValue]) { router.ingest(e, now: now) }
+        }
+        codexApprovalMonitor.poll(sessions: router.activeCodexSessions(now: now), now: now) { [weak self] events in
+            guard let self else { return }
+            let current = nowMs()
+            for event in events where self.router.activeCodexSessions(now: current).contains(event.session) {
+                self.router.ingest(event, now: current)
+            }
         }
         router.tick(now: now)
 

@@ -84,6 +84,11 @@ class TransportTests(unittest.TestCase):
             with self.subTest(mode=mode), tempfile.TemporaryDirectory() as tmp:
                 self.roundtrip(tmp, mode)
 
+    def test_approval_byte_transport_requires_resolution_receipt(self):
+        for mode in ['approval', 'approval-unconfirmed']:
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as tmp:
+                self.roundtrip(tmp, mode)
+
     def roundtrip(self, tmp, mode):
         errors, received = [], []
         deadline = time.monotonic() + 8
@@ -120,6 +125,9 @@ class TransportTests(unittest.TestCase):
                     data = struct.pack('<I', len(body)) + body
                     transport.sendall(data[:2]); transport.sendall(data[2:])
                 state = snapshot(mode != 'legacy')
+                if mode.startswith('approval'):
+                    from test_codex_approvals import snapshot as approval_snapshot
+                    state = approval_snapshot()
                 if mode == 'expired': turns_in(state)[0]['status'] = 'completed'
                 if mode in ('blocking', 'unconfirmed'):
                     state['requests'] = [dict(id=42, method='item/tool/requestUserInput', params=dict(itemId='blocking', questions=[dict(id='choice', question='Which?')]))]
@@ -134,12 +142,15 @@ class TransportTests(unittest.TestCase):
                     result = {}
                     if method == 'initialize': result = dict(clientId='test-client')
                     elif method == 'thread-owner-discovery': result = dict(ownerClientId='owner')
-                    elif method in ('thread-follower-steer-turn', 'thread-follower-submit-user-input'):
+                    elif method in ('thread-follower-steer-turn', 'thread-follower-submit-user-input', 'thread-follower-command-approval-decision'):
                         received.append(message)
                         assert message['params']['conversationId'] == 'session'
                         assert message['targetClientId'] == 'owner'
                         result = dict(result=dict(turnId='turn')) if method.endswith('steer-turn') else dict(ok=True)
                     elif method == 'thread-follower-load-complete-history':
+                        if mode == 'approval': state['requests'] = []
+                        if mode == 'approval-unconfirmed':
+                            turns_in(state)[0]['items'].append(dict(requestId=42, completed=True))
                         if mode == 'blocking':
                             turns_in(state)[0]['items'].append(dict(requestId=42, completed=True))
                         broadcast()
@@ -152,16 +163,22 @@ class TransportTests(unittest.TestCase):
         worker = threading.Thread(target=server, daemon=True); worker.start()
         try:
             call = 'blocking' if mode in ('blocking', 'unconfirmed') else 'call'
+            question, answer = QUESTION, 'A'
+            if mode.startswith('approval'):
+                from test_codex_approvals import snapshot as approval_snapshot
+                from yukio.codex_approvals import pending
+                call, question, _ = pending(approval_snapshot(), 'session')[0]
+                answer = question.options[0].label
             if self.packaged_exe:
                 config = Path(tmp)/'config.json'; output = Path(tmp)/'result.json'
                 config.write_text(json.dumps(dict(endpoint=endpoint, call=call, output=str(output))), encoding='utf-8')
                 subprocess.run([self.packaged_exe, '--codex-answer-smoke', str(config)], check=True, timeout=20)
                 expected = 'expired' if mode == 'expired' else 'rejected' if mode in ('rejected', 'unconfirmed') else 'received'
                 self.assertEqual(json.loads(output.read_text())['status'], expected)
-            elif mode in ('expired', 'rejected', 'unconfirmed'):
-                with self.assertRaises(AnswerError): send_answer('session', call, QUESTION, 'A', endpoint)
+            elif mode in ('expired', 'rejected', 'unconfirmed', 'approval-unconfirmed'):
+                with self.assertRaises(AnswerError): send_answer('session', call, question, answer, endpoint)
             else:
-                send_answer('session', call, QUESTION, 'A', endpoint)
+                send_answer('session', call, question, answer, endpoint)
         finally:
             worker.join(9)
             if listener: listener.close()

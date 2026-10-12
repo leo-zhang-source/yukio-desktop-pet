@@ -144,6 +144,8 @@ class PetApp:
         self._delivery = None
         self._delivery_question = None
         self._codex_answers = {}
+        from .codex_approvals import ApprovalMonitor
+        self._approval_monitor = ApprovalMonitor()
         self._answer_executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="yukio-answer")
         #: 会话 → 深链（查一次要翻几百份记录，问题卡每帧都要问）。
         self._chat_url_cache = {}
@@ -933,6 +935,8 @@ class PetApp:
                         self.router.ingest(e, min(e.ts, now))
                 except Exception:
                     traceback.print_exc()
+        for event in self._approval_monitor.poll(self.router.active_codex_sessions(now), now, self._answer_executor):
+            self.router.ingest(event, now)
         self.router.tick(now)
 
         if self.demo:

@@ -179,7 +179,7 @@ class QuestionCardLayout:
             y += GAP * s - OPTION_GAP * s
 
         self._notice_rect = None
-        if not self.is_sending:
+        if not self.is_sending and question.approval is None:
             self._input_rect = (PAD_X * s, y, inner_w - SEND_WIDTH * s - 4 * s, INPUT_HEIGHT * s)
             self._send_rect = (width - PAD_X * s - SEND_WIDTH * s, y, SEND_WIDTH * s, INPUT_HEIGHT * s)
             self._notice_rect = None
@@ -217,7 +217,7 @@ class QuestionCardLayout:
         if self._inside(self._close_rect, x, y):
             return Hit("close")
         for i, rect in enumerate(self._option_rects):
-            if self._inside(rect, x, y):
+            if not (self.is_sending and self.question.approval is not None) and self._inside(rect, x, y):
                 return Hit("option", i)
         if self._inside(self._input_rect, x, y):
             return Hit("input")
@@ -272,6 +272,8 @@ class QuestionCardLayout:
             hint = tr("Check the chat", "请到聊天中确认")
         elif self.hidden_options > 0:
             hint = tr("%d more in the chat", "还有 %d 个选项在聊天里") % self.hidden_options
+        elif self.question.approval is not None:
+            hint = tr("Choose a decision", "请选择批准或拒绝")
         elif self.question.multi_select:
             hint = tr("Pick any, press Enter", "可多选，按回车送出")
         else:

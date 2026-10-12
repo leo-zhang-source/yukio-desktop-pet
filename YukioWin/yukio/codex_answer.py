@@ -51,6 +51,9 @@ def turns_in(snapshot):
 
 
 def submission(snapshot, session, call_id, question, answer):
+    if question.approval is not None or call_id.startswith('yukio-approval:'):
+        from .codex_approvals import submission as approval_submission
+        return approval_submission(snapshot, session, call_id, question, answer)
     if snapshot.get('id') != session:
         raise AnswerError('protocol')
     turn = next((t for t in reversed(turns_in(snapshot)) if t.get('status') == 'inProgress'), None)
@@ -253,8 +256,13 @@ def send_answer(session, call_id, question, answer, endpoint=None):
                     raise AnswerError('protocol')
                 connection.request('thread-follower-load-complete-history', dict(conversationId=session), target=owner)
                 updated = connection.snapshot(session, owner)
-                if not any(str(item.get('requestId')) == str(params['requestId']) and item.get('completed') is True
-                           for turn in turns_in(updated) for item in turn.get('items', [])):
+                approval_resolved = (question.approval is not None and updated.get('id') == session
+                                     and isinstance(updated.get('requests'), list)) and not any(
+                    r.get('id') == params['requestId'] for r in updated.get('requests', []))
+                confirmed = approval_resolved if question.approval is not None else any(
+                    str(item.get('requestId')) == str(params['requestId']) and item.get('completed') is True
+                    for turn in turns_in(updated) for item in turn.get('items', []))
+                if not confirmed:
                     raise AnswerError('rejected')
         finally:
             try:

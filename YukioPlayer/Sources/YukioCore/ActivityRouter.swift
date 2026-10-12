@@ -609,10 +609,16 @@ public final class ActivityRouter {
 
     /// 在菜单里挑一条聊天跟：传 nil 回到自动（完成与提问优先）。挑中立刻生效，不等防抖。
     /// 返回 false 表示播放器没见过这条聊天（菜单只会给出见过的）。
-    @discardableResult
     /// 这条聊天是哪一家的（`PetEvent.source`）。点举牌要按家分路：只有 Claude 和 Codex 能跳回聊天。
+    public func activeCodexSessions(now: Double) -> [String] {
+        sessions.values.filter { $0.source == "codex" && isLive($0, now: now) }.map(\.id).sorted()
+    }
+
+    /// Source used to route card interactions to the right provider.
     public func sourceOfSession(_ id: String) -> String? { sessions[id]?.source }
 
+    /// Pin a known session; nil returns to automatic selection.
+    @discardableResult
     public func pinSession(_ id: String?, now: Double) -> Bool {
         temporarySession = nil
         if let id {

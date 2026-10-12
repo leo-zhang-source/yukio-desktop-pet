@@ -50,6 +50,9 @@ final class CodexAnswerClient {
     /// The mutation is constructed only from a freshly fetched question in this exact thread.
     static func submission(snapshot: [String: Any], session: String, callID: String,
                            question: PetQuestion, answer: String) throws -> (method: String, params: [String: Any]) {
+        if question.approval != nil || callID.hasPrefix(CodexApprovals.prefix) {
+            return try CodexApprovals.submission(snapshot: snapshot, session: session, callID: callID, question: question, answer: answer)
+        }
         guard snapshot["id"] as? String == session else { throw Failure.protocolMismatch }
         let turns = try Self.turns(in: snapshot)
         guard let turn = turns.last(where: { $0["status"] as? String == "inProgress" }) else { throw Failure.expired }
@@ -100,6 +103,15 @@ final class CodexAnswerClient {
             "response": ["answers": [questionID: ["answers": [answer]]]]])
     }
 
+    func approvalSnapshot(session: String) throws -> [String: Any] {
+        let connection = try Connection(path: socketPath)
+        let reply = try connection.request("thread-owner-discovery", params: ["hostId": "local", "conversationId": session])
+        guard let owner = reply["handledByClientId"] as? String else { throw Failure.unavailable }
+        try connection.follow(session: session, owner: owner, following: true)
+        defer { try? connection.follow(session: session, owner: owner, following: false) }
+        return try connection.snapshot(session: session, owner: owner)
+    }
+
     func send(session: String, callID: String, question: PetQuestion, answer: String) throws {
         let connection = try Connection(path: socketPath)
         let ownerReply = try connection.request("thread-owner-discovery", params: ["hostId": "local", "conversationId": session])
@@ -119,7 +131,11 @@ final class CodexAnswerClient {
             _ = try connection.request("thread-follower-load-complete-history", params: ["conversationId": session], target: owner)
             let updated = try connection.snapshot(session: session, owner: owner)
             let turns = try Self.turns(in: updated)
-            let confirmed = turns.flatMap { $0["items"] as? [[String: Any]] ?? [] }.contains {
+            let approvalResolved = question.approval != nil && updated["id"] as? String == session
+                && updated["requests"] is [[String: Any]] && !(updated["requests"] as? [[String: Any]] ?? []).contains {
+                String(describing: $0["id"] ?? "") == String(describing: submission.params["requestId"] ?? "")
+            }
+            let confirmed = question.approval != nil ? approvalResolved : turns.flatMap { $0["items"] as? [[String: Any]] ?? [] }.contains {
                 String(describing: $0["requestId"] ?? "") == String(describing: submission.params["requestId"] ?? "")
                     && $0["completed"] as? Bool == true
             }

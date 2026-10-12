@@ -81,7 +81,7 @@ final class QuestionCardView: NSView, NSTextFieldDelegate {
             field.isHidden = true
             return
         }
-        field.isHidden = false
+        field.isHidden = !card.allowsText
         field.isEnabled = !card.isSending
         field.frame = card.textFieldFrame(in: bounds).insetBy(dx: 5, dy: 4)
     }

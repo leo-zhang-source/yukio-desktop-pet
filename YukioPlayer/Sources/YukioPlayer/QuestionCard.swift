@@ -54,6 +54,7 @@ struct QuestionCardLayout {
     /// 没列出来的选项个数。
     let hiddenOptions: Int
     let multiSelect: Bool
+    let allowsText: Bool
     /// 多选时已经选中的选项下标。
     let picked: Set<Int>
     /// 能不能跳回那条聊天（Deep Code 没有窗口可跳，就不画这条）。
@@ -74,6 +75,7 @@ struct QuestionCardLayout {
         self.sentNotice = sentNotice
         self.isSending = isSending
         self.multiSelect = q.multiSelect
+        self.allowsText = q.approval == nil
         self.picked = picked
         self.canOpenChat = canOpenChat
         header = q.header.flatMap { $0.isEmpty ? nil : CardLook.singleLine($0) }
@@ -100,7 +102,7 @@ struct QuestionCardLayout {
         inputRect = NSRect(x: Self.padX, y: y, width: innerW - Self.sendWidth - 4, height: Self.inputHeight)
         sendRect = NSRect(x: Self.width - Self.padX - Self.sendWidth, y: y,
                           width: Self.sendWidth, height: Self.inputHeight)
-        y += Self.inputHeight + Self.gap
+        if allowsText { y += Self.inputHeight + Self.gap }
         if sentNotice != nil {
             let h = CardLook.lineHeight(Self.optionFont) * 2
             noticeRect = NSRect(x: Self.padX, y: y, width: innerW, height: h)
@@ -151,7 +153,7 @@ struct QuestionCardLayout {
         guard bounds.contains(point) else { return nil }
         if r(Self.closeRect(NSRect(origin: .zero, size: size))).contains(point) { return .close }
         for (i, rect) in optionRects.enumerated() where !isSending && r(rect).contains(point) { return .option(i) }
-        if !isSending {
+        if !isSending && allowsText {
             if r(inputRect).contains(point) { return .input }
             if r(sendRect).contains(point) { return .send }
         }
@@ -192,10 +194,13 @@ struct QuestionCardLayout {
         if let notice = sentNotice {
             CardLook.draw(notice, Self.optionFont, CardLook.accent, in: r(noticeRect))
         }
-        drawInput(in: r(inputRect))
-        drawSend(in: r(sendRect))
+        if allowsText {
+            drawInput(in: r(inputRect))
+            drawSend(in: r(sendRect))
+        }
 
         var hint = multiSelect ? tr("Pick any, ⏎ to send", "可多选，⏎ 送出") : tr("Click an option or type ⏎", "点选项，或打字 ⏎")
+        if !allowsText { hint = tr("Choose a decision", "请选择批准或拒绝") }
         if hiddenOptions > 0 { hint = tr("\(hiddenOptions) more in the chat", "还有 \(hiddenOptions) 个选项在聊天里") }
         if sentNotice != nil { hint = isSending ? tr("Waiting for receipt", "等待接收确认") : tr("Click or type to retry", "可重选或输入后重试") }
         let hintRectOnScreen = r(hintRect)

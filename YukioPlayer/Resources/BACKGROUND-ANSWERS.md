@@ -14,6 +14,16 @@
 
 Codex 使用桌面应用的内部 IPC，升级后可能需要更新适配。当前卡片展示提问数组中的第一题；多题的阻塞式 request_user_input 请在原聊天完成，卡片不会错发一条普通消息来代替整组答案。
 
+## Codex 批准请求 / Approval requests
+
+Codex 本机活动任务的命令执行、文件修改和权限请求，现在使用同一张问题卡及等待提醒。卡片显示批准原因和操作内容，点击「批准本次」或「拒绝」后在后台回应对应请求；不抢前台、不发送普通聊天文字。权限请求只按本轮授予，卡片不提供永久批准。关闭卡片仅收起提醒，不代表批准或拒绝；完整操作内容可通过「打开聊天」查看。
+
+发送前重新读取待处理请求，核对聊天、轮次、请求 ID 和完整请求内容；请求已处理、内容变化或连接失败时，不会继续提交。只有确认请求已从待处理列表移除后才收起已发送的卡片。原聊天中处理请求也会自动收起雪绪的提醒。
+
+此通道适用于 Codex 桌面版的本机任务；macOS 与 Windows 使用同一语义。Claude Code / Deep Code 的批准仍由各自原有授权界面处理，它们的问题回答适配器不等于工具批准通道。Windows 原生管道和界面仍需 Windows 环境验证。
+
+Local Codex command, file-change and permission approvals share the question card and waiting state. Explicit option clicks respond to the exact pending request in the background, after fresh validation of the thread, turn, request ID and full request contents. Closing the card only dismisses the reminder. Permission grants are limited to the turn. Claude Code and Deep Code approvals still use their original authorization interfaces.
+
 ## Claude Code
 
 安装按钮只合并 `AskUserQuestion` 的钩子，保留其他 hooks、模型和权限配置。配置位置遵从 `CLAUDE_CONFIG_DIR`，默认 `~/.claude/settings.json`；修改前自动备份到 `~/Library/Application Support/YukioPlayer/claude-settings-before-answers-*.json`。

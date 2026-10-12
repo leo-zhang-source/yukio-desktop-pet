@@ -653,6 +653,9 @@ class ActivityRouter:
         out = [r[2] for r in rows]
         return out if limit is None else out[:limit]
 
+    def active_codex_sessions(self, now):
+        return sorted(k for k, s in self._sessions.items() if s.source == 'codex' and self._is_live(s, now))
+
     def session_source(self, session: str) -> Optional[str]:
         item = self._sessions.get(session)
         return item.source if item else None
