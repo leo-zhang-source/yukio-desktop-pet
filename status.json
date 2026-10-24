@@ -1,6 +1,6 @@
 {
   "project": {
-    "updated_at": "2026-10-24T19:41:38.172976+00:00",
+    "updated_at": "2026-10-24T19:49:07.741849+00:00",
     "focus_id": "validation",
     "boundary": "已在 Windows 实际打开首页和桌宠，并用明确的模拟材料调用内网模型。当前 Windows 尚无可读取的真实聊天；真实聊天解释、长期使用、完整交接和公开产品发布仍待验收。网站只展示开发进度。",
     "schema_version": 1,
@@ -406,7 +406,7 @@
         "status": "active",
         "title": "检查整条流程，而不只检查页面",
         "summary": "Mac 与 Windows 的基础运行检查通过；正在等待真实工作体验验收。",
-        "outcome": "本轮 95 项工作台检查通过；构建包解压启动、旧记录保留和模拟模型解释均已核对。",
+        "outcome": "本轮工作台在 Mac 和 Windows 上各 97 项检查通过；Windows 实际页面、独立包和模拟模型说明均已核对。真实日常体验按用户选择稍后验收。",
         "evidence": "工作台在两种电脑上各 97 项通过；Windows 原桌宠 347 项通过，1 项其他系统专属检查跳过。独立包重开后 6 条模拟记录仍为 6 条。",
         "details": [
           "在 Moonlight 中实际打开 Windows 工作台、模型预览与三段说明。",
@@ -459,17 +459,17 @@
             "done": false
           },
           {
-            "label": "Windows 实机",
-            "done": false
+            "label": "Windows 基础实机检查",
+            "done": true
           }
         ]
       },
       {
         "id": "delivery",
         "status": "active",
-        "title": "先交付 Mac 可用版本，再验收使用效果",
+        "title": "两种电脑可用，再验收真实体验",
         "summary": "Mac 与 Windows 桌面已有独立试用入口；两种包的运行文件一致，公开产品发布待验收。",
-        "outcome": "独立 Mac 工作台已更新为简洁首页，本机包和桌面副本已核对。",
+        "outcome": "Mac 与 Windows 均已交付本机试用入口，运行文件、桌面副本和旧历史已核对。",
         "evidence": "两种包共用的 39 个文件指纹一致；Windows 桌面 55 个清单文件、Mac 桌面 43 个文件与各自候选匹配。Mac 切换时保留已有 12,123 条记录。",
         "details": [
           "Windows 双击桌面“雪绪活动工作台”，无需另装 Python。",
@@ -516,7 +516,11 @@
             "done": false
           },
           {
-            "label": "Windows 与正式发布",
+            "label": "Windows 独立包本机交付",
+            "done": true
+          },
+          {
+            "label": "公开产品发布",
             "done": false
           }
         ]
@@ -612,6 +616,6 @@
   "collector": null,
   "publication": {
     "mode": "published",
-    "exported_at": "2026-10-24T19:41:58.205104+00:00"
+    "exported_at": "2026-10-24T19:49:07.910611+00:00"
   }
 }
