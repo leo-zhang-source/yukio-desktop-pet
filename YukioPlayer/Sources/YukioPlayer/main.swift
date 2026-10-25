@@ -1535,18 +1535,24 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // “头顶显示任务”是整块头顶任务 UI 的总开关：关掉气泡时，
         // 上面单独悬着的“N more”也要一起消失。
         let cards = (showBubble && showCards && following && simulation == nil) ? router.cards(now: now) : []
+        let wasExpanded = cardsExpanded
         if cards.isEmpty { cardsExpanded = false }
         // 摊开后一阵没人点就自己收起来，免得一直挡着。
         if cardsExpanded, now - cardsExpandedAt > Self.cardsAutoCollapseMs { cardsExpanded = false }
         // 多一条少一条立刻生效；只是卡上的字变了就按最短停留，免得一直闪。
         let appeared = cards.map(\.session) != cardsHold.value.map(\.session)
-        guard cardsHold.update(cards, now: now, immediate: immediate || appeared) else { return }
+        let changed = cardsHold.update(cards, now: now, immediate: immediate || appeared)
         let value = cardsHold.value
+        // Window visibility and expansion can change without any new chat text.
+        // A hidden child window must be ordered in again, not just faded to alpha 1.
+        let restoreWindow = !value.isEmpty && !petHidden && !cardStack.isVisible
+        guard changed || immediate || wasExpanded != cardsExpanded || restoreWindow else { return }
         guard !value.isEmpty else {
             fade(cardStack, to: 0)
             return
         }
         layoutCards(value)
+        if !petHidden && !cardStack.isVisible { cardStack.orderFrontRegardless() }
         fade(cardStack, to: 1)
     }
 
@@ -2359,6 +2365,49 @@ app.run()
 
 #if DEBUG
 extension AppController {
+    /// Exercise the real child windows without polling the user's conversations.
+    func chatCardsForCheck() -> [String: Bool] {
+        following = true; showBubble = true; showCards = true; hideWhenIdle = false
+        setUpWindow(); setUpBubble(); setUpCards(); setUpQuestion()
+        defer {
+            for window in [bubble as NSWindow?, cardStack as NSWindow?, questionPanel as NSWindow?] {
+                if let window { panel.removeChildWindow(window); window.close() }
+            }
+            panel.close()
+        }
+        var now = nowMs()
+        func work(_ session: String) {
+            router.ingest(PetEvent(ts: now, source: "test", session: session, kind: .taskStart), now: now)
+            router.ingest(PetEvent(ts: now, source: "test", session: session, kind: .activityStart,
+                                  eventID: session, activity: .write_file), now: now)
+            router.settle(now: now)
+            shownState = router.displayed
+            updatePetVisibility(now: now)
+            updateBubble(now: now, force: true)
+            updateCards(now: now, immediate: true)
+        }
+        work("first")
+        now += 100
+        work("second")
+        var checks = ["bothChatsDetected": router.sessionSummaries(now: now).filter(\.live).count == 2,
+                      "otherChatCardExists": cardsHold.value.count == 1,
+                      "otherChatWindowVisible": cardStack.isVisible,
+                      "collapsedEntryVisible": cardStack.stackView.layout?.hidden == 1]
+        toggleCards()
+        checks["clickExpandsUnchangedCards"] = cardStack.stackView.layout?.shown.count == 1
+        collapseCards()
+        checks["clickCollapsesUnchangedCards"] = cardStack.stackView.layout?.shown.isEmpty == true
+        toggleCards()
+        updateCards(now: nowMs() + Self.cardsAutoCollapseMs + 1)
+        checks["timeoutCollapsesUnchangedCards"] = cardStack.stackView.layout?.shown.isEmpty == true
+        cardStack.orderOut(nil)
+        updateCards(now: now, immediate: false)
+        checks["unchangedCardsRestoreHiddenWindow"] = cardStack.isVisible
+        setHidden(true); setHidden(false)
+        checks["restoresOtherChatWindow"] = cardStack.isVisible
+        return checks
+    }
+
     func skinSwitchForCheck() throws -> [String: Bool] {
         _ = NSApplication.shared
         hideWhenIdle = false

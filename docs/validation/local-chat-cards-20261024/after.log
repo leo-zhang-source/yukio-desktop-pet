@@ -1,0 +1,46 @@
+[0/1] Planning build
+Building for debugging...
+[0/5] Write sources
+[1/5] Write swift-version--1AB21518FC5DEDBE.txt
+[3/7] Emitting module YukioPlayer
+[4/7] Compiling YukioPlayer main.swift
+[4/9] Write Objects.LinkFileList
+[5/9] Linking YukioPlayer
+[6/9] Applying YukioPlayer
+[7/9] Write Objects.LinkFileList
+[8/9] Linking YukioPlayerPackageTests
+Build complete! (5.19s)
+◇ Test run started.
+↳ Testing Library Version: 124.4
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite IdleVisibilityTests started.
+◇ Suite TaskBubbleScalingTests started.
+◇ Suite ChatCardVisibilityTests started.
+◇ Suite CardStackTests started.
+◇ Test settingsSwitchReflectsPreferenceAndEmitsChange() started.
+◇ Test autoHideLifecycleUsesRealWindows() started.
+◇ Test cardHitRegionsFollowTheRenderedScale() started.
+◇ Test mutedChatsGetNoCards() started.
+◇ Test multipleChatsUseVisibleAndExpandableWindows() started.
+◇ Test dismissingTheCardOfTheChatSheIsShowingSwitchesHerToTheNextOne() started.
+◇ Test bubbleFillsItsScaledWindowAtEverySize() started.
+◇ Test dismissingACardPutsTheSignDownAndKeepsItAwayUntilTheNextTurn() started.
+◇ Test cardsAreSortedByWhoNeedsYouFirstAndSkipTheOneSheIsShowing() started.
+◇ Test aFailedChatGetsACardAheadOfTheFinishedOne() started.
+◇ Test quietChatsDropOffTheStack() started.
+✔ Test mutedChatsGetNoCards() passed after 0.003 seconds.
+✔ Test cardsAreSortedByWhoNeedsYouFirstAndSkipTheOneSheIsShowing() passed after 0.004 seconds.
+✔ Test aFailedChatGetsACardAheadOfTheFinishedOne() passed after 0.004 seconds.
+✔ Test dismissingTheCardOfTheChatSheIsShowingSwitchesHerToTheNextOne() passed after 0.004 seconds.
+✔ Test dismissingACardPutsTheSignDownAndKeepsItAwayUntilTheNextTurn() passed after 0.004 seconds.
+✔ Test quietChatsDropOffTheStack() passed after 0.484 seconds.
+✔ Suite CardStackTests passed after 0.484 seconds.
+✔ Test settingsSwitchReflectsPreferenceAndEmitsChange() passed after 5.449 seconds.
+✔ Test autoHideLifecycleUsesRealWindows() passed after 5.449 seconds.
+✔ Suite IdleVisibilityTests passed after 5.449 seconds.
+✔ Test multipleChatsUseVisibleAndExpandableWindows() passed after 5.451 seconds.
+✔ Test bubbleFillsItsScaledWindowAtEverySize() passed after 5.451 seconds.
+✔ Test cardHitRegionsFollowTheRenderedScale() passed after 5.451 seconds.
+✔ Suite ChatCardVisibilityTests passed after 5.451 seconds.
+✔ Suite TaskBubbleScalingTests passed after 5.451 seconds.
+✔ Test run with 11 tests passed after 5.451 seconds.
