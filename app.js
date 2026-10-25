@@ -58,14 +58,23 @@ function renderProject(p){
   byId('stage-position').textContent=`第 ${p.stages.indexOf(current)+1} / ${p.stages.length} 阶段`;
   byId('focus-title').textContent=current.title;byId('focus-description').textContent=p.current_note;
   byId('focus-outcome').textContent=current.outcome;byId('boundary').textContent=p.boundary;
-  byId('next-title').textContent=next===current?'完成当前步骤的剩余检查':next?.title||'本轮计划已交付';
+  byId('next-title').textContent=next===current?'完成当前步骤的剩余检查':next?.title||'之后可选：Windows 与长期体验';
   byId('next-description').textContent=next===current
     ?(current.checks||[]).filter(c=>!c.done).map(c=>c.label).join('；')||current.summary
-    :next?.summary||'继续根据实际使用情况完善。';
+    :next?.summary||'本轮九步按 Mac 试用版范围交付；Windows、更多真实样本与多天使用放在下方的可选清单。';
   byId('acceptance').replaceChildren();
   for(const item of current.checks||[]){const c=el('span',`check ${item.done?'done':''}`);c.append(el('span','circle',item.done?'✓':'·'),el('span','',item.label));byId('acceptance').append(c);}
   byId('milestones').textContent=`${p.stages.filter(s=>s.status==='complete').length} / ${p.stages.length} 个阶段已完成`;
-  renderStages();byId('update-list').replaceChildren();
+  renderStages();
+  const optional=byId('optionalTasks');optional.replaceChildren();
+  for(const task of p.optional_tasks||[]){
+    const card=el('article','stage planned'),body=el('div','stage-body');
+    card.append(el('span','step-number','○'));body.append(el('h3','',task.title),el('p','stage-description',task.summary));
+    const details=el('details');details.append(el('summary','','展开可选安排'));const list=el('ul');
+    for(const line of task.details||[])list.append(el('li','',line));details.append(list);body.append(details);
+    card.append(body,el('span','status planned','之后可选'));optional.append(card);
+  }
+  byId('update-list').replaceChildren();
   for(const update of p.updates.slice().reverse()){
     const row=el('li');const t=el('time','',update.at.length===10?update.at:time(update.at));t.dateTime=update.at;
     row.append(t,el('p','',update.text));byId('update-list').append(row);

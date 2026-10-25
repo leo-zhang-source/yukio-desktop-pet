@@ -580,6 +580,7 @@
         ]
       }
     ],
+    "optional_tasks": [],
     "updates": [
       {
         "at": "2026-10-18",
@@ -718,6 +719,6 @@
   "collector": null,
   "publication": {
     "mode": "published",
-    "exported_at": "2026-10-25T04:03:46.330628+00:00"
+    "exported_at": "2026-10-25T05:18:47.404212+00:00"
   }
 }
