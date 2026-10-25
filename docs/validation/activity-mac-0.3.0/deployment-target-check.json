@@ -1,0 +1,26 @@
+{
+  "target": "13.0",
+  "native_files": 3,
+  "all_native_minimums_at_or_below_target": true,
+  "not_old_macos_native_acceptance": true,
+  "files": [
+    {
+      "file": "Contents/MacOS/YukioWorkbench",
+      "minimum_macos": [
+        "13.0"
+      ]
+    },
+    {
+      "file": "Contents/Resources/runtime/YukioRuntime/YukioRuntime",
+      "minimum_macos": [
+        "11.0"
+      ]
+    },
+    {
+      "file": "Contents/Resources/runtime/YukioRuntime/_internal/libpython3.12.dylib",
+      "minimum_macos": [
+        "11.0"
+      ]
+    }
+  ]
+}

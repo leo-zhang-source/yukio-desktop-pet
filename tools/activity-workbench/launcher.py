@@ -1,0 +1,136 @@
+#!/usr/bin/env python3
+"""Local launcher: existing collector ownership is respected; no automatic model call."""
+import argparse
+import json
+import os
+from pathlib import Path
+import signal
+import subprocess
+import sys
+import time
+import urllib.request
+import webbrowser
+
+from runtime_identity import identity
+from server import create_server
+from explanation import load_config
+
+ROOT=Path(__file__).resolve().parent
+CLIENTS=('codex','claude','deepcode')
+
+def default_directory():
+    if sys.platform=='darwin':return Path.home()/'Library/Application Support/YukioPlayer/activity-observation'
+    if os.name=='nt':return Path(os.environ.get('LOCALAPPDATA',str(Path.home()/'AppData/Local')))/'Yukio/activity-observation'
+    return Path.home()/'.local/share/yukio/activity-observation'
+
+def core_path():
+    packaged=ROOT/'core'
+    return packaged if packaged.is_dir() else ROOT.parents[1]/'YukioWin'
+
+def databases_for(directory):return {client:directory/(client+'-activity-history-v1.sqlite') for client in CLIENTS}
+
+def check_existing(port,databases,model_config=None):
+    req=urllib.request.Request('http://127.0.0.1:%d/api/health'%port,headers={'X-Yukio-Workbench':'1'})
+    try:
+        opener=urllib.request.build_opener(urllib.request.ProxyHandler({}))
+        with opener.open(req,timeout=1) as r:raw=r.read(8193)
+        if len(raw)>8192:return 'different'
+        data=json.loads(raw)
+        return 'same' if data==identity(databases,model_config) else 'different'
+    except Exception as error:
+        if os.environ.get('YUKIO_DIAGNOSTICS')=='1':
+            print('Existing service check: '+type(error).__name__+' '+str(getattr(error,'name',getattr(error,'errno',''))),file=sys.stderr)
+        return 'unavailable'
+
+def inspect(directory):
+    from history_view import HistoryView
+    databases=databases_for(directory)
+    data=HistoryView(databases).clients()
+    data.pop('explanation',None)
+    data['python_supported']=sys.version_info>=(3,9)
+    data['collector_code_available']=(core_path()/'yukio/activity_collector_cli.py').is_file()
+    data['model_config_present']=(directory/'lan-model.json').is_file()
+    return data
+
+def main(argv=None):
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--data-dir',type=Path,default=default_directory())
+    parser.add_argument('--port',type=int,default=8767)
+    parser.add_argument('--collect',action='store_true',help='Collect supported recent local activity; no model transmission')
+    parser.add_argument('--no-browser',action='store_true')
+    parser.add_argument('--check',action='store_true',help='Read-only readiness report')
+    parser.add_argument('--source-root',type=Path,help='Optional source parent containing codex, claude and deepcode directories')
+    parser.add_argument('--collector',choices=CLIENTS,help=argparse.SUPPRESS)
+    parser.add_argument('--parent-stdin',action='store_true',help=argparse.SUPPRESS)
+    args=parser.parse_args(argv)
+    if not 1<=args.port<=65535:parser.error('Port must be 1..65535')
+    directory=args.data_dir.absolute();databases=databases_for(directory)
+    if args.check:print(json.dumps(inspect(directory),ensure_ascii=False));return 0
+    if args.collector:
+        sys.path.insert(0,str(core_path()))
+        from yukio.activity_collector_cli import run_activity_collector
+        collector_args=['--activity-collect',str(databases[args.collector]),'--source-format',args.collector,'--status-file',str(directory/(args.collector+'-workbench-status.json'))]
+        if args.source_root:collector_args+=['--sessions-dir',str(args.source_root.absolute()/args.collector)]
+        if args.parent_stdin:collector_args+=['--parent-stdin']
+        return run_activity_collector(collector_args)
+    config_path=directory/'lan-model.json'
+    try:config=load_config(config_path) if config_path.is_file() else None
+    except (OSError,ValueError):print('模型配置需要检查；未启动新服务。',file=sys.stderr);return 1
+    existing=check_existing(args.port,databases,config)
+    if existing=='same' and not args.collect:
+        print('本机工作台已在运行，继续使用现有服务。',flush=True)
+        if not args.no_browser:webbrowser.open('http://127.0.0.1:%d/'%args.port)
+        return 0
+    if existing=='different':
+        print('这个端口已有不同版本或不同记录目录的服务。请关闭该服务或换一个端口；没有替换现有进程。',file=sys.stderr);return 1
+    children=[];server=None;old_handlers={}
+    try:
+        # A fast exit during startup must still release our newly started children.
+        def stop(*_):raise KeyboardInterrupt
+        for sig in (signal.SIGINT,signal.SIGTERM):old_handlers[sig]=signal.signal(sig,stop)
+        # Reserve the port before creating databases or starting child collectors.
+        roots={c:args.source_root.absolute()/c for c in CLIENTS} if args.source_root else None
+        if existing!='same':server=create_server(args.port,databases,model_config=config,source_roots=roots)
+        if args.collect:
+            sys.path.insert(0,str(core_path()))
+            from yukio.activity_collector_cli import CollectorLease
+            directory.mkdir(parents=True,exist_ok=True,mode=0o700)
+            for client,database in databases.items():
+                try:lease=CollectorLease(database)
+                except ValueError:
+                    print(client+'：沿用已有记录器。',flush=True);continue
+                lease.close()
+                command=([sys.executable] if getattr(sys,'frozen',False) else [sys.executable,'-B',str(ROOT/'launcher.py')])
+                command+=['--data-dir',str(directory),'--collector',client,'--parent-stdin']
+                if args.source_root:command+=['--source-root',str(args.source_root.absolute())]
+                process=subprocess.Popen(command,stdin=subprocess.PIPE,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,
+                                         creationflags=subprocess.CREATE_NO_WINDOW if os.name=='nt' else 0)
+                children.append(process)
+            time.sleep(.25)
+            if any(p.poll() is not None for p in children):
+                print('部分新记录器未启动；请检查记录器状态。已有历史仍可查看。',flush=True)
+        url='http://127.0.0.1:%d/'%args.port
+        print('Yukio 活动工作台 '+url+'\n关闭此启动窗口或按 Ctrl-C 停止本次启动的服务；不会停止已有记录器。',flush=True)
+        if not args.no_browser:webbrowser.open(url)
+        if server:server.serve_forever()
+        elif children:
+            # A live read-only page does not imply that its collectors are alive.
+            print('本机页面已在运行；本窗口接续缺少的记录器。',flush=True)
+            while True:time.sleep(.5)
+        else:print('本机工作台和记录器已在运行，继续使用现有服务。',flush=True)
+    except KeyboardInterrupt:pass
+    except (OSError,ValueError,ImportError):
+        print('无法启动；请检查端口、Python 环境或本机记录目录。已有数据未被替换。',file=sys.stderr);return 1
+    finally:
+        if server:server.server_close()
+        for process in children:
+            if process.stdin:process.stdin.close()
+        for process in children:
+            try:process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                process.terminate();process.wait(timeout=5)
+                print('本次记录器未及时响应，已停止；下次启动会检查保存位置。',file=sys.stderr)
+        for sig,handler in old_handlers.items():signal.signal(sig,handler)
+    return 0
+
+if __name__=='__main__':sys.exit(main())

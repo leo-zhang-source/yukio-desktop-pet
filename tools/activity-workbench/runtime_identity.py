@@ -1,0 +1,28 @@
+"""Local service identity for safe launcher reuse; no paths sent to the model."""
+import hashlib
+import ast
+import json
+from pathlib import Path
+
+ROOT=Path(__file__).resolve().parent
+FILES=('task_summary.py','project_context.py','handoff_view.py','server.py','source_context.py','glance_view.py','glance_automation.py','dist/history.html','dist/glance.js','dist/glance.css','history_view.py','context_view.py','explanation.py','runtime_identity.py','collector_status.py','dist/index.html','dist/app.js','dist/context.js','dist/explanation.js','dist/style.css')
+def identity(databases,model_config=None):
+    digest=hashlib.sha256()
+    for name in FILES:
+        digest.update(name.encode());digest.update((ROOT/name).read_bytes())
+    digest.update((ROOT/'launcher.py').read_bytes())
+    core=ROOT/'core/yukio'
+    if not core.is_dir():core=ROOT.parents[1]/'YukioWin/yukio'
+    pending=['activity_collector_cli'];seen=set()
+    while pending:
+        name=pending.pop()
+        if name in seen:continue
+        seen.add(name);raw=(core/(name+'.py')).read_bytes()
+        digest.update(name.encode());digest.update(raw)
+        for node in ast.walk(ast.parse(raw)):
+            if isinstance(node,ast.ImportFrom) and node.level and node.module:
+                dependency=node.module.split('.')[0]
+                if (core/(dependency+'.py')).is_file():pending.append(dependency)
+    scope=hashlib.sha256(json.dumps({k:str(Path(v).resolve()) for k,v in databases.items()},sort_keys=True).encode()).hexdigest()
+    config=hashlib.sha256(json.dumps(model_config,sort_keys=True).encode()).hexdigest()
+    return dict(service='yukio-activity-workbench',build=digest.hexdigest(),database_scope=scope,model_configuration=config)

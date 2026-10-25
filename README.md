@@ -1,3 +1,5 @@
+> **独立 Mac 活动工作台 0.3.0（Apple 芯片预览版）**：内置运行环境，按聊天看内容、解释和原因。第8、9步按Mac范围交付；Windows以后可选，不替换原桌宠。 [下载与使用说明](https://github.com/leozhang8654/yukio-desktop-pet/releases/tag/activity-workbench-v0.3.0) · [版本与核验范围](docs/releases/activity-workbench-0.3.0.md)。
+
 > **0.4.6**: GPT plugin chats retain their Chrome tab destination; visible chats acknowledge completion reminders. Includes Qianxia, idle hiding, approval cards and answer pasting. [Release notes and verification limits](docs/releases/0.4.6.md).
 
 **English** · [简体中文](README.zh-CN.md)

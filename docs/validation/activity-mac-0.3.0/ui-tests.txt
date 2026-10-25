@@ -1,0 +1,16 @@
+✔ unchanged polling retains the same evidence subtree and focus (3.551125ms)
+✔ changed content retains an opened matching proof and keyboard position (0.802ms)
+✔ overlapping polls share one request and a switched chat rejects the old reply (1.210833ms)
+✔ the entry names the selected chat explanation and clearly labels local text (1.433333ms)
+✔ a model answer appears in the three parts and new work restores the local label (0.814959ms)
+✔ opening the explanation entry only previews and says where the result will appear (0.875917ms)
+✔ resuming the same explicit chat finds the latest file without matching titles (0.964542ms)
+✔ a continuation resets the model answer and revokes the old send grant (1.013792ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 126.65175
