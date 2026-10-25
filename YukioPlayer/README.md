@@ -1,3 +1,5 @@
+> **Mac 0.4.7**：右键雪绪或再次打开 App 进入活动工作台；顶部右侧进入设置，分为外观与显示、聊天与提醒、更多设置。在更多设置中“检查更新”。当前发布面向 Apple 芯片，Intel 保留 0.4.6。 [本轮说明](../docs/releases/0.4.7.md)。
+
 > **0.4.6**: browser chat destinations, visible-chat completion reminders, approval cards, answer pasting and Qianxia. [Release notes](../docs/releases/0.4.6.md).
 
 # Yukio desktop player (macOS, follows Claude Code, DeepSeek or GPT)
@@ -6,7 +8,7 @@ One Yukio (雪绪) who changes what she is doing based on what your coding agent
 With several chats open at once, whichever one has just finished or is waiting for your decision is shown first; the other chats that have something to say stack above the bubble as cards of the same design, and clicking one takes you to that chat. You can also pin one chat in the menu so she follows only that one. Every motion moves gently and continuously (writing, typing, moving her eyes, blinking), and the small bubble over her head shows the big task, the current task, and progress.
 Native Swift / AppKit. It needs only the Xcode Command Line Tools and has no third-party dependencies.
 
-## Release interface (0.3.3)
+## Historical release interface (0.3.3)
 
 The standalone assistant page and its entries are suspended in release builds; existing local data is preserved. Right-click Yukio or reopen the app for compact settings, and click outside to close. The large **Lower sign** button lowers the current completion sign without opening the chat. See [assistant status](../docs/ASSISTANT.md).
 

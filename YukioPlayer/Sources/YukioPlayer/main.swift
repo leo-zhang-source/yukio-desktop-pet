@@ -786,7 +786,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var cardStack: CardStackPanel!
     private var questionPanel: QuestionPanel!
     private var statusItem: NSStatusItem!
-    private var settingsWindow: SettingsPanelController?
+    private var settingsWindow: WorkbenchPanelController?
     private let softwareUpdates = SoftwareUpdates()
     private var reminderStore: ReminderStore?
     private var reminderPanel: ReminderPanelController?
@@ -923,6 +923,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         ) { [weak self] _ in self?.screensChanged() }
 
         setUpAssistant()
+        if CommandLine.arguments.contains("--open-workbench") { showSettings() }
         softwareUpdates.start()
         if CommandLine.arguments.contains("--demo") { startDemo() }
     }
@@ -943,7 +944,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         view.onDragBegan = { [weak self] in self?.dragBegan() }
         view.onDragOriginChanged = { [weak self] in self?.panel.frame.origin ?? .zero }
         view.onDragEnded = { [weak self] in self?.dragEnded() }
-        // 右键保留轻量设置入口，再通过设置里的大按钮切换到完整助手窗口。
+        // 沿用原设置的右键入口与点外部收起方式，打开内置工作台。
         let openSettings: (NSEvent) -> Void = { [weak self] _ in
             // Finish routing the mouse event before activating another window.
             DispatchQueue.main.async { self?.showSettings() }
@@ -1535,18 +1536,24 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // “头顶显示任务”是整块头顶任务 UI 的总开关：关掉气泡时，
         // 上面单独悬着的“N more”也要一起消失。
         let cards = (showBubble && showCards && following && simulation == nil) ? router.cards(now: now) : []
+        let wasExpanded = cardsExpanded
         if cards.isEmpty { cardsExpanded = false }
         // 摊开后一阵没人点就自己收起来，免得一直挡着。
         if cardsExpanded, now - cardsExpandedAt > Self.cardsAutoCollapseMs { cardsExpanded = false }
         // 多一条少一条立刻生效；只是卡上的字变了就按最短停留，免得一直闪。
         let appeared = cards.map(\.session) != cardsHold.value.map(\.session)
-        guard cardsHold.update(cards, now: now, immediate: immediate || appeared) else { return }
+        let changed = cardsHold.update(cards, now: now, immediate: immediate || appeared)
         let value = cardsHold.value
+        // Window visibility and expansion can change without any new chat text.
+        // A hidden child window must be ordered in again, not just faded to alpha 1.
+        let restoreWindow = !value.isEmpty && !petHidden && !cardStack.isVisible
+        guard changed || immediate || wasExpanded != cardsExpanded || restoreWindow else { return }
         guard !value.isEmpty else {
             fade(cardStack, to: 0)
             return
         }
         layoutCards(value)
+        if !petHidden && !cardStack.isVisible { cardStack.orderFrontRegardless() }
         fade(cardStack, to: 1)
     }
 
@@ -1848,7 +1855,11 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
             : tr("Yukio: ", "雪绪：") + (swing != nil ? L10n.heldName : L10n.stateName(shownState))
     }
 
-    /// 再次打开 App 时显示桌宠设置。
+    /// 再次打开 App 时显示活动工作台。
+    func applicationWillTerminate(_ notification: Notification) {
+        settingsWindow?.shutdown()
+    }
+
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         showSettings()
         return false
@@ -1991,11 +2002,11 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     private func showSettings() {
-        let controller: SettingsPanelController
+        let controller: WorkbenchPanelController
         if let existing = settingsWindow {
             controller = existing
         } else {
-            controller = SettingsPanelController()
+            controller = WorkbenchPanelController()
             controller.onChange = { [weak self] change in self?.applySettings(change) }
             settingsWindow = controller
         }
@@ -2170,7 +2181,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
             menu.addItem(action(tr("Stop demo", "停止模拟演示"), #selector(menuStopDemo)))
         }
         menu.addItem(action(tr("Follow assistant activity", "跟随助手活动"), #selector(menuToggleFollow), on: following))
-        menu.addItem(action(tr("Settings…", "设置…"), #selector(menuShowSettings), key: ","))
+        menu.addItem(action(tr("Activity workbench…", "活动工作台…"), #selector(menuShowSettings), key: ","))
         menu.addItem(.separator())
         menu.addItem(action(tr("Quit Yukio", "退出雪绪"), #selector(menuQuit), key: "q"))
         return menu
@@ -2290,6 +2301,9 @@ if args.contains("--connect-claude-answers") {
     do { try BackgroundAnswerSetup.installClaude(); print("Claude AskUserQuestion bridge installed"); exit(0) }
     catch { FileHandle.standardError.write(Data("\(error)\n".utf8)); exit(1) }
 }
+if let i = args.firstIndex(of: "--workbench-panel-check"), i + 1 < args.count {
+    runWorkbenchPanelCheck(path: args[i + 1])
+}
 if args.contains("--check") { runCheck() }
 if args.contains("--motion-benchmark") { runMotionBenchmark() }
 if let i = args.firstIndex(of: "--snapshot"), i + 1 < args.count { runSnapshot(path: args[i + 1]) }
@@ -2359,6 +2373,49 @@ app.run()
 
 #if DEBUG
 extension AppController {
+    /// Exercise the real child windows without polling the user's conversations.
+    func chatCardsForCheck() -> [String: Bool] {
+        following = true; showBubble = true; showCards = true; hideWhenIdle = false
+        setUpWindow(); setUpBubble(); setUpCards(); setUpQuestion()
+        defer {
+            for window in [bubble as NSWindow?, cardStack as NSWindow?, questionPanel as NSWindow?] {
+                if let window { panel.removeChildWindow(window); window.close() }
+            }
+            panel.close()
+        }
+        var now = nowMs()
+        func work(_ session: String) {
+            router.ingest(PetEvent(ts: now, source: "test", session: session, kind: .taskStart), now: now)
+            router.ingest(PetEvent(ts: now, source: "test", session: session, kind: .activityStart,
+                                  eventID: session, activity: .write_file), now: now)
+            router.settle(now: now)
+            shownState = router.displayed
+            updatePetVisibility(now: now)
+            updateBubble(now: now, force: true)
+            updateCards(now: now, immediate: true)
+        }
+        work("first")
+        now += 100
+        work("second")
+        var checks = ["bothChatsDetected": router.sessionSummaries(now: now).filter(\.live).count == 2,
+                      "otherChatCardExists": cardsHold.value.count == 1,
+                      "otherChatWindowVisible": cardStack.isVisible,
+                      "collapsedEntryVisible": cardStack.stackView.layout?.hidden == 1]
+        toggleCards()
+        checks["clickExpandsUnchangedCards"] = cardStack.stackView.layout?.shown.count == 1
+        collapseCards()
+        checks["clickCollapsesUnchangedCards"] = cardStack.stackView.layout?.shown.isEmpty == true
+        toggleCards()
+        updateCards(now: nowMs() + Self.cardsAutoCollapseMs + 1)
+        checks["timeoutCollapsesUnchangedCards"] = cardStack.stackView.layout?.shown.isEmpty == true
+        cardStack.orderOut(nil)
+        updateCards(now: now, immediate: false)
+        checks["unchangedCardsRestoreHiddenWindow"] = cardStack.isVisible
+        setHidden(true); setHidden(false)
+        checks["restoresOtherChatWindow"] = cardStack.isVisible
+        return checks
+    }
+
     func skinSwitchForCheck() throws -> [String: Bool] {
         _ = NSApplication.shared
         hideWhenIdle = false

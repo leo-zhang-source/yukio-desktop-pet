@@ -41,7 +41,7 @@ final class WorkbenchDelegate: NSObject, NSApplicationDelegate {
                 guard let self=self else{return}
                 if text.contains("已在运行") || text.contains("http://127.0.0.1:8767/") {
                     self.reuse = text.contains("已在运行")
-                    self.message.stringValue="工作台已经准备好。点击下方按钮，按聊天名称查看下方“内容、解释、原因”。要生成千问说明，点页面上方“让千问解释这段聊天”。\n\n页面会自动跟进活动；任务与交接小结可展开查看。首次设置自动说明会展示发送范围，已有同意后可直接更新。此试用版不会替换原来的桌宠。退出会停止由本窗口启动的服务；已有服务继续运行。"
+                    self.message.stringValue="工作台已经准备好。选择聊天后，千问会按你的设置自动解释“内容、解释、原因”；页面打开期间持续跟进，关掉页面停止后续解释。\n\n说明会结合前面的进展，用普通语言讲清正在做什么、有什么用。发送范围和接收位置在页面的“说明与隐私”中查看。此试用版不会替换原来的桌宠。退出会停止由本窗口启动的服务；已有服务继续运行。"
                     self.openButton.isEnabled=true
                     if !self.didOpen {self.didOpen=true;self.openWorkbench()}
                 } else if text.contains("需要检查") || text.contains("无法") || text.contains("不同版本") {

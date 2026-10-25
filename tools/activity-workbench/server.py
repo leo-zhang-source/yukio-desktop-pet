@@ -12,10 +12,12 @@ from context_view import ContextView
 from glance_view import GlanceView
 from handoff_view import HandoffView
 from glance_automation import GlanceAutomation
+from reading_view import ReadingView
 from project_context import ProjectContext
 from runtime_identity import identity
 from collector_status import read_status
 from explanation import ExplanationService, ExplanationError, MESSAGES, load_config
+from page_explanation_policy import enabled as page_policy_enabled
 
 ROOT = Path(__file__).resolve().parent
 ASSETS = {'/': ('index.html', 'text/html; charset=utf-8'),
@@ -36,7 +38,10 @@ def create_server(port, databases, *, synthetic=False, model_config=None, explan
     glance = GlanceView(view,{} if synthetic and source_roots is None else source_roots)
     parents={Path(p).parent.resolve() for p in databases.values()}
     glance.project_context=ProjectContext(next(iter(parents))/'work-context.json' if len(parents)==1 else None)
-    automation = GlanceAutomation(glance,explainer) if explainer else None
+    directory=next(iter(parents)) if len(parents)==1 else None
+    page_allowed=lambda:page_policy_enabled(directory,model_config)
+    automation = GlanceAutomation(glance,explainer,page_allowed=page_allowed) if explainer else None
+    reading = ReadingView(glance,explainer,automation) if explainer else None
 
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *_):
@@ -84,6 +89,7 @@ def create_server(port, databases, *, synthetic=False, model_config=None, explan
                 if url.path == '/api/clients':
                     result['mode'] = 'synthetic' if synthetic else 'local'
                     result['explanation'] = explainer.info() if explainer else dict(configured=False)
+                    result['explanation']['automatic_on_open']=bool(explainer and page_allowed())
                     for client in result['clients']:
                         client['recorder'] = dict(state='synthetic') if synthetic else read_status(databases[client['id']],client['id'])
                 return self.reply(200, json.dumps(result, ensure_ascii=False, allow_nan=False).encode(), 'application/json; charset=utf-8')
@@ -98,7 +104,7 @@ def create_server(port, databases, *, synthetic=False, model_config=None, explan
             if (host not in allowed or self.headers.get('Sec-Fetch-Site')=='cross-site' or
                     self.headers.get('Origin','http://'+host)!='http://'+host or self.headers.get('X-Yukio-Workbench')!='1'):
                 return self.reply(403,b'Local access only','text/plain')
-            if self.path not in ('/api/explanation-preview','/api/explanation-generate','/api/context-preview','/api/glance-preview','/api/glance-authorize','/api/glance-refresh','/api/glance-stop'):
+            if self.path not in ('/api/explanation-preview','/api/explanation-generate','/api/context-preview','/api/glance-preview','/api/glance-authorize','/api/glance-refresh','/api/glance-stop','/api/glance-heartbeat','/api/reading-current','/api/reading-history','/api/reading-explain'):
                 return self.reply(404,b'Not found','text/plain')
             if explainer is None:
                 return self.json_reply(503,dict(error='尚未配置模型，本机记录仍可查看。'))
@@ -110,19 +116,29 @@ def create_server(port, databases, *, synthetic=False, model_config=None, explan
                 self.connection.settimeout(5)
                 data=json.loads(self.rfile.read(int(length)))
                 if not isinstance(data,dict):raise ValueError('Invalid request')
-                if self.path=='/api/glance-preview':
+                if self.path.startswith('/api/reading-'):
+                    fields={'grant','token'} if self.path=='/api/reading-explain' else {'grant','snapshot','before'} if self.path=='/api/reading-history' else {'grant'}
+                    if 'grant' not in data or set(data)-fields or not isinstance(data['grant'],str) or len(data['grant'])>100:raise ValueError('Invalid reading selection')
+                    if self.path=='/api/reading-explain':
+                        if set(data)!=fields or not isinstance(data['token'],str) or len(data['token'])>100:raise ValueError('Invalid reading token')
+                        result=reading.explain(**data)
+                    elif self.path=='/api/reading-history':result=reading.history_page(**data)
+                    else:result=reading.current(**data)
+                elif self.path=='/api/glance-preview':
                     if set(data)!={'client','key'} or not all(isinstance(v,str) for v in data.values()):raise ValueError('Invalid selection')
                     observed,payload,references=glance.prepared(**data)
                     result=explainer.preview_prepared(data,payload,references)
                     result['snapshot']=observed['snapshot']
                     result['revision']=observed['revision']
                 elif self.path=='/api/glance-authorize':
-                    if set(data)!={'token','consent'} or not isinstance(data['token'],str):raise ValueError('Invalid consent')
-                    result=automation.authorize(data['token'],data['consent'])
-                elif self.path in ('/api/glance-refresh','/api/glance-stop'):
+                    if not {'token','consent'}<=set(data) or set(data)-{'token','consent','page_owned'} or not isinstance(data['token'],str):raise ValueError('Invalid consent')
+                    result=automation.authorize(data['token'],data['consent'],data.get('page_owned',False))
+                elif self.path in ('/api/glance-refresh','/api/glance-stop','/api/glance-heartbeat'):
                     allowed={'grant','force'} if self.path=='/api/glance-refresh' else {'grant'}
                     if 'grant' not in data or set(data)-allowed or not isinstance(data['grant'],str) or len(data['grant'])>100 or type(data.get('force',False)) is not bool:raise ValueError('Invalid grant')
-                    result=automation.refresh(data['grant'],data.get('force',False)) if self.path=='/api/glance-refresh' else automation.revoke(data['grant'])
+                    if self.path=='/api/glance-refresh':result=automation.refresh(data['grant'],data.get('force',False))
+                    elif self.path=='/api/glance-heartbeat':result=automation.heartbeat(data['grant'])
+                    else:result=automation.revoke(data['grant'])
                 elif self.path=='/api/explanation-preview':
                     if set(data)!={'client','key','sequence'}:raise ValueError('Invalid selection')
                     if not isinstance(data['client'],str) or not isinstance(data['key'],str):raise ValueError('Invalid selection')

@@ -1,3 +1,5 @@
+> **Mac 0.4.7**：右键雪绪或再次打开 App 进入活动工作台；顶部右侧进入设置，分为外观与显示、聊天与提醒、更多设置。在更多设置中“检查更新”。当前发布面向 Apple 芯片，Intel 保留 0.4.6。 [本轮说明](../docs/releases/0.4.7.md)。
+
 > **0.4.6**: browser chat destinations, visible-chat completion reminders, approval cards, answer pasting and Qianxia. [Release notes](../docs/releases/0.4.6.md).
 
 # 雪绪桌面播放器（macOS，跟随 Claude、DeepSeek 或 GPT）
@@ -6,7 +8,7 @@
 同时开着好几个聊天时，谁答完、谁在等你拿主意，就先显示谁；其余有话要说的，按同一张卡的样子叠在气泡上面，点一张就去那条聊天。也可以在菜单里挑定一条，让她只跟那条。每个动作都在小幅、连续地动（写字、敲键盘、转眼、眨眼），头顶的小气泡显示大任务、当前任务和进度。
 原生 Swift / AppKit，只需 Xcode Command Line Tools，无第三方依赖。
 
-## 正式版界面（0.3.3）
+## 历史界面（0.3.3）
 
 正式版暂停独立助手页面及入口，保留已有本地数据。右键雪绪或再次打开程序进入紧凑设置，点击设置外部关闭。顶部大号“取消举牌”按钮放下当前完成牌，不跳转聊天。参见[助手当前状态](../docs/ASSISTANT.md)。
 

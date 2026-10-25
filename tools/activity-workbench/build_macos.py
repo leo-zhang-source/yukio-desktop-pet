@@ -17,8 +17,8 @@ import sys
 import zipfile
 from build_bundle import ROOT, build
 
-VERSION = '0.3.0'
-BUILD = '18'
+VERSION = '0.3.5'
+BUILD = '24'
 
 
 def build_macos(destination):
@@ -62,7 +62,7 @@ def build_macos(destination):
                     str(contents / 'MacOS/YukioWorkbench'), '-framework', 'AppKit', '-target', 'arm64-apple-macosx13.0'], check=True)
     subprocess.run(['codesign', '--force', '--deep', '--sign', '-', str(app)], check=True)
     subprocess.run(['codesign', '--verify', '--deep', '--strict', str(app)], check=True)
-    archive = destination / 'Yukio-Activity-Workbench-Mac-arm64-0.3.0.zip'
+    archive = destination / ('Yukio-Activity-Workbench-Mac-arm64-'+VERSION+'.zip')
     # ditto preserves framework symlinks and executable bits. Drop Finder metadata.
     subprocess.run(['ditto', '-c', '-k', '--norsrc', '--keepParent', str(app), str(archive)], check=True)
     files = {p.relative_to(app).as_posix():hashlib.sha256(p.read_bytes()).hexdigest()
