@@ -1,5 +1,11 @@
 # In-app updates / 应用内更新
 
+## Mac 0.4.7 的本轮入口与范围
+
+右键雪绪打开内置工作台，在顶部右侧进入设置，再选“更多设置 → 检查更新”。Mac 0.4.7 面向 Apple 芯片，更新列表包含 `sparkle:hardwareRequirements=arm64`，同时保留先前 0.4.6 的通用项。新包和更新列表保持原公钥的签名校验，内部构建号从本机 27.3 增到 28。
+
+Windows 的新版本测试仍为之后可选；最新发布携带的 Windows 元数据与完整包继续是原样的 0.4.6，保持既有 GitHub 更新来源可用。不要把它称为 Windows 0.4.7。最终本轮核验见 [Mac 0.4.7](validation/mac-workbench-0.4.7/README.md)。
+
 Starting with 0.4.0, Yukio checks for stable releases automatically. The update
 window opens when a newer release is found, shows its version and release notes,
 and offers Install/Update and Later before downloading and restarting. Settings

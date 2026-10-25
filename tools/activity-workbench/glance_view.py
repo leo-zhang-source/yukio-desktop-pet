@@ -10,6 +10,9 @@ from collector_status import read_status
 from context_view import ContextView
 from handoff_view import HandoffView
 from task_summary import recap
+from plain_language import plain_words
+from explanation import add_object_names
+from chat_catalog import activity_state, readable_title, catalog_card
 
 IGNORED={'reasoning_record_observed','inherited_context_record','context_record_observed','identity_conflict','foreign_session_record','identity_scope_unresolved'}
 NOISE={'token_count','token_usage_record','thread_settings_applied'}
@@ -200,7 +203,7 @@ class GlanceView:
                 snippets=[r for r in material.get('receipts',[]) if r['sequence']==receipt['sequence'] and r['call_id']==call]
                 if len(snippets)==1:
                     fragment=dict(snippets[0],material_kind='tool_output' if output else 'file_read',display=clean(snippets[0]['text'],100),text=reqs[0]['target']+(' 的工具返回短片段：' if output else ' 的读取返回短片段：')+snippets[0]['text']+('（工具实际返回的这小段文字；未单独确认脚本内各步骤，不代表完整文件或任务结果；' if output else '（仅这段返回，不代表完整文件；')+op['status_label']+'）')
-        title=source['title'] or clean((user or {}).get('text',''),62) or CLIENTS[client]+' · 暂未取得聊天名称'
+        title=readable_title(source['title'] or clean((user or {}).get('text',''),62))
         status='最近的工作';tone='quiet';needs='暂未看到明确需要你处理的请求。'
         markers=[(seq,r) for seq,r in selected if r.get('kind') in ('turn_started','turn_ended','turn_cancelled')]
         latest_marker=markers[0][1]['kind'] if markers else None
@@ -223,7 +226,7 @@ class GlanceView:
             seen.add(identity);meaningful.append(item)
             if len(meaningful)==3:break
         detail=dict(client=client,key=key,session_id=parts[2],title=title,title_source='客户端聊天名称' if source['title'] else '根据你的要求显示',
-            status=status,tone=tone,last_activity_ms=latest_stamp,age_seconds=round(age) if age is not None else None,
+            status=status,tone=tone,last_activity_ms=latest_stamp,age_seconds=round(age) if age is not None else None,project=source.get('project'),
             goal=goal,project_goals=origins,previous_progress=checkpoints,earlier_activity=earlier_activity,
             goal_short=clean((user or {}).get('text','尚未读到具体要求。'),96),
             last_step=last_step,
@@ -268,6 +271,10 @@ class GlanceView:
         meaning['handoffs']=[(seq,r.get('handoff')) for seq,r in selected if r.get('handoff')]
         meaning['turn']=[newest_user,latest_start];meaning['speech']=(speech or {}).get('text')
         detail['revision']=hashlib.sha256(json.dumps(meaning,sort_keys=True,ensure_ascii=False).encode()).hexdigest()
+        # Story prose uses object roles; exact excerpts remain in folded proof.
+        for part in ('content','explanation','reason'):
+            detail[part]=plain_words(detail[part])
+        detail['activity_state']=activity_state(detail)
         return detail
 
     def summary(self,client,key):
@@ -276,7 +283,7 @@ class GlanceView:
         return recap(data,handoffs)
 
     def cards(self):
-        cards=[];unavailable=[]
+        cards=[];unavailable=[];limited=False
         for client in self.history.databases:
             try:
                 groups=self.history.groups(client,limit=50)['groups']
@@ -291,14 +298,14 @@ class GlanceView:
                 if not group['session_id'] or group['session_id'].startswith('source-') or group['is_sidechain'] or group['agent_id']:continue
                 if group['session_id'] in seen:continue
                 seen.add(group['session_id'])
-                try:detail=self.detail(client,group['key'])
+                try:card=catalog_card(self.history,self.reader,client,group,self.clock)
                 except (ValueError,OSError,sqlite3.Error):continue
-                card={k:detail[k] for k in ('client','key','session_id','title','title_source','status','tone','last_activity_ms','content','goal','source_unavailable')}
                 card['is_helper']=(group['source_id'],group['generation'],group['session_id']) in helpers
                 cards.append(card)
-                if len(seen)>=8:break
+                if len(seen)>=20:
+                    limited=True;break
         cards.sort(key=lambda c:(c['is_helper'],-(c['last_activity_ms'] or 0)))
-        return dict(cards=cards[:12],unavailable=unavailable,limited=len(cards)>12)
+        return dict(cards=cards[:60],unavailable=unavailable,limited=limited or len(cards)>60)
 
     def prepared(self,client,key):
         data=self.detail(client,key);facts=[];references=[];prior_progress=[]
@@ -354,9 +361,16 @@ class GlanceView:
             if card['returns']:text+=' 回复（助手自述）：'+'；'.join(r['who']+'：'+clean(r['text'],160) for r in card['returns'][:4])
             facts.append(dict(evidence_id=alias,record_marker='可观察的助手交接（回复属于助手自述）',excerpt=text,evidence_class='assistant' if card['returns'] else 'observed'))
             references.append(dict(evidence_id=alias,title='助手交接',quote=text,record_id=card['evidence'][0]['id'],sequence=card.get('sequence')))
-        payload=dict(scope=dict(glance=True,whole_task_status='unknown',body_text_included=True,untrusted_excerpts=True,
+        naming=add_object_names(facts,references,brief)
+        payload=dict(scope=dict(glance=True,compose_current_result=True,whole_task_status='unknown',body_text_included=True,untrusted_excerpts=True,
                                bounded_context=True,partial=data['partial'] or data['source_unavailable'] or handoffs['limited'],
                                current_turn_state={'这一轮已结束':'ended','这一轮已取消':'cancelled'}.get(data['status'],'unknown'),
                                previous_progress_evidence_ids=prior_progress,**current_operation),facts=facts)
+        if naming:payload['scope']['naming_context_evidence_id']=naming
         if brief:payload['scope'].update(context_bridge_evidence_ids=bridge,project_goal_evidence_id=project_goal_id)
+        action=current_operation.get('current_work_evidence_id') or current_operation.get('current_operation_evidence_id')
+        payload['scope']['writing_anchors']={
+            'content':[action] if action else [],
+            'explanation':([action] if action else [])+bridge,
+            'reason':[project_goal_id] if project_goal_id else []}
         return data,payload,references

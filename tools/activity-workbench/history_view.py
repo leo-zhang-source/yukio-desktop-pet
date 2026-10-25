@@ -167,6 +167,9 @@ class HistoryView:
             db.set_progress_handler(lambda: int(time.monotonic() > deadline), 1000)
             db.execute('PRAGMA query_only=ON')
             db.execute('PRAGMA trusted_schema=OFF')
+            # Bounded read queries should remain available when the disk is full.
+            # Only temporary query sorting changes; saved history stays read-only.
+            db.execute('PRAGMA temp_store=MEMORY')
             if db.execute('PRAGMA application_id').fetchone()[0] != APPLICATION_ID or db.execute('PRAGMA user_version').fetchone()[0] not in (1, 2):
                 raise ValueError('Unsupported history database')
             db.execute('BEGIN')
@@ -200,7 +203,10 @@ class HistoryView:
 
     @staticmethod
     def scope(parts):
-        return f'{SOURCE}=? AND {GENERATION}=? AND {SESSION}=? AND {AGENT}=? AND {SIDECHAIN}=?', parts
+        # Nonempty sessions can use the existing (session_id, sequence) index.
+        # Keep the exact source, generation, agent and sidechain checks as well.
+        session = 'e.session_id' if parts[2] else SESSION
+        return f'{SOURCE}=? AND {GENERATION}=? AND {session}=? AND {AGENT}=? AND {SIDECHAIN}=?', parts
 
     def timeline(self, client, key, *, before=0, snapshot=0, limit=40):
         if before < 0 or snapshot < 0 or not 1 <= limit <= 100:

@@ -321,6 +321,17 @@ class GlanceTests(unittest.TestCase):
         finally:store.close()
         cards=self.glance.cards()['cards'];self.assertEqual(cards[0]['session_id'],'chat-one');self.assertFalse(cards[0]['is_helper']);self.assertTrue(cards[1]['is_helper'])
 
+    def test_chat_list_does_not_reconstruct_each_conversation(self):
+        from datetime import datetime, timezone
+        (self.root/'codex-workbench-status.json').write_text(json.dumps(dict(state='active',updated_at=datetime.now(timezone.utc).isoformat())))
+        def forbidden(*_):raise AssertionError('Chat list must not read full task details')
+        self.glance.detail=forbidden
+        card=self.glance.cards()['cards'][0]
+        self.assertEqual(card['session_id'],'chat-one')
+        self.assertEqual(card['title'],'简化雪绪首页')
+        self.assertEqual(card['activity_state'],'working')
+        self.assertNotIn('goal',card);self.assertNotIn('content',card)
+
     def test_old_waiting_signal_clears_after_outcome_answer_or_closed_turn(self):
         request=dict(sequence=5);waiting=dict(sequence=6,reported_await_user_response=True)
         op=dict(request=request,receipts=[waiting],status='unknown')

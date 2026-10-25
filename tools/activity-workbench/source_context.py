@@ -52,7 +52,8 @@ def user_text(text):
         try:answers=json.loads(match[1])
         except (ValueError,RecursionError):return ''
         if not isinstance(answers,list):return ''
-        consent_choices={'同意，开启本页当前聊天的自动说明','同意，只解释预览中的这一步','暂不发送，只用本机说明'}
+        consent_choices={'同意，开启本页当前聊天的自动说明','同意，只解释预览中的这一步','暂不发送，只用本机说明',
+                         '同意，仅生成这一次','同意，仅这一次','同意，只解释这一次','先看本机说明，不发送'}
         return clean('；'.join(a['answer'] for a in answers[:3] if isinstance(a,dict) and isinstance(a.get('answer'),str) and a['answer'] not in consent_choices),480)
     if '## My request:' in text:text=text.rsplit('## My request:',1)[1]
     elif text.lstrip().startswith(('# AGENTS.md instructions','<environment_context>','<send_user_message_question_reply>','<external_codex_apps_open_page>')):return ''
@@ -373,7 +374,7 @@ class SourceContext:
         return title,path
 
     def read(self,client,parts,state,rows):
-        title,path=self.title_and_path(client,parts[2],parts[0]);out=[];missing=0;used=0;requests=[];receipts=[];handoffs=[]
+        title,path=self.title_and_path(client,parts[2],parts[0]);out=[];missing=0;used=0;requests=[];receipts=[];handoffs=[];workspace=''
         if not path or not self.permitted(path,client,parts[0]):return dict(title=title,items=[],unavailable=True,missing=0)
         if state.get('generation')!=parts[1]:return dict(title=title,items=[],unavailable=True,missing=0)
         descriptor=None
@@ -393,6 +394,8 @@ class SourceContext:
                     try:obj=json.loads(raw)
                     except (ValueError,RecursionError):missing+=1;continue
                     if not isinstance(obj,dict):continue
+                    if client=='claude' and not workspace and obj.get('sessionId')==parts[2] and isinstance(obj.get('cwd'),str):
+                        workspace=obj['cwd']
                     if client=='codex' and row.get('handoff',{}).get('form') in ('request','receipt','native'):
                         handoffs.append(dict(handoff_material(obj),sequence=seq,event_id=row['event_id']))
                     reqs,results=tool_material(client,obj)
@@ -408,4 +411,6 @@ class SourceContext:
         except OSError:return dict(title=title,items=[],unavailable=True,missing=missing)
         finally:
             if descriptor is not None:os.close(descriptor)
-        return dict(title=title,items=out,requests=requests,receipts=receipts,handoffs=handoffs,unavailable=False,missing=missing)
+        from chat_catalog import project_label
+        project=project_label(workspace,client=client) if workspace else None
+        return dict(title=title,items=out,requests=requests,receipts=receipts,handoffs=handoffs,project=project,unavailable=False,missing=missing)
