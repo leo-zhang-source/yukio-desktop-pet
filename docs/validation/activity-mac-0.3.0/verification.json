@@ -22,5 +22,23 @@
   "user_readability_signed_off": false,
   "multi_day_stability_verified": false,
   "new_real_model_calls": 0,
-  "unrelated_pet_assets_replaced": false
+  "unrelated_pet_assets_replaced": false,
+  "soak": {
+    "seconds": 301.04,
+    "requests": 528,
+    "cycles_per_chat": 75,
+    "restart_counts_equal": true,
+    "failures": 0,
+    "synthetic_only": true
+  },
+  "stage8_mac_engineering_complete": true,
+  "stage9_delivery_status": "complete",
+  "release_url": "https://github.com/leozhang8654/yukio-desktop-pet/releases/tag/activity-workbench-v0.3.0",
+  "source_commit": "5fcb1b544652255c56f9ace3c928b82c38137348",
+  "github_source_files_verified": 71,
+  "download_sha256_verified": {
+    "SHA256SUMS.txt": "013c1356b55311c057ea4c978abcca2261428731d34457573e8033f00ac843d2",
+    "Yukio-Activity-Workbench-0.3.0-source.zip": "32858d408a0990f7688d1b2d71998a17abc4b35324029a84401a3323f00e7f5b",
+    "Yukio-Activity-Workbench-Mac-arm64-0.3.0.zip": "e368d63cd9fc22982a6f55eb8f3890d004e253dba360aa32b3ae5d180bbc28e2"
+  }
 }
