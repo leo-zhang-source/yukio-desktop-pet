@@ -1,0 +1,333 @@
+{
+  "started_at": "2026-10-25T05:08:39.860942+00:00",
+  "finished_at": "2026-10-25T05:13:40.900428+00:00",
+  "platform": "macOS-27.0.1-arm64-arm-64bit",
+  "elapsed_seconds": 301.04,
+  "requested_seconds": 300,
+  "cycles": 75,
+  "http_requests": 528,
+  "synthetic_only": true,
+  "model_calls": 0,
+  "build": {
+    "service": "yukio-activity-workbench",
+    "build": "7a14565b04551f7669c6310c0cbac21a6979b808056cfafef2b3793eca0bab73",
+    "database_scope": "884cc2ffa6b6cdce13ba4e3f4cd78b157fa81467295dfac3768458f5c14bbb83",
+    "model_configuration": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+  },
+  "failures": [],
+  "completed_turns": {
+    "synthetic-soak-0": 75,
+    "synthetic-soak-1": 75
+  },
+  "expected_saved_counts": {
+    "synthetic-soak-0": 451,
+    "synthetic-soak-1": 451
+  },
+  "restart_counts_equal": true,
+  "rss_min_bytes": 30375936,
+  "rss_max_bytes": 42876928,
+  "max_response_seconds": 0.271,
+  "samples": [
+    {
+      "elapsed": 2.4,
+      "rss_bytes": 31031296
+    },
+    {
+      "elapsed": 6.36,
+      "rss_bytes": 29540352
+    },
+    {
+      "elapsed": 10.44,
+      "rss_bytes": 29917184
+    },
+    {
+      "elapsed": 14.42,
+      "rss_bytes": 30310400
+    },
+    {
+      "elapsed": 18.4,
+      "rss_bytes": 30392320
+    },
+    {
+      "elapsed": 22.48,
+      "rss_bytes": 30375936
+    },
+    {
+      "elapsed": 26.47,
+      "rss_bytes": 30556160
+    },
+    {
+      "elapsed": 30.46,
+      "rss_bytes": 30670848
+    },
+    {
+      "elapsed": 34.44,
+      "rss_bytes": 31031296
+    },
+    {
+      "elapsed": 38.54,
+      "rss_bytes": 30900224
+    },
+    {
+      "elapsed": 42.53,
+      "rss_bytes": 30851072
+    },
+    {
+      "elapsed": 46.53,
+      "rss_bytes": 31080448
+    },
+    {
+      "elapsed": 50.54,
+      "rss_bytes": 31309824
+    },
+    {
+      "elapsed": 54.55,
+      "rss_bytes": 31948800
+    },
+    {
+      "elapsed": 58.63,
+      "rss_bytes": 32112640
+    },
+    {
+      "elapsed": 62.64,
+      "rss_bytes": 31883264
+    },
+    {
+      "elapsed": 66.65,
+      "rss_bytes": 32079872
+    },
+    {
+      "elapsed": 70.66,
+      "rss_bytes": 32374784
+    },
+    {
+      "elapsed": 74.68,
+      "rss_bytes": 32473088
+    },
+    {
+      "elapsed": 78.69,
+      "rss_bytes": 32653312
+    },
+    {
+      "elapsed": 82.7,
+      "rss_bytes": 32768000
+    },
+    {
+      "elapsed": 86.72,
+      "rss_bytes": 32915456
+    },
+    {
+      "elapsed": 90.7,
+      "rss_bytes": 32980992
+    },
+    {
+      "elapsed": 94.81,
+      "rss_bytes": 32751616
+    },
+    {
+      "elapsed": 99.12,
+      "rss_bytes": 32751616
+    },
+    {
+      "elapsed": 102.74,
+      "rss_bytes": 33046528
+    },
+    {
+      "elapsed": 106.84,
+      "rss_bytes": 33177600
+    },
+    {
+      "elapsed": 110.84,
+      "rss_bytes": 33505280
+    },
+    {
+      "elapsed": 114.85,
+      "rss_bytes": 33718272
+    },
+    {
+      "elapsed": 118.87,
+      "rss_bytes": 38109184
+    },
+    {
+      "elapsed": 122.87,
+      "rss_bytes": 38191104
+    },
+    {
+      "elapsed": 126.88,
+      "rss_bytes": 34373632
+    },
+    {
+      "elapsed": 130.89,
+      "rss_bytes": 34504704
+    },
+    {
+      "elapsed": 134.91,
+      "rss_bytes": 34701312
+    },
+    {
+      "elapsed": 138.92,
+      "rss_bytes": 34848768
+    },
+    {
+      "elapsed": 142.94,
+      "rss_bytes": 35012608
+    },
+    {
+      "elapsed": 146.98,
+      "rss_bytes": 35160064
+    },
+    {
+      "elapsed": 151.01,
+      "rss_bytes": 35274752
+    },
+    {
+      "elapsed": 155.05,
+      "rss_bytes": 35373056
+    },
+    {
+      "elapsed": 158.98,
+      "rss_bytes": 35225600
+    },
+    {
+      "elapsed": 163.0,
+      "rss_bytes": 35340288
+    },
+    {
+      "elapsed": 167.02,
+      "rss_bytes": 35504128
+    },
+    {
+      "elapsed": 171.05,
+      "rss_bytes": 35569664
+    },
+    {
+      "elapsed": 175.11,
+      "rss_bytes": 36110336
+    },
+    {
+      "elapsed": 179.16,
+      "rss_bytes": 36126720
+    },
+    {
+      "elapsed": 183.1,
+      "rss_bytes": 36257792
+    },
+    {
+      "elapsed": 187.12,
+      "rss_bytes": 40189952
+    },
+    {
+      "elapsed": 191.17,
+      "rss_bytes": 36470784
+    },
+    {
+      "elapsed": 195.2,
+      "rss_bytes": 36634624
+    },
+    {
+      "elapsed": 199.25,
+      "rss_bytes": 36765696
+    },
+    {
+      "elapsed": 203.18,
+      "rss_bytes": 36896768
+    },
+    {
+      "elapsed": 207.24,
+      "rss_bytes": 37060608
+    },
+    {
+      "elapsed": 211.28,
+      "rss_bytes": 37224448
+    },
+    {
+      "elapsed": 215.33,
+      "rss_bytes": 37486592
+    },
+    {
+      "elapsed": 219.24,
+      "rss_bytes": 37797888
+    },
+    {
+      "elapsed": 223.29,
+      "rss_bytes": 37912576
+    },
+    {
+      "elapsed": 227.36,
+      "rss_bytes": 38060032
+    },
+    {
+      "elapsed": 231.31,
+      "rss_bytes": 42106880
+    },
+    {
+      "elapsed": 235.37,
+      "rss_bytes": 42221568
+    },
+    {
+      "elapsed": 239.43,
+      "rss_bytes": 42319872
+    },
+    {
+      "elapsed": 243.36,
+      "rss_bytes": 42369024
+    },
+    {
+      "elapsed": 247.42,
+      "rss_bytes": 38567936
+    },
+    {
+      "elapsed": 251.48,
+      "rss_bytes": 38731776
+    },
+    {
+      "elapsed": 255.43,
+      "rss_bytes": 38780928
+    },
+    {
+      "elapsed": 259.5,
+      "rss_bytes": 38928384
+    },
+    {
+      "elapsed": 263.46,
+      "rss_bytes": 42680320
+    },
+    {
+      "elapsed": 267.52,
+      "rss_bytes": 42745856
+    },
+    {
+      "elapsed": 271.47,
+      "rss_bytes": 42876928
+    },
+    {
+      "elapsed": 275.53,
+      "rss_bytes": 41877504
+    },
+    {
+      "elapsed": 279.58,
+      "rss_bytes": 41959424
+    },
+    {
+      "elapsed": 283.54,
+      "rss_bytes": 39452672
+    },
+    {
+      "elapsed": 287.63,
+      "rss_bytes": 39550976
+    },
+    {
+      "elapsed": 291.62,
+      "rss_bytes": 39583744
+    },
+    {
+      "elapsed": 295.58,
+      "rss_bytes": 42369024
+    },
+    {
+      "elapsed": 299.66,
+      "rss_bytes": 42336256
+    }
+  ],
+  "limitation": "Measured bounded run with simulated activity; not multi-day or real-user acceptance."
+}
