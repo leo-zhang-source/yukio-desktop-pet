@@ -1,0 +1,18 @@
+{
+  "source_revision": "92ea141e15f861146227f039c033b1e905f86628",
+  "local_version": "0.4.6 (27.1)",
+  "installed_app": "/Users/leozhang/Desktop/Yukio.app",
+  "backup": "/Users/leozhang/Desktop/yukio-cloud-handoff/artifacts/local-chat-cards-20261024-r1/before.app",
+  "binary_sha256": "dab409e49deddebe000f52014d80da746f78038f9f2adf583796be11ebf7822b",
+  "resource_files_unchanged": 275,
+  "regression_tests": 11,
+  "platform": "macOS arm64",
+  "github_published": false,
+  "windows_updated": false,
+  "running_process": "7255 /Users/leozhang/Desktop/Yukio.app/Contents/MacOS/YukioPlayer",
+  "desktop_entry_visually_verified": true,
+  "desktop_entry_text": "1 more",
+  "desktop_screenshot": "/Users/leozhang/Desktop/yukio-cloud-handoff/artifacts/local-chat-cards-20261024-r1/desktop-fixed.png",
+  "actual_mouse_click_check": "Cua coordinate click unavailable: AXError.notImplemented; expansion verified by native AppController regression test",
+  "initial_package_check": "missing framework rpath; corrected before installation; final package check passed"
+}

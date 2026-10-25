@@ -1,0 +1,46 @@
+{
+  "platform": "macOS arm64",
+  "installed_version": "0.4.6 (27.1)",
+  "installed_source_revision": "92ea141e15f861146227f039c033b1e905f86628",
+  "binary_sha256": "dab409e49deddebe000f52014d80da746f78038f9f2adf583796be11ebf7822b",
+  "automatic_tests_passed": 222,
+  "additional_settings_conditions": 16,
+  "socket_fixture_history_formats": [
+    "legacy",
+    "canonical"
+  ],
+  "cli_checks": {
+    "installed-resources": 0,
+    "installed-menu": 0,
+    "installed-questions": 0,
+    "installed-cards": 0,
+    "installed-settings": 0,
+    "installed-eyelids": 0,
+    "installed-live-chats": 0,
+    "installed-visible-chat": 0,
+    "installed-animation-sheet": 0,
+    "installed-drag-sheet": 0,
+    "qianxia-resources": 0,
+    "qianxia-animation-sheet": 0,
+    "qianxia-eyelids": 0
+  },
+  "skins_checked": [
+    "yukio",
+    "qianxia"
+  ],
+  "native_eyelid_snapshots": {
+    "eyelids": 161,
+    "qianxia-eyelids": 286
+  },
+  "resource_hashes_unchanged": 275,
+  "new_product_defects_found": [],
+  "live_local_chat_count_verified": 2,
+  "production_code_changed": false,
+  "limitations": [
+    "Browser chat recognition is not permitted; browser automatic completion acknowledgement remains unverified.",
+    "Answers tested against owned isolated local sockets and temporary Claude hook fixtures; no real conversation was answered.",
+    "Native Cua pointer interactions with the custom panels return AXError.notImplemented; controller/AppKit event tests and native rendered snapshots used.",
+    "Windows runtime and signed update download/install not exercised.",
+    "Animation review inspected native decoded snapshots and existing timeline tests; not a new full animation acceptance review."
+  ]
+}

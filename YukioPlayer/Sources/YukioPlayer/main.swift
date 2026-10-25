@@ -2365,6 +2365,64 @@ app.run()
 
 #if DEBUG
 extension AppController {
+    /// Check settings against the production controller, using isolated preferences and events.
+    func settingsLifecycleForCheck() -> [String: Bool] {
+        following = true; showBubble = true; showCards = true; showQuestionCard = true
+        hideWhenIdle = false
+        setUpWindow(); setUpBubble(); setUpCards(); setUpQuestion()
+        defer {
+            for window in [bubble as NSWindow?, cardStack as NSWindow?, questionPanel as NSWindow?] {
+                if let window { panel.removeChildWindow(window); window.close() }
+            }
+            panel.close()
+        }
+        func step() { tickCount = 0; tick() }
+        func event(_ session: String, _ kind: PetEvent.Kind, activity: PetState? = nil) {
+            let now = nowMs()
+            router.ingest(PetEvent(ts: now, source: "test", session: session, kind: kind,
+                                  eventID: session + (activity?.rawValue ?? ""), activity: activity,
+                                  question: activity == .question_for_user ? .init(text: "Fixture question", options: [.init(label: "A")]) : nil), now: now)
+            router.settle(now: now)
+            step()
+        }
+        event("first", .taskStart)
+        event("first", .activityStart, activity: .write_file)
+        event("second", .taskStart)
+        event("second", .activityStart, activity: .read_file)
+        var checks = ["twoChatsVisible": bubbleHold.value != nil && cardsHold.value.count == 1]
+        applySettings(.showBubble(false)); step()
+        checks["bubbleSwitchHidesAllTaskUI"] = bubbleHold.value == nil && cardsHold.value.isEmpty
+        applySettings(.showBubble(true)); step()
+        checks["bubbleSwitchRestoresTaskUI"] = bubbleHold.value != nil && cardsHold.value.count == 1
+        applySettings(.showCards(false)); step()
+        checks["cardSwitchKeepsMainBubble"] = bubbleHold.value != nil && cardsHold.value.isEmpty
+        applySettings(.showCards(true)); step()
+        checks["cardSwitchRestoresOtherChat"] = cardsHold.value.count == 1
+        applySettings(.chat("first")); step()
+        checks["chatPickerPinsFirst"] = router.pinnedSession == "first" && router.focusedSession == "first"
+        applySettings(.chat("second")); step()
+        checks["chatPickerPinsSecond"] = router.pinnedSession == "second" && router.focusedSession == "second"
+        applySettings(.chat(nil)); step()
+        checks["chatPickerReturnsToAutomatic"] = router.pinnedSession == nil
+        applySettings(.following(false)); step()
+        checks["pauseHidesTaskUI"] = bubbleHold.value == nil && cardsHold.value.isEmpty && shownQuestion == nil
+        applySettings(.following(true)); step()
+        checks["resumeRestoresTaskUI"] = bubbleHold.value != nil && cardsHold.value.count == 1
+        event("first", .activityStart, activity: .question_for_user)
+        checks["questionAppears"] = shownQuestion?.session == "first" && questionPanel.isVisible
+        applySettings(.showQuestionCard(false)); step()
+        checks["questionSwitchDisablesInput"] = shownQuestion == nil && questionPanel.ignoresMouseEvents
+        applySettings(.showQuestionCard(true)); step()
+        checks["questionSwitchRestoresSameQuestion"] = shownQuestion?.session == "first" && !questionPanel.ignoresMouseEvents
+        for value in [0.5, 1.25, 2.0] {
+            applySettings(.scale(value)); step()
+            checks["scalePreservesTaskAndQuestion_\(value)"] = panel.frame.size == petSize
+                && bubble.bubbleView.scale == scale && cardStack.stackView.scale == scale
+                && shownQuestion?.session == "first"
+        }
+        return checks
+    }
+
     /// Exercise the real child windows without polling the user's conversations.
     func chatCardsForCheck() -> [String: Bool] {
         following = true; showBubble = true; showCards = true; hideWhenIdle = false
