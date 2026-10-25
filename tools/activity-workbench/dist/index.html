@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>雪绪 · 当前工作</title><link rel="stylesheet" href="/glance.css"><script src="/glance.js" defer></script></head>
+<body><header><a class="brand" href="/"><span>雪</span> Yukio <small>陪你看工作</small></a><a id="historyLink" href="/history">记录详情 ↗</a></header>
+<main><div class="topline"><p class="eyebrow">现在，看到这里</p><span id="connection" role="status">正在连接…</span></div>
+<div class="picker"><label for="chat">这段聊天</label><select id="chat" aria-label="选择聊天"><option>正在找最近的聊天…</option></select><button id="reload" class="icon-button" aria-label="刷新当前工作" title="刷新当前工作">↻</button></div>
+<p id="alert" role="status" hidden></p>
+<article id="work" class="work" hidden><div class="work-title"><h1 id="title"></h1><span id="status" class="status"></span></div>
+<div class="purpose"><span id="goalLabel">这次的要求</span><p id="goalShort"></p><small id="projectFocus" hidden></small></div>
+<div class="explanation-entry">
+<div class="actions"><button id="explain" class="primary">让千问解释这段聊天</button><button id="stopAuto" hidden>停止持续说明</button></div>
+<p id="modelNote" role="status">当前显示本机说明。想看结合上下文的千问说明，请点上方按钮。</p>
+</div>
+<div class="story" id="story">
+<section><div class="part-label">内容<button id="contentBasis" class="basis-button" aria-expanded="false" aria-controls="contentProof"></button></div><div class="part-body"><p id="content" class="lead"></p><div id="contentProof" class="part-proof" hidden></div></div></section>
+<section><div class="part-label">解释<button id="explanationBasis" class="basis-button" aria-expanded="false" aria-controls="explanationProof"></button></div><div class="part-body"><p id="explanation"></p><div id="explanationProof" class="part-proof" hidden></div></div></section>
+<section><div class="part-label">原因<button id="reasonBasis" class="basis-button" aria-expanded="false" aria-controls="reasonProof"></button></div><div class="part-body"><p id="reason"></p><div id="reasonProof" class="part-proof" hidden></div></div></section>
+</div>
+<p id="attention" class="attention" role="status" hidden></p>
+
+<div id="preview" class="preview" role="region" aria-label="发送前确认" hidden></div>
+<details id="taskSummaryBox" class="more"><summary>任务与交接小结</summary><div id="taskSummary"></div></details>
+<details id="previousModel" class="more" hidden><summary>上一段的千问说明</summary><div id="previousText"></div></details>
+<details id="detailsBox" class="more"><summary>查看过程和依据</summary>
+<div id="latestStep" class="latest-step" hidden><span>最近一步</span><p id="stepAction"></p><small id="stepResult"></small></div>
+<details id="goalBox" class="goal"><summary>完整要求和之前的补充</summary><p id="goal"></p></details>
+<details id="projectBox" class="goal" hidden><summary>整个项目与前后步骤</summary><p id="projectText"></p></details>
+<details id="handoffBox" class="more"><summary>助手之间怎么交接</summary><div id="handoffs"></div></details>
+<details class="more"><summary>最近做了什么</summary><div id="recent"></div></details>
+<details class="more"><summary>查看这段说明的依据</summary><div id="evidence"></div></details>
+</details>
+<p id="scope" class="scope"></p></article>
+<div id="empty" class="empty" hidden><h1>等你开始一段工作。</h1><p>在 Codex、Claude 或 Deep Code 开始一个小任务，雪绪读到新活动后会自动显示。</p><details><summary>已经在工作，却没有显示？</summary><p>先确认客户端已经留下本机聊天记录，再重新打开桌面上的“雪绪活动工作台”。没有显示不代表 AI 没有工作，也可能是记录暂时读不到。</p><div id="emptyClients"></div></details></div>
+<footer><span id="refreshNote">自动跟进新消息</span><details><summary>说明与隐私</summary><p>聊天名称、近期要求与助手公开说明只在本机读取，不另存完整聊天。无法读取的文件内容不会补猜；对常见步骤的作用可以给出有依据、明确标为“推测”的简短说明。</p><p>千问收到的是确认页显示的短摘录；自动说明只针对你确认的这一段聊天，在本页打开期间生效，最多两小时，至少间隔三分钟。切换聊天或关闭页面后停止。模型可能出错，成功回执也不等于整项任务完成。</p><p id="modelDetails"></p></details></footer>
+</main></body></html>

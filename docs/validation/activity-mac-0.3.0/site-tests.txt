@@ -1,0 +1,13 @@
+test_invalid_stage_links_fail_export (test_export_public.PublicExportTests) ... ok
+test_optional_work_keeps_only_reviewed_copy_and_does_not_change_stage_count (test_export_public.PublicExportTests) ... ok
+test_populated_destination_preserves_existing_files (test_export_public.PublicExportTests) ... ok
+test_reject_nested_metadata_in_text_field (test_export_public.PublicExportTests) ... ok
+test_reject_obvious_private_material (test_export_public.PublicExportTests) ... ok
+test_require_explicit_public_copy (test_export_public.PublicExportTests) ... ok
+test_unknown_metadata_never_reaches_public_snapshot (test_export_public.PublicExportTests) ... ok
+test_gap_count_reaches_local_page_without_private_evidence (test_runtime_status.RuntimeStatusTests) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.007s
+
+OK

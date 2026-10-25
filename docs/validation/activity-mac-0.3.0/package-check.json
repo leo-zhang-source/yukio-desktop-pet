@@ -1,0 +1,23 @@
+{
+  "platform": "macOS-27.0.1-arm64-arm-64bit",
+  "native_macos": true,
+  "package_sha256": "e368d63cd9fc22982a6f55eb8f3890d004e253dba360aa32b3ae5d180bbc28e2",
+  "manifest_files": 43,
+  "all_hashes_match": true,
+  "no_private_data_in_package": true,
+  "python_removed_from_path": true,
+  "unicode_space_path_passed": true,
+  "collector_history_context_page_passed": true,
+  "handoff_request_input_return_passed": true,
+  "task_and_handoff_summary_passed": true,
+  "forced_exit_stops_owned_collectors": true,
+  "restart_record_count": [
+    11,
+    11
+  ],
+  "synthetic_only": true,
+  "real_model_called": false,
+  "signature_valid": true,
+  "standalone_runtime": true,
+  "reopening_existing_service_passed": true
+}

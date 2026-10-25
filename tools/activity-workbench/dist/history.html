@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Yukio · 本机活动工作台</title>
+  <link rel="stylesheet" href="/style.css"><script src="/explanation.js" defer></script><script src="/context.js" defer></script><script src="/app.js" defer></script>
+</head>
+<body>
+  <header><a href="/" class="brand"><span>雪</span> Yukio <small>活动工作台</small></a><span class="local">仅在这台电脑上</span></header>
+  <main>
+    <section class="intro"><div><p class="eyebrow">把工作过程看清楚</p><h1>发生了什么，都有迹可循。</h1><p>这里保留详细依据。日常工作可回到 <a href="/">简洁首页</a>。</p></div><div class="connection"><span id="connection" role="status">正在读取本机历史…</span><small id="checked"></small></div></section>
+    <div class="boundary"><strong>本机活动工作台</strong><span>记录数量不代表任务完成度。默认显示本机规则说明；选择“让模型解释”后，先预览再发送。模型解释单独标注，不改变原始记录。</span></div>
+    <p id="modelStatus" class="hint">正在读取解释功能配置…</p>
+    <div id="error" class="error" role="alert" hidden></div>
+    <div class="toolbar"><label>客户端 <select id="client" aria-label="选择客户端"></select></label><label>记录范围 <select id="scope" aria-label="记录范围"><option value="0">当前观察版本</option><option value="1">旧观察版本</option></select></label><button id="refresh" type="button">刷新记录</button><span id="news" role="status"></span></div>
+    <p id="recorderStatus" class="hint" role="status"></p>
+    <div class="workspace">
+      <aside><div class="section-top"><h2>会话记录</h2><span id="groupCount"></span></div><p class="hint">同一聊天的不同来源、助手和观察版本分别保留。</p><div id="groups"></div><button id="moreGroups" hidden>查看更多会话</button></aside>
+      <section class="history" aria-label="活动时间线"><div class="history-head"><p class="eyebrow" id="selectionLabel">等待选择</p><h2 id="selection">从左侧选择一份记录</h2><p id="selectionNote" class="hint">最新保存的记录在前。保存顺序不等于不同助手实际执行的先后。</p></div><div id="notices"></div><div id="timeline"><div class="empty">你的历史仍保存在本机。<br>选择一份记录后，具体活动会出现在这里。</div></div><button id="moreEvents" hidden>查看更早记录</button></section>
+    </div>
+    <footer>只读历史 · 解释需手动发送 · 模型解释不改写记录<br>工具报告成功、整项任务完成、你认可结果，是三件不同的事。</footer>
+  </main>
+</body></html>
