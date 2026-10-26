@@ -24,6 +24,12 @@ class LanguageAndContextTests(unittest.TestCase):
             self.assertEqual(localize(dict(quote='这份资料'))['quote'],'这份资料')
             self.assertEqual(localize(dict(kind='assistant',text='这份资料'))['text'],'这份资料')
         self.assertEqual(shown['key'],'private_key')
+        with language_context('en'):
+            identity=localize(dict(id='当前工作',session_id='当前工作',evidence_ids=['当前工作'],label='当前工作'))
+        self.assertEqual(identity['id'],'当前工作')
+        self.assertEqual(identity['session_id'],'当前工作')
+        self.assertEqual(identity['evidence_ids'],['当前工作'])
+        self.assertEqual(identity['label'],'Current work')
         for key in ['title_source','status','action','note']:
             self.assertNotRegex(shown[key],r'[\u3400-\u9fff]',key)
         self.assertEqual(english_text('This is an English update.'),'This is an English update.')
