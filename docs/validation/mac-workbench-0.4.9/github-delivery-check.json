@@ -1,0 +1,17 @@
+{
+  "checked_at": "2026-10-26T05:01:37.858055+00:00",
+  "version": "0.4.9",
+  "build": "30",
+  "workbench_version": "0.3.7",
+  "source_commit": "577e85f1bc195d04b6b51c3b599287a2eeaf14d0",
+  "public_unauthenticated_downloads": true,
+  "release_asset_digests_match": true,
+  "zip_app_files_match": 468,
+  "dmg_app_files_match": 468,
+  "desktop_app_files_match": 468,
+  "strict_code_signature_valid": true,
+  "feed_and_archive_signatures_valid": true,
+  "main_functional_sources_match_tag": true,
+  "automatic_installation": "not_accepted_deferred_by_user",
+  "windows": "optional_not_tested"
+}
