@@ -71,18 +71,19 @@ test('a model answer stays readable while new work is marked for automatic updat
  assert.match(f.elements.get('modelNote').textContent,/稍早.*自动更新/);
 });
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
-test('chat filters search locally without switching the chosen chat or calling the model',()=>{
+test('projects precede recent chats and states remain markers instead of categories',()=>{
  const f=setup();f.context.cards=[{client:'codex',key:'a',title:'雪绪首页',project:{id:'p',name:'Yukio'},activity_state:'working'},
  {client:'claude',key:'b',title:'检查图片',project:{id:'q',name:'封面设计'},activity_state:'inactive'},
  {client:'codex',key:'c',title:'之前的工作',activity_state:'unknown'},
  {client:'codex',key:'d',title:'需要回答',activity_state:'waiting'}];
- f.run('selected={client:"codex",key:"a"};chatCatalog=cards;chatFilter="working";renderChatNavigation()');
- assert.equal(f.run('filteredChats(cards,"working","").length'),2);
- assert.equal(f.run('filteredChats(cards,"inactive","").length'),1);
- assert.equal(f.run('filteredChats(cards,"recent","yukio")[0].key'),'a');
- assert.equal(f.run('filteredChats(cards,"recent","claude")[0].key'),'b');
- f.run('chatFilter="inactive";chatSearch="图片";renderChatNavigation()');
- assert.equal(f.run('selected.key'),'a');assert.equal(f.pending.length,0);
+ f.run('selected={client:"codex",key:"a"};chatCatalog=cards;renderChatNavigation()');
+ const list=f.elements.get('chatLists');assert.deepEqual(list.children.filter(c=>c.tag==='h2').map(c=>c.textContent),['项目','最近聊天']);
+ const rows=list.children.filter(c=>c.className?.startsWith('chat-row'));
+ assert.equal(rows.length,4);assert.deepEqual(rows.map(c=>c.children[1].children[0].className),['chat-state working','chat-state inactive','chat-state unknown','chat-state waiting']);
+ assert.equal(f.elements.has('filterWorking'),false);assert.equal(f.elements.has('filterInactive'),false);
+ const html=fs.readFileSync(path.join(__dirname,'dist/index.html'),'utf8');assert.doesNotMatch(html,/id="filter(?:Recent|Working|Inactive)"|按工作状态查看/);
+ assert.equal(f.run('filteredChats(cards,"yukio")[0].key'),'a');assert.equal(f.run('filteredChats(cards,"claude")[0].key'),'b');
+ f.run('chatSearch="图片";renderChatNavigation()');assert.equal(f.run('selected.key'),'a');assert.equal(f.pending.length,0);
 });
 test('project navigation uses identity instead of joining same named projects',()=>{
  const f=setup();f.context.cards=[{client:'codex',key:'a',project:{id:'one',name:'App'}},{client:'codex',key:'b',project:{id:'two',name:'App'}}];

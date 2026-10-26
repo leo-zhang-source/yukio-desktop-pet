@@ -423,7 +423,7 @@
   "雪绪读到新活动后会自动显示。": "Yukio will auto-display after reading new activity.",
   "需要留意": "Needs attention",
   "页面打开期间持续跟进，至少间隔三分钟，有变化才更新。切换聊天后只跟进新选择的聊天；关闭页面停止后续发送。已经发出的本次请求可能返回。浏览器异常退出时，旧设置会在两分钟内失效。没有页面在运行，就没有后台解释任务。模型可能出错，操作成功不代表整项任务验收。": "Continuous follow-up while page is open, at least 3-minute intervals, updates only on change. After switching chats, only the newly selected chat is followed; closing the page stops further sends. The current request may still return. If the browser exits abnormally, old settings expire within two minutes. No background explanation tasks run without an active page. Models may err; successful operation does not imply full task acceptance.",
-  "项目": "Project",
+  "项目": "Projects",
   "首页说明还在准备，请稍后再点。": "Home description is still preparing; please click later.",
   "；模型：": "; Model: ",
   "；每小时最多 ": "; Max per hour: ",
@@ -515,5 +515,6 @@
   "已收到结果，是否成功还不清楚": "A result arrived; its effect is not confirmed",
   "还没看到对应结果": "No matching result has been seen",
   "暂时不能确定结果属于谁": "The result cannot yet be matched to an action",
-  "结果有冲突，暂不下结论": "The results disagree, so no conclusion is made"
+  "结果有冲突，暂不下结论": "The results disagree, so no conclusion is made",
+  "暂未读到相符的项目": "No matching projects found"
 }

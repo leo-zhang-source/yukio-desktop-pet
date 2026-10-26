@@ -97,3 +97,20 @@ class LanguageAndContextTests(unittest.TestCase):
         validate_named_subject('The More Detail button opens a fuller explanation.',payload)
         with self.assertRaises(ExplanationError):validate_named_subject('The two buttons were changed.',payload)
 
+
+
+class ExampleIsolationTests(unittest.TestCase):
+    def test_prompts_do_not_seed_unrelated_project_examples(self):
+        for language in ['zh','en']:
+            for view in [{'glance':True},{'reading':'detail'}]:
+                prompt=output_system({'scope':dict(language=language,**view)})
+                self.assertNotRegex(prompt.lower(),r'videos|服务器存放视频|开机后自动找到|家庭资料服务器')
+        self.assertIn('测试、演示、举例',output_system({'scope':{'glance':True,'language':'zh'}}))
+        self.assertIn('examples, quotations',output_system({'scope':{'glance':True,'language':'en'}}))
+
+    def test_model_action_comes_from_source_without_a_local_result_suffix(self):
+        fx=test_glance.GlanceTests();fx.setUp()
+        try:
+            data,payload,_=fx.glance.prepared('codex',fx.key)
+            self.assertEqual(payload['facts'][1]['excerpt'],data['evidence']['content']['text'])
+        finally:fx.tearDown()

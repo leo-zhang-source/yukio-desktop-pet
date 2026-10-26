@@ -312,7 +312,7 @@ class GlanceView:
     def prepared(self,client,key):
         data=self.detail(client,key);facts=[];references=[];prior_progress=[]
         entries=[('聊天和你的要求',data['title']+'；你的要求：'+data['goal'],'user_request','goal'),
-                 ('当前工作线索',data['content'],data['content_basis'],'content'),
+                 ('当前工作线索',data['evidence'].get('content',{}).get('text') or data['content'],data['content_basis'],'content'),
                  ('助手公开说明',data['evidence'].get('explanation',{}).get('text','助手尚未留下可显示的文字说明。'),'assistant' if 'explanation' in data['evidence'] else 'unknown','explanation'),
                  ('助手明确说明的原因',data['evidence'].get('reason',{}).get('text','助手未公开说明这一步的原因。'),'assistant' if 'reason' in data['evidence'] else 'unknown','reason')]
         for title,text,basis,field in entries:

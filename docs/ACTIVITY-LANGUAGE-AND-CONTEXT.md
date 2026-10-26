@@ -1,10 +1,14 @@
 # Workbench language and understandable context
 
-Mac 0.4.8 embeds workbench 0.3.6. The native workbench uses the first macOS preferred language: Chinese variants share the Chinese UI; English and unsupported languages use English. The page receives that choice, and standalone browser use follows the browser language. Reopening the App after changing the system language applies the new preference. The pet's existing manual language preference is not overwritten.
+Mac 0.4.9 embeds workbench 0.3.7. The native workbench uses the first macOS preferred language: Chinese variants share the Chinese UI; English and unsupported languages use English. The page receives that choice, and standalone browser use follows the browser language. Reopening the App after changing the system language applies the new preference. The pet's existing manual language preference is not overwritten.
 
 The page, loading/error messages, navigation and model explanations use the same language. Chat titles, user requests and quoted source notes remain in their original language; the model writes the explanation in the selected UI language. A temporary local note never pretends to translate an arbitrary source message without a model.
 
 ## What changed
+
+- The chat sidebar uses Projects above Recent chats. Search and project expansion stay local. Working, waiting, ended and unknown are per-chat markers, never navigation categories; no selection or model send is triggered by searching.
+- Real-chat review of 0.4.8 found an unrelated illustration copied from the writing instructions into the project explanation. Those concrete domain examples have been removed. Current action and request take precedence over old plans; quoted examples and test subjects cannot establish project facts. A local outcome suffix is no longer included in the model’s action excerpt and then appended again.
+
 
 - A clipped tool response containing boolean fields and a partial object could become the explanation paragraph. Only conversational fragments may now supply that local paragraph. Presentation filtering removes code, commands, paths, filenames, addresses and internal identifiers without changing the saved history or the private evidence used for matching.
 - Supporting notes in the workbench use readable descriptions. The older record view no longer prints raw metadata tables or a JSON prompt dump. Exact IDs remain inside the local data and request matching, rather than becoming prose.
@@ -17,4 +21,4 @@ The page, loading/error messages, navigation and model explanations use the same
 
 Only the selected chat's bounded public excerpts are used. This change adds no destination, paid service, whole-chat export, hidden-reasoning access or background model scheduler. The hourly call limit and minimum refresh interval remain; longer explanations have a bounded output budget. Close/switch cancellation and the page lease remain in place.
 
-Neither a word budget nor reference validation proves that an explanation is correct or easy to understand. Missing context must stay unknown; a filename cannot establish a file's purpose. Chinese and English were checked with explicitly simulated video-connection work, and the installed Mac is checked separately. Windows remains optional and untested for this release.
+Neither a word budget nor reference validation proves that an explanation is correct or easy to understand. Missing context must stay unknown; a filename cannot establish a file's purpose. Chinese and English example-isolation checks use an explicitly simulated workbench task containing an unrelated example. A bounded excerpt from the current real Yukio chat is checked separately. This checks those cases, not every possible summary. Windows remains optional and untested for this release.
