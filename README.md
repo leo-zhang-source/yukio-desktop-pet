@@ -1,4 +1,4 @@
-> **Mac 0.4.7**：工作台已内置在桌面雪绪中，聊天可按项目、最近和工作状态查找；设置分成三组。Apple 芯片版下载与应用内更新见 [发布说明](docs/releases/0.4.7.md)。Windows 新版测试继续留作之后可选。
+> **Mac 0.4.7**：工作台已内置在桌面雪绪中，聊天可按项目、最近和工作状态查找；设置分成三组。Apple 芯片版下载与应用内更新见 [发布说明](docs/releases/0.4.7.md)。Windows 新版测试继续留作之后可选。 桌面0.4.7与下载包已逐项核对，应用内检查更新正常；[查看验收结果](docs/validation/mac-workbench-0.4.7/README.md)。
 
 > **独立 Mac 活动工作台 0.3.0（Apple 芯片预览版）**：内置运行环境，按聊天看内容、解释和原因。第8、9步按Mac范围交付；Windows以后可选，不替换原桌宠。 [下载与使用说明](https://github.com/leozhang8654/yukio-desktop-pet/releases/tag/activity-workbench-v0.3.0) · [版本与核验范围](docs/releases/activity-workbench-0.3.0.md)。
 
