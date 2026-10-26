@@ -38,8 +38,10 @@ func runWorkbenchPanelCheck(path: String) {
             if let data = try? JSONSerialization.data(withJSONObject: results, options: [.prettyPrinted, .sortedKeys]) {
                 try? data.write(to: URL(fileURLWithPath: path), options: .atomic)
             }
-            app.stop(nil)
-            CFRunLoopStop(CFRunLoopGetMain())
+            // NSApplication.stop may wait for another UI event before run()
+            // returns. This explicit CLI check has finished and owns no work;
+            // exit here so unattended verification cannot wait indefinitely.
+            exit(results.count == 7 && results.values.allSatisfy { $0 } ? 0 : 1)
         }
     }
     withExtendedLifetime(controller) { app.run() }
