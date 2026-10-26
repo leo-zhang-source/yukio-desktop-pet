@@ -1,0 +1,20 @@
+{
+  "checked_at": "2026-10-26T04:00:27.547751+00:00",
+  "version": "0.4.9",
+  "candidate_version": "0.4.10",
+  "candidate_published": false,
+  "desktop_unlocked_observed": true,
+  "machine_reboot_observed": false,
+  "download": true,
+  "signature_verification": true,
+  "extraction": true,
+  "host_quit": true,
+  "installation": false,
+  "relaunch": false,
+  "root_cause": "not established",
+  "stopped_test_helpers": true,
+  "desktop_reopened": true,
+  "desktop_files_match": 468,
+  "desktop_signature_valid": true,
+  "windows": "optional_not_tested"
+}
