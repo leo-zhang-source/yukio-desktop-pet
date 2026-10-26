@@ -10,9 +10,10 @@ from collector_status import read_status
 from context_view import ContextView
 from handoff_view import HandoffView
 from task_summary import recap
-from plain_language import plain_words
+from plain_language import plain_words,readable_fragment
 from explanation import add_object_names
 from chat_catalog import activity_state, readable_title, catalog_card
+from localization import current_language
 
 IGNORED={'reasoning_record_observed','inherited_context_record','context_record_observed','identity_conflict','foreign_session_record','identity_scope_unresolved'}
 NOISE={'token_count','token_usage_record','thread_settings_applied'}
@@ -93,8 +94,9 @@ def local_story(user,activity,reason,step,fragment):
             elif re.search(r'修改|修复|简化|调整|收起',first):recipe=recipes[1]
             if recipe:
                 recipe=(recipe[0],'按助手的公开说明，'+recipe[1],recipe[2])
-    if fragment and (not activity or fragment['sequence']>=activity['sequence']):
-        explanation='读到的内容：'+fragment['display']+'（只看到这一小段）';eb='observed'
+    readable=readable_fragment(fragment['display']) if fragment else ''
+    if readable and (not activity or fragment['sequence']>=activity['sequence']):
+        explanation='读到的说明：'+readable+'（只看到这一小段）';eb='observed'
         er=[dict(title='明确对应的读取返回',**fragment)]
     elif recipe:
         explanation=recipe[1];eb='inference';er=refs
@@ -252,7 +254,7 @@ class GlanceView:
             before=clean(re.split(r'[。；]',brief['before'])[0],100)
             action_story=local_story(user,activity,reason,last_step,None)
             role=action_story['explanation'] if action_story['explanation_basis']=='inference' else ''
-            detail.update(explanation=clean('前面进展：'+before+'。'+(role or '眼前的公开工作线索是“'+detail['content']+'”；其具体作用还需结合后续结果确认。'),160),explanation_basis='inference')
+            detail.update(explanation=clean('这项工作要实现的是：'+brief['goal']+'。前面进展：'+before+'。'+(role or '眼前的公开工作线索是“'+detail['content']+'”；其具体作用还需结合后续结果确认。'),360),explanation_basis='inference')
             detail['part_evidence']['explanation']=[dict(title='前面进展（开发记录）',text=brief['before'])]+detail['part_evidence']['explanation']
             if not reason and brief['benefit']:
                 detail.update(reason=brief['benefit'],reason_basis='inference')
@@ -273,7 +275,7 @@ class GlanceView:
         detail['revision']=hashlib.sha256(json.dumps(meaning,sort_keys=True,ensure_ascii=False).encode()).hexdigest()
         # Story prose uses object roles; exact excerpts remain in folded proof.
         for part in ('content','explanation','reason'):
-            detail[part]=plain_words(detail[part])
+            detail[part]=plain_words(detail[part],current_language())
         detail['activity_state']=activity_state(detail)
         return detail
 
@@ -345,10 +347,13 @@ class GlanceView:
                 if field in ('before','now'):bridge.append(alias)
                 facts.append(dict(evidence_id=alias,record_marker=title,excerpt=quote,evidence_class=basis))
                 references.append(dict(evidence_id=alias,title=title,quote=quote,record_id='本机项目说明，非原始活动记录'))
+        conversation_goal=None;previous_checkpoint=None
         for title,items,basis in [('这段可读记录中较早的要求，不一定是项目最初目标',data['project_goals'],'user_request'),('前面已有的进展，助手自述',data['previous_progress'],'assistant'),('本轮前面的公开说明，助手自述',data['earlier_activity'],'assistant')]:
             for item in items:
                 alias='E'+str(len(facts)+1)
                 if basis=='assistant':prior_progress.append(alias)
+                if basis=='user_request' and not conversation_goal:conversation_goal=alias
+                if items is data['previous_progress'] and not previous_checkpoint:previous_checkpoint=alias
                 facts.append(dict(evidence_id=alias,record_marker=title,excerpt=item['text'],evidence_class=basis))
                 references.append(dict(evidence_id=alias,title=title,quote=item['text'],record_id=item['event_id'],sequence=item['sequence']))
         alias='E'+str(len(facts)+1);snippet=data['fragment']
@@ -362,15 +367,20 @@ class GlanceView:
             facts.append(dict(evidence_id=alias,record_marker='可观察的助手交接（回复属于助手自述）',excerpt=text,evidence_class='assistant' if card['returns'] else 'observed'))
             references.append(dict(evidence_id=alias,title='助手交接',quote=text,record_id=card['evidence'][0]['id'],sequence=card.get('sequence')))
         naming=add_object_names(facts,references,brief)
-        payload=dict(scope=dict(glance=True,compose_current_result=True,whole_task_status='unknown',body_text_included=True,untrusted_excerpts=True,
+        payload=dict(scope=dict(glance=True,language=current_language(),compose_current_result=True,whole_task_status='unknown',body_text_included=True,untrusted_excerpts=True,
                                bounded_context=True,partial=data['partial'] or data['source_unavailable'] or handoffs['limited'],
                                current_turn_state={'这一轮已结束':'ended','这一轮已取消':'cancelled'}.get(data['status'],'unknown'),
                                previous_progress_evidence_ids=prior_progress,**current_operation),facts=facts)
         if naming:payload['scope']['naming_context_evidence_id']=naming
-        if brief:payload['scope'].update(context_bridge_evidence_ids=bridge,project_goal_evidence_id=project_goal_id)
+        # Ordinary chats also need earlier context; a hand-written project brief
+        # must not be required to get an understandable explanation.
+        if previous_checkpoint and previous_checkpoint not in bridge:bridge.append(previous_checkpoint)
+        if bridge:payload['scope']['context_bridge_evidence_ids']=bridge[:3]
+        if project_goal_id or conversation_goal:payload['scope']['project_goal_evidence_id']=project_goal_id or conversation_goal
+        payload['scope']['standalone_explanation']=True
         action=current_operation.get('current_work_evidence_id') or current_operation.get('current_operation_evidence_id')
         payload['scope']['writing_anchors']={
             'content':[action] if action else [],
-            'explanation':([action] if action else [])+bridge,
-            'reason':[project_goal_id] if project_goal_id else []}
+            'explanation':([action] if action else [])+bridge[:3],
+            'reason':[project_goal_id or conversation_goal] if project_goal_id or conversation_goal else []}
         return data,payload,references

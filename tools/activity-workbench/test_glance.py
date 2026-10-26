@@ -27,9 +27,11 @@ def result(payload):
     anchor=payload.get('scope',{}).get('current_operation_evidence_id')
     state=payload.get('scope',{}).get('current_operation_status')
     content={'failed':'查看入口文件报告失败，仍需处理。','no_receipt':'请求查看入口文件，还没看到对应结果。','cancelled':'查看入口文件已取消。','conflict':'查看入口文件的结果有冲突。','unresolved':'查看入口文件的对应关系不清楚。','unknown':'查看入口文件，已收到结果，是否成功还不清楚。'}.get(state,'查看入口文件，准备简化首页。')
-    return [dict(part='content',text=content,basis=payload['facts'][1]['evidence_class'],evidence_ids=['E2']+([anchor] if anchor else [])),
-            dict(part='explanation',text='这一步对应你希望页面更容易理解的要求。',basis='inference',evidence_ids=['E1','E2']+([anchor] if anchor else [])),
-            dict(part='reason',text='助手说，先了解入口才能保留原来的使用方式。',basis='assistant',evidence_ids=['E4'])]
+    bridge=payload['scope'].get('context_bridge_evidence_ids',[])
+    goal=payload['scope'].get('project_goal_evidence_id')
+    return [dict(part='content',text=content,basis='inference' if bridge else payload['facts'][1]['evidence_class'],evidence_ids=['E2']+([anchor] if anchor else [])),
+            dict(part='explanation',text='这一步对应你希望页面更容易理解的要求。',basis='inference',evidence_ids=list(dict.fromkeys(['E1','E2']+([anchor] if anchor else [])+bridge))),
+            dict(part='reason',text='助手说，先了解入口才能保留原来的使用方式。',basis='inference' if goal or bridge else 'assistant',evidence_ids=['E4']+([goal] if goal else []))]
 
 
 class GlanceTests(unittest.TestCase):
@@ -181,7 +183,7 @@ class GlanceTests(unittest.TestCase):
     def test_model_response_requires_three_parts_and_valid_basis(self):
         _,payload,_=self.glance.prepared('codex',self.key);good=result(payload);self.assertEqual(validate_output(encode(dict(explanations=good)),payload),good)
         self.assertEqual(schema_for(payload)['properties']['explanations']['minItems'],3)
-        for change in [dict(part='content'),dict(evidence_ids=['E99']),dict(basis='observed'),dict(text='x'*101)]:
+        for change in [dict(part='content'),dict(evidence_ids=['E99']),dict(basis='observed'),dict(text='x'*361)]:
             bad=json.loads(encode(good));bad[2].update(change)
             with self.assertRaises(ExplanationError):validate_output(encode(dict(explanations=bad)),payload)
 

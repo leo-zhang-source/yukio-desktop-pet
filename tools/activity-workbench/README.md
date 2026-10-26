@@ -1,3 +1,5 @@
+> Mac 0.4.8 embeds workbench 0.3.6: system language, Chinese/English explanations, readable context and no raw diagnostic prose. [Details and limits](../../docs/ACTIVITY-LANGUAGE-AND-CONTEXT.md).
+
 > 已随 Mac 雪绪 0.4.7 提供本轮工作台：右键桌宠打开，在顶部右侧进入设置。公开源码、包与桌面安装依据见 [0.4.7 发布记录](../../docs/releases/0.4.7.md)。以下各小版本的本机说明保留作历史。
 
 # 雪绪活动工作台 0.3.5 · 聊天侧栏与分类设置

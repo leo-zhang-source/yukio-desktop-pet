@@ -18,6 +18,7 @@ from runtime_identity import identity
 from collector_status import read_status
 from explanation import ExplanationService, ExplanationError, MESSAGES, load_config
 from page_explanation_policy import enabled as page_policy_enabled
+from localization import language_context,localize,catalog
 
 ROOT = Path(__file__).resolve().parent
 ASSETS = {'/': ('index.html', 'text/html; charset=utf-8'),
@@ -28,6 +29,7 @@ ASSETS = {'/': ('index.html', 'text/html; charset=utf-8'),
           '/explanation.js': ('explanation.js', 'text/javascript; charset=utf-8'),
           '/context.js': ('context.js', 'text/javascript; charset=utf-8'),
           '/style.css': ('style.css', 'text/css; charset=utf-8')}
+ASSETS['/i18n.js']=('i18n.js','text/javascript; charset=utf-8')
 
 
 def create_server(port, databases, *, synthetic=False, model_config=None, explanation_service=None, source_roots=None):
@@ -48,6 +50,10 @@ def create_server(port, databases, *, synthetic=False, model_config=None, explan
             pass  # No session IDs or local paths in access logs.
 
         def do_GET(self):
+            with language_context(self.headers.get('X-Yukio-Language',self.headers.get('Accept-Language','zh'))):
+                return self.get()
+
+        def get(self):
             host = self.headers.get('Host')
             allowed = {'127.0.0.1:%d' % self.server.server_port, 'localhost:%d' % self.server.server_port}
             if host not in allowed:
@@ -57,7 +63,9 @@ def create_server(port, databases, *, synthetic=False, model_config=None, explan
             url = urlsplit(self.path)
             if url.path in ASSETS:
                 name, mime = ASSETS[url.path]
-                return self.reply(200, (ROOT/'dist'/name).read_bytes(), mime)
+                raw=(ROOT/'dist'/name).read_bytes()
+                if name=='i18n.js':raw=('globalThis.YukioEnglish='+json.dumps(catalog(),ensure_ascii=False)+';\n').encode()+raw
+                return self.reply(200,raw,mime)
             routes = {'/api/health': set(), '/api/clients': set(), '/api/groups': {'client','archive','offset','snapshot'},
                       '/api/timeline': {'client','key','before','snapshot'}, '/api/blocks': {'client','key','sequence','offset'},
                       '/api/handoffs': {'client','key','snapshot'}, '/api/context': {'client','key','snapshot','offset','filter'}, '/api/relations': {'client','key','snapshot'},
@@ -92,13 +100,17 @@ def create_server(port, databases, *, synthetic=False, model_config=None, explan
                     result['explanation']['automatic_on_open']=bool(explainer and page_allowed())
                     for client in result['clients']:
                         client['recorder'] = dict(state='synthetic') if synthetic else read_status(databases[client['id']],client['id'])
-                return self.reply(200, json.dumps(result, ensure_ascii=False, allow_nan=False).encode(), 'application/json; charset=utf-8')
+                return self.reply(200, json.dumps(localize(result), ensure_ascii=False, allow_nan=False).encode(), 'application/json; charset=utf-8')
             except (ValueError, TypeError, KeyError):
                 return self.json_reply(400,dict(error='这段聊天暂时读不到，请重新选择聊天。'))
             except (sqlite3.Error, OSError):
                 return self.json_reply(503,dict(error='暂时无法读取历史，已经保存的记录仍然保留。'))
 
         def do_POST(self):
+            with language_context(self.headers.get('X-Yukio-Language',self.headers.get('Accept-Language','zh'))):
+                return self.post()
+
+        def post(self):
             host=self.headers.get('Host')
             allowed={'127.0.0.1:%d'%self.server.server_port,'localhost:%d'%self.server.server_port}
             if (host not in allowed or self.headers.get('Sec-Fetch-Site')=='cross-site' or
@@ -162,7 +174,7 @@ def create_server(port, databases, *, synthetic=False, model_config=None, explan
                 return self.json_reply(503,dict(error='暂时无法读取，已有记录没有改变。'))
 
         def json_reply(self,code,data):
-            return self.reply(code,json.dumps(data,ensure_ascii=False,allow_nan=False).encode(),'application/json; charset=utf-8')
+            return self.reply(code,json.dumps(localize(data),ensure_ascii=False,allow_nan=False).encode(),'application/json; charset=utf-8')
 
         def reply(self, code, data, mime):
             self.send_response(code)

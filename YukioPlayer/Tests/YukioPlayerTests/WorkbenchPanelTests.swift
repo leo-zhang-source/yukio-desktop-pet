@@ -57,6 +57,24 @@ import YukioCore
         runtime.stop()
     }
 
+    @Test func workbenchFollowsSystemLanguageWithoutChangingPetPreferences() throws {
+        _ = NSApplication.shared
+        #expect(WorkbenchPanelController.preferredLanguage(["zh-Hans-CN", "en-US"]) == "zh")
+        #expect(WorkbenchPanelController.preferredLanguage(["en-GB", "zh-Hans"]) == "en")
+        #expect(WorkbenchPanelController.preferredLanguage(["fr-FR"]) == "en")
+        let panel = WorkbenchPanelController(runtime: Runtime(), preferredLanguages: ["en-US"])
+        defer { panel.shutdown(); panel.close() }
+        panel.apply(snapshot) // Pet's manual language can differ from the system.
+        #expect(panel.uiLanguage == "en")
+        #expect(panel.window?.title == "Yukio · Activity workbench")
+        let button = try #require(find(panel.window!.contentView!, "petSettingsTab", as: NSButton.self))
+        #expect(button.title == "Settings")
+        let url = panel.localizedURL(URL(string: "http://127.0.0.1:8767/?client=codex&key=chat&lang=zh")!)
+        let query = URLComponents(url: url, resolvingAgainstBaseURL: false)!.queryItems!
+        #expect(query.filter { $0.name == "lang" }.map(\.value) == ["en"])
+        #expect(query.contains { $0.name == "key" && $0.value == "chat" })
+    }
+
     @Test func unavailableWorkbenchKeepsSettingsUsableAndOnlyLocalNavigationIsAllowed() throws {
         _ = NSApplication.shared
         let runtime = Runtime(), panel = WorkbenchPanelController(runtime: runtime)

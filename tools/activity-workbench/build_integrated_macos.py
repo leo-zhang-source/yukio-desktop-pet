@@ -67,7 +67,7 @@ def build(base_app, workbench_app, binary, source, output, version=None, build_n
                 YukioWorkbenchVersion=workbench_version, YukioIntegrationSourceSHA256=hashlib.sha256(json.dumps(sources, sort_keys=True).encode()).hexdigest())
     if version:
         info.update(CFBundleShortVersionString=version, YukioSourceRevision=revision,
-                    YukioFeature='activity-workbench-chat-navigation')
+                    YukioFeature='activity-workbench-language-and-context')
         for key in ('YukioLocalFeature', 'YukioLocalRepair'):
             info.pop(key, None)
     # Permit only local networking; external HTTPS trust checks are unchanged.
