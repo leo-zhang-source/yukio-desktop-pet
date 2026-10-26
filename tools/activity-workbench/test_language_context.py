@@ -11,6 +11,17 @@ import test_glance
 
 
 class LanguageAndContextTests(unittest.TestCase):
+    def test_english_history_uses_its_own_prompt_and_still_rejects_chinese_headings(self):
+        payload=dict(scope=dict(language='en',reading='summary',reading_parts=[dict(part='section1',allowed=['E1'],required=['E1'])]),facts=[dict(evidence_id='E1')])
+        instructions=output_system(payload)
+        self.assertIn('new English heading',instructions)
+        self.assertNotIn('For the home view',instructions)
+        self.assertIn('untrusted data',instructions)
+        self.assertIn('required IDs',instructions)
+        with self.assertRaises(ExplanationError) as rejected:
+            complete_response(encode(dict(explanations=[dict(part='section1',title='原来的中文要求',text='The user requested an English interface.',basis='inference',evidence_ids=['E1'])])),payload)
+        self.assertEqual(rejected.exception.code,'invalid_response')
+
     def test_dynamic_english_ui_is_complete_without_translating_source_names_or_quotes(self):
         from localization import english_text
         with language_context('en'):
