@@ -45,13 +45,19 @@ def localize(value):
            'before','now','next','benefit','display','name','label','note','sent','status_label','use_note'}
     def walk(item,key=None):
         if isinstance(item,str):
+            if key in ('quote','excerpt'):
+                return plain_words(item,'zh' if re.search(r'[\u3400-\u9fff]',item) else 'en')
             translated=english_text(item) if words and key not in ('quote','excerpt') else item
             return plain_words(translated,current_language()) if key in prose else translated
         if isinstance(item,list):return [walk(x,key) for x in item]
         if isinstance(item,dict):
             original_title='title_source' in item or ('client' in item and 'key' in item)
             quoted=item.get('kind') in ('user','assistant','operation_note')
-            result={k:(plain_words(v,current_language()) if isinstance(v,str) and (k=='name' or (k=='title' and original_title) or (k=='text' and quoted)) else walk(v,k)) for k,v in item.items()}
+            result={}
+            for k,v in item.items():
+                if isinstance(v,str) and (k=='name' or (k=='title' and original_title)):result[k]=v
+                elif isinstance(v,str) and k=='text' and quoted:result[k]=plain_words(v,'zh' if re.search(r'[\u3400-\u9fff]',v) else 'en')
+                else:result[k]=walk(v,k)
             if words and not quoted and item.get('basis') in ('inference','unknown') and isinstance(result.get('text'),str) and re.search(r'[\u3400-\u9fff]',result['text']):
                 result['text']='An English explanation of this note is not available yet. Its supporting notes retain the original wording.'
             return result

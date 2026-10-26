@@ -20,6 +20,9 @@ class LanguageAndContextTests(unittest.TestCase):
                 note='请求查看 the program；尚未见到可配对的回执。不表示仍在运行，也不证明执行失败；结果可能尚未出现或未被观察到。'))
         self.assertEqual(shown['title'],'最近的工作')
         self.assertEqual(shown['quote'],'这次操作报告失败')
+        with language_context('en'):
+            self.assertEqual(localize(dict(quote='这份资料'))['quote'],'这份资料')
+            self.assertEqual(localize(dict(kind='assistant',text='这份资料'))['text'],'这份资料')
         self.assertEqual(shown['key'],'private_key')
         for key in ['title_source','status','action','note']:
             self.assertNotRegex(shown[key],r'[\u3400-\u9fff]',key)
@@ -68,6 +71,11 @@ class LanguageAndContextTests(unittest.TestCase):
                 self.assertNotRegex(english_text('请求查看 the document；'+label+'。'+note),r'[\u3400-\u9fff]')
         for message in ['接收者实际拿到的完整背景尚不可确认。','尚未观察到回复如何被采用；收到回复不代表已经采用。','这次交接没有可确认的回复正文。']:
             self.assertNotRegex(english_text(message),r'[\u3400-\u9fff]')
+        from source_context import operation
+        for command in ['swift test','swift build','rg matching','cat index.html']:
+            with language_context('en'):
+                shown=localize(dict(action=operation('exec_command',{'cmd':command})))
+            self.assertNotRegex(shown['action'],r'[\u3400-\u9fff]',command)
 
     def test_english_generated_prose_rejects_mixed_language_but_chinese_is_unchanged(self):
         payload,items=fixture()
