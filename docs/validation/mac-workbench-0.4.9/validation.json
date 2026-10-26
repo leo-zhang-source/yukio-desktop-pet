@@ -1,0 +1,59 @@
+{
+  "version": "0.4.9",
+  "build": "30",
+  "workbench_version": "0.3.7",
+  "source_commit": "577e85f1bc195d04b6b51c3b599287a2eeaf14d0",
+  "python_tests": 227,
+  "page_tests": 27,
+  "native_tests": 225,
+  "native_window_checks": 7,
+  "resource_checks": 13,
+  "public_downloads": {
+    "all_match": true,
+    "sha256": {
+      "Yukio-0.4.9-macOS-arm64.zip": "524636a591e4e36db9cc427f35de8253feb475d0765d041b8c0075fee61c561c",
+      "Yukio-0.4.9-macOS-arm64.dmg": "90da831c4e1ee33f035b85172840f400fd08d3a8a3f6a48cd72a16485234f859",
+      "appcast.xml": "d64602d8d1222c24b1858595ab98aa32df1f7adf2faf4992cb52fb7baa44c46d"
+    }
+  },
+  "package": {
+    "version": "0.4.9",
+    "build": "30",
+    "workbench_version": "0.3.7",
+    "source_commit": "577e85f1bc195d04b6b51c3b599287a2eeaf14d0",
+    "files": 468,
+    "zip_matches": true,
+    "dmg_matches": true,
+    "signature_valid": true,
+    "original_update_trust_retained": true,
+    "tampered_feed_rejected": true,
+    "windows": "deferred_optional"
+  },
+  "desktop": {
+    "version": "0.4.9",
+    "build": "30",
+    "workbench_version": "0.3.7",
+    "source_commit": "577e85f1bc195d04b6b51c3b599287a2eeaf14d0",
+    "files_match": 468,
+    "signature_valid": true,
+    "old_history_preserved": true,
+    "model_and_page_policy_unchanged": true,
+    "project_context_initially_unchanged": true,
+    "business_preferences_unchanged": true,
+    "preference_changes": [
+      "NSWindow Frame SUUpdateAlert2",
+      "SULastCheckTime"
+    ],
+    "real_update_transition": "0.4.8 to 0.4.9",
+    "relaunch_observed": true,
+    "initial_install_attempt": "failed; cancelled and restarted successfully",
+    "update_retry_passed": true,
+    "windows": "optional_not_tested",
+    "project_context_intentionally_updated": "Only this Yukio chat: current project brief and names; original backed up"
+  },
+  "automatic_install_passed": false,
+  "current_desktop_reverified_468_files": true,
+  "pending": "Clean Mac restart and retest of OS App replacement; candidate 0.4.10 unpublished",
+  "windows": "deferred_optional_not_tested",
+  "private_profile_uploaded": false
+}
