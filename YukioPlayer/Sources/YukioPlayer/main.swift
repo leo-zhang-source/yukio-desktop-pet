@@ -1957,7 +1957,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func languageItem() -> NSMenuItem {
         let item = NSMenuItem(title: tr("Language", "语言"), action: nil, keyEquivalent: "")
         let sub = NSMenu()
-        for (code, name) in [(UILanguage.english, "English"), (UILanguage.chinese, "中文")] {
+        for (code, name) in [(UILanguage.english, "English"), (UILanguage.chinese, tr("Chinese (Simplified)", "中文"))] {
             let row = action(name, #selector(menuSetLanguage(_:)), on: language == code)
             row.representedObject = code.rawValue
             sub.addItem(row)
@@ -2011,7 +2011,8 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if let existing = settingsWindow {
             controller = existing
         } else {
-            controller = WorkbenchPanelController()
+            let choice = WorkbenchPanelController.preferredLanguage(Locale.preferredLanguages, appPreference: defaults.string(forKey: "language"))
+            controller = WorkbenchPanelController(preferredLanguages: [choice])
             controller.onChange = { [weak self] change in self?.applySettings(change) }
             settingsWindow = controller
         }
@@ -2114,6 +2115,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
             applyScale(value)
         case .language(let value):
             language = value
+            settingsWindow?.setLanguage(value)
             updateStatusTitle()
         case .browserChatPermission:
             BrowserOpenChat.openPermissionSettings()
@@ -2235,7 +2237,9 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc private func menuSetLanguage(_ sender: NSMenuItem) {
         language = UILanguage(code: sender.representedObject as? String)
+        settingsWindow?.setLanguage(language)
         updateStatusTitle()
+        refreshSettingsPanel()
     }
     @objc private func menuStartDemo() { startDemo() }
     @objc private func menuStopDemo() { stopDemo() }
@@ -2359,6 +2363,14 @@ if Bundle.main.bundleIdentifier != nil && !running.isEmpty {
     exit(0)
 }
 
+// Apply an explicit app choice to framework-provided windows at launch too.
+// This argument-domain override lasts only for this process; it does not change
+// the Mac's language or write an AppleLanguages setting into the user's profile.
+if let choice = UserDefaults.standard.string(forKey: "language") {
+    var domain = UserDefaults.standard.volatileDomain(forName: UserDefaults.argumentDomain)
+    domain["AppleLanguages"] = [UILanguage(code: choice).rawValue]
+    UserDefaults.standard.setVolatileDomain(domain, forName: UserDefaults.argumentDomain)
+}
 let (catalog, assetsRoot) = loadCatalogOrExit(useSavedSkin: true)
 let library: SpriteLibrary
 do {

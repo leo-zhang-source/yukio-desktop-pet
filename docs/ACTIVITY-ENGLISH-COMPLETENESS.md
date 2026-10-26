@@ -7,7 +7,7 @@ Mac candidate 0.4.11 embeds workbench 0.3.8. The earlier 0.4.10 automatic-instal
 - Translate composed operation/results messages, task recap limits, handoff states, error messages and generated fallback chat names, rather than only matching complete static headings. Unknown source text is never partly translated into a misleading mixture.
 - Preserve actual chat names, project names and original quotations, as explicitly requested. Local project background in another language stays in the original-text disclosure; the home context labels the current quoted request as original text.
 - Require generated model prose and history headings to be English in English mode. Reject mixed Chinese/English responses and keep the English fallback instead of displaying an unchecked answer. Source evidence retains its language.
-- Embedded settings use the workbench’s presentation language independently of the pet’s saved language. This changes labels and status text without rewriting that preference. Standalone launch messages and App display-name resources also have English text.
+- An explicit language selected in Yukio also controls the workbench, including its native header and embedded settings. Without an explicit app preference, the workbench follows the system language. Switching the setting refreshes the page language while retaining the selected chat. This changes labels and status text without rewriting that preference. Standalone launch messages and App display-name resources also have English text.
 
 ## Verified so far
 

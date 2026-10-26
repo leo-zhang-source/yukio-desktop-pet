@@ -101,10 +101,11 @@ final class WorkbenchPanelController: NSWindowController, NSWindowDelegate, WKNa
     private(set) var showingSettings = false
     private var selectionURL: URL?
     private var opening = UUID()
-    let uiLanguage: String
+    private(set) var uiLanguage: String
 
-    static func preferredLanguage(_ languages: [String]) -> String {
-        (languages.first ?? "en").lowercased().hasPrefix("zh") ? "zh" : "en"
+    static func preferredLanguage(_ languages: [String], appPreference: String? = nil) -> String {
+        if let appPreference { return UILanguage(code: appPreference).rawValue }
+        return (languages.first ?? "en").lowercased().hasPrefix("zh") ? "zh" : "en"
     }
 
     private func localized(_ zh: String, _ en: String) -> String { uiLanguage == "zh" ? zh : en }
@@ -200,6 +201,24 @@ final class WorkbenchPanelController: NSWindowController, NSWindowDelegate, WKNa
     }
 
     func apply(_ snapshot: SettingsSnapshot) { settings.apply(snapshot) }
+    func setLanguage(_ language: UILanguage) {
+        guard uiLanguage != language.rawValue else { return }
+        let wasShowingSettings = showingSettings
+        dismissContent()
+        uiLanguage = language.rawValue
+        settings.presentationLanguage = language
+        window?.title = localized("Yukio · 活动工作台", "Yukio · Activity workbench")
+        workButton.title = localized("活动工作台", "Activity workbench")
+        settingsButton.title = localized("设置", "Settings")
+        retryButton.title = localized("重新连接", "Reconnect")
+        settingsButton.toolTip = localized("雪绪的大小、显示、聊天、换装与其他设置", "Yukio’s size, appearance, chats, outfits and other settings")
+        if wasShowingSettings { showSettings() }
+        else if window?.isVisible == true { showWork() }
+        if window?.isVisible == true {
+            outsideClickMonitor.start(window: window, isInteracting: { [weak self] in self?.settings.isTrackingPopup ?? false },
+                                      dismiss: { [weak self] in self?.close() })
+        }
+    }
     func showStartupError(_ error: Error) { settings.showStartupError(error) }
 
     private func fill(_ view: NSView) {

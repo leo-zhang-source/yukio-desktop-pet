@@ -5,6 +5,25 @@ import YukioCore
 @testable import YukioPlayer
 
 @Suite @MainActor struct WorkbenchPanelTests {
+    @Test func explicitAppLanguageWinsAndSwitchingRefreshesTheWholeWorkbench() throws {
+        _ = NSApplication.shared
+        #expect(WorkbenchPanelController.preferredLanguage(["zh-Hans"], appPreference: "en") == "en")
+        #expect(WorkbenchPanelController.preferredLanguage(["en-US"], appPreference: "zh") == "zh")
+        #expect(WorkbenchPanelController.preferredLanguage(["zh-Hans"]) == "zh")
+        let runtime = Runtime()
+        let panel = WorkbenchPanelController(runtime: runtime, preferredLanguages: ["zh-Hans"])
+        defer { panel.shutdown(); panel.close() }
+        panel.apply(snapshot); panel.showSettings()
+        panel.setLanguage(.english); panel.apply(snapshot)
+        #expect(panel.showingSettings && panel.uiLanguage == "en")
+        #expect(panel.window?.title == "Yukio · Activity workbench")
+        let root = try #require(panel.window?.contentView)
+        #expect(try #require(find(root, "workbenchTab", as: NSButton.self)).title == "Activity workbench")
+        #expect(try #require(find(root, "petSettingsTab", as: NSButton.self)).title == "Settings")
+        #expect(runtime.starts == 0)
+        let url=panel.localizedURL(URL(string: "http://127.0.0.1:8767/?client=codex&key=preserved&lang=zh")!)
+        #expect(url.query?.contains("key=preserved") == true && url.query?.contains("lang=en") == true)
+    }
     @Test func embeddedEnglishSettingsDoNotFollowThePetsChinesePreference() throws {
         _ = NSApplication.shared
         let saved = L10n.language
