@@ -515,5 +515,6 @@
   "已收到结果，是否成功还不清楚": "A result arrived; its effect is not confirmed",
   "还没看到对应结果": "No matching result has been seen",
   "暂时不能确定结果属于谁": "The result cannot yet be matched to an action",
-  "结果有冲突，暂不下结论": "The results disagree, so no conclusion is made"
+  "结果有冲突，暂不下结论": "The results disagree, so no conclusion is made",
+  "暂未读到相符的项目": "No matching projects found"
 }

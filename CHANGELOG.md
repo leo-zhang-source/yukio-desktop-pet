@@ -1,3 +1,9 @@
+## 0.4.9
+
+- Arrange chat selection as Projects then Recent chats; work status remains a per-chat label.
+- Prevent concrete writing examples from becoming project facts and avoid repeating a local outcome in the model action excerpt.
+- Retain system-language Chinese/English, readable background explanations and existing updater protections. Windows remains optional.
+
 # Changelog / 更新记录
 
 ## 0.4.8 · Mac language and context

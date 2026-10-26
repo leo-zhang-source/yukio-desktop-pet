@@ -20,13 +20,13 @@ from plain_language import plain_words
 from localization import current_language
 from localization import english_text
 
-VERSION = 11
+VERSION = 12
 NAMING_SYSTEM = (
+    '摘录中测试、演示、举例或待修正旧说明里的对象，只能按其原本身份描述，不当作当前项目事实。'
     '每张卡片或一组说明必须独立读得懂：先说明对象的具体名称，再讲动作、前后联系或用途。'
     '记录或名称对照已有按钮、页面、功能、图片的名称时，优先原样使用名称，不只写“两个按钮、按钮、该功能、这个页面、它”。'
     '不同对象分别命名，不因数量相同就合并。新增一组与移除另一组必须分别说明是哪一组。'
     'scope.naming_context_evidence_id 指向已核对的名称对照，只帮助选择称呼，不证明某段做过这些事；动作仍必须依据本段记录。'
-    '例如可以写“新增‘深入解释’和‘之前做了什么’入口”，或“移除‘解释一次’和‘持续解释’按钮”；这只是写法示例，实际选哪组必须看本段要求与汇报。'
     '不能从现在的页面倒推旧按钮名称。无法对应名称时说“当时用于……的按钮（名称未读到）”，用途也不明时直说具体对象不清楚，不补猜。'
     '同一张卡片内开头写全名后可以简称，不要求每句话重复全名；不同历史卡片不能只靠“这个／那个”承接。对比不同对象时分别写清名称。名称用中文引号，成组名称用“和”或顿号，不用文件路径式写法。'
 )
@@ -59,10 +59,10 @@ GLANCE_SYSTEM = (
     '仅当 scope.current_operation_status 明确为 unknown，才要求 content 说“已收到结果，是否成功还不清楚”；不能说还没收到对应结果。没有 current_operation_status 时不套用这句话，不把其他旧操作或整项任务状态当成当前操作结果。若收到助手回复，只说明各自回复与采用情况未知，不把“采用未知”改成“尚未收到回复”。'
     'unknown 也不等于归属不明，不得说对应关系不清楚；归属问题只在 unresolved 时报告。助手回复归属已知、采用未知时，分别说清楚。'
     'explanation：独立读得懂。先用一句交代这是什么东西、为谁做什么，再联系前面进展，说明眼前补哪一块、具体改变了什么。必须结合眼前动作，不能只把阶段安排换个说法。'
-    '解释第一句要把对象的作用翻译给新手，不能只是把“配置”换成“设置”。例如上下文已说明服务器存放视频，可以说“这是一项让电脑开机后自动找到存放视频的设备的设置，视频App要先连到它才能读取视频”。之后再交代前面做过什么、现在补什么。示例不是本次事实，不适用时不能套用。'
-    '不要只说“连接配置”“后台进程”“媒体库”等含糊词。记录明确时，展开成“让电脑自动连接存放项目资料的设备的设置”“关闭窗口后继续运行的连接程序”“App用来查找和播放视频的资料列表”等普通描述，并说明是哪个App或哪项工作。写法示例不是本次事实；记录没说连接谁、资料做什么，就明确说还没读到，不能猜成某种设备或功能。'
+    '解释第一句要根据眼前动作的依据，说明这个对象是什么、为谁做什么；不要只是把技术词换成另一个含糊词。之后再交代有依据的前面进展与现在补什么。'
+    '以当前要求和眼前动作确定这是什么工作，旧计划只作背景；最新要求修正了旧安排时，应说明正在调整哪一处，不沿用旧安排作为现在的结论。'
+    '只描述本段实际任务。测试、演示、举例、引用、待修正的旧说明里的对象，不代表用户正在开发那个对象；只能说正在检查该示例，不能把示例中的工作当成项目事实或当前动作。'
     'reason：先说明用户原本想完成什么或眼下遇到什么麻烦，再说这一步怎么帮助解决，以及不处理可能继续遇到什么具体麻烦；最后一种后果仅可作有依据的可能性，不编造故障。'
-    '例如前面改了按钮，现在测试：说“前面已报告修改按钮，现在检查改动是否生效，避免把仍不能用的按钮交给你”。例子只指导写法，不能套用到无关记录。'
     '提供 context_bridge_evidence_ids 时，解释必须同时引用前面进展与阶段安排；还必须引用眼前动作的依据，不能只引用背景。没有前面材料就明确说联系暂不能确认，不能编造早期成果。'
     'scope.previous_progress_evidence_ids 才是可引用的较早公开进展；声称“前面已报告／此前已完成”必须引用其中的依据。user_request 只是用户要求，不能改写成助手做过或汇报过的事。列表为空时，说没有足够前面材料来确认联系。'
     'reason：说当前动作如何帮助最终目标，展开到用户能感受的具体用途，不用“符合整体目标、有助于任务、提升掌控感”这类空话。提供 project_goal_evidence_id 时必须引用。'
@@ -254,7 +254,9 @@ def output_system(payload):
             'Return JSON explanations. Evidence IDs belong only in evidence_ids, never in prose. '
             'For the home view return exactly content (20–45 words), explanation (55–100 words), reason (40–85 words), each with basis and evidence_ids. '
             'Content names the current action and the specific user problem. Follow scope.writing_anchors. When compose_current_result is true, do not state an operation outcome: the app adds its own recorded outcome separately. Do not use an older milestone instead of the current action. '
-            'Explanation starts by describing what the object DOES for the user. Do not merely rename a technical term. For example, if the notes say videos are stored on another device, explain the settings as letting this computer reach the device that stores those videos when the computer starts. This example is not evidence about this chat. Then say what earlier work was reported and how the current action connects to it. '
+            'Explanation starts by describing what the object DOES for the user. Do not merely rename a technical term. Then say what earlier work was reported and how the current action connects to it. '
+            'Use the current request and action to identify the subject. Older plans are background; when the latest request changes them, explain the change instead of treating the old plan as the current conclusion. '
+            'Describe only the actual task. Subjects inside tests, demonstrations, examples, quotations or incorrect earlier explanations are not current project facts. Describe testing an example as a test; never adopt its subject as the project or current action. '
             'Earlier progress must cite scope.previous_progress_evidence_ids. Say "The assistant previously reported…" for earlier assistant reports. Never turn a report into "confirmed" or "verified" work. Include all context_bridge_evidence_ids plus the current action in the explanation references. If earlier context is missing, say that instead of inventing it. '
             'Reason states the user’s underlying goal or difficulty, then the concrete inconvenience this step helps address. Cite project_goal_evidence_id when supplied. Describe intended benefits as purposes, not achieved results. Avoid "ensure", "guarantee", "reliable" and vague claims about quality. '
             'Use ordinary descriptions: "a program that keeps running after the window closes", not "background processes". No code, filenames, paths, addresses, internal IDs, machine fields or command output. Keep known product and button names; name different sets of buttons separately. A filename never establishes what a file contains or is used for. Unknown roles must remain unknown. '

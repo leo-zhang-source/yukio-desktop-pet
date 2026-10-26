@@ -4,13 +4,12 @@ var uiLanguage=globalThis.YukioI18n?.language||'zh';
 const $=id=>document.getElementById(id), make=(tag,text)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n;};
 const names={codex:'Codex',claude:'Claude',deepcode:'Deep Code'}, basis={observed:tr('记录所见'),assistant:tr('助手自述'),user_request:tr('你的要求'),inference:tr('推测'),unknown:tr('尚不清楚')};
 let selected=null, current=null, epoch=0, busy=false, cardsAt=0, model=null, grant=null, modelAnswer=null, refreshAgain=false, synthetic=false, modelPending=false, attemptMessage='', pageClosed=false, autoRun=null, nextRetry=0;
-let chatCatalog=[],chatFilter='recent',chatSearch='',chatLimited=false;
+let chatCatalog=[],chatSearch='',chatLimited=false;
 const openProjects=new Set(),activityLabels={working:tr('正在工作'),waiting:tr('等你处理'),inactive:tr('本轮已结束'),unknown:tr('状态待确认')};
 const chatValue=c=>JSON.stringify({client:c.client,key:c.key});
-function filteredChats(cards,filter,query){
+function filteredChats(cards,query){
  const search=query.trim().toLocaleLowerCase();
- return cards.filter(c=>(filter==='recent'||filter==='working'&&['working','waiting'].includes(c.activity_state)||filter==='inactive'&&c.activity_state==='inactive')&&
- (!search||[c.title,c.project?.name,names[c.client]].filter(Boolean).join(' ').toLocaleLowerCase().includes(search)));
+ return cards.filter(c=>(!search||[c.title,c.project?.name,names[c.client]].filter(Boolean).join(' ').toLocaleLowerCase().includes(search)));
 }
 function projectGroups(cards){
  const groups=new Map();for(const card of cards){if(!card.project?.id)continue;const id=card.project.id;
@@ -26,30 +25,27 @@ function chatRow(card){
  const chosen=selected&&button.dataset.chatValue===chatValue(selected);button.className+=chosen?' selected':'';
  button.setAttribute('aria-current',chosen?'true':'false');button.title=card.title;
  const text=make('span');text.className='chat-row-text';const title=make('span',card.title);title.className='chat-row-title';
- const meta=make('span',names[card.client]+(card.is_helper?tr(' · 协助助手'):'')+' · '+(activityLabels[card.activity_state]||tr('状态待确认'))+' · '+age(card.last_activity_ms));meta.className='chat-row-meta';text.append(title,meta);
- const state=card.activity_state||'unknown',dot=make('span');dot.className='chat-state '+state;dot.setAttribute('aria-label',activityLabels[state]);dot.title=activityLabels[state];
- button.append(dot,text);button.onclick=()=>{toggleChatBrowser(false);void choose(chatValue(card));};return button;
+ const meta=make('span',names[card.client]+(card.is_helper?tr(' · 协助助手'):'')+' · '+age(card.last_activity_ms));meta.className='chat-row-meta';text.append(title,meta);
+ const state=card.activity_state||'unknown',dot=make('span');dot.className='chat-state '+state;dot.setAttribute('aria-hidden','true');dot.title=activityLabels[state];
+ const badge=make('span');badge.className='chat-status';badge.append(dot,make('span',activityLabels[state]||activityLabels.unknown));
+ button.append(text,badge);button.onclick=()=>{toggleChatBrowser(false);void choose(chatValue(card));};return button;
 }
 function renderChatNavigation(){
- const shown=filteredChats(chatCatalog,chatFilter,chatSearch),signature=JSON.stringify([shown.map(c=>[c.key,c.title,c.project,c.activity_state,age(c.last_activity_ms)]),selected,chatFilter,chatSearch]);
+ const shown=filteredChats(chatCatalog,chatSearch),signature=JSON.stringify([shown.map(c=>[c.key,c.title,c.project,c.activity_state,age(c.last_activity_ms)]),selected,chatSearch]);
  const list=$('chatLists');if(list.dataset.signature===signature)return;list.dataset.signature=signature;
  const focused=list.contains(document.activeElement)?document.activeElement?.dataset.chatValue:null;let restore;
  const add=(container,card)=>{const row=chatRow(card);container.append(row);if(row.dataset.chatValue===focused)restore=row;};
- for(const [filter,id] of [['recent','filterRecent'],['working','filterWorking'],['inactive','filterInactive']]){
-  const button=$(id);button.setAttribute('aria-pressed',String(chatFilter===filter));button.className='chat-filter'+(chatFilter===filter?' active':'');
-  $(id+'Count').textContent=String(filteredChats(chatCatalog,filter,'').length);
- }
  list.replaceChildren();const projects=projectGroups(shown);
- if(projects.length){list.append(make('h2',tr('项目')));for(const group of projects){
+ list.append(make('h2',tr('项目')));if(projects.length){for(const group of projects){
   const folder=make('details');folder.className='chat-project';folder.open=openProjects.has(group.id)||Boolean(chatSearch);
   const heading=make('summary');heading.append(make('span','▱'),make('span',group.name),make('small',String(group.cards.length)));folder.append(heading);
   folder.addEventListener('toggle',()=>{if(folder.open)openProjects.add(group.id);else openProjects.delete(group.id);});
   const rows=make('div');rows.className='project-chats';for(const card of group.cards)add(rows,card);folder.append(rows);list.append(folder);
- }}
- list.append(make('h2',chatSearch?tr('搜索结果'):chatFilter==='working'?tr('正在工作'):chatFilter==='inactive'?tr('未在工作'):tr('最近聊天')));
+ }}else {const empty=make('p',tr('暂未读到相符的项目'));empty.className='chat-list-empty';list.append(empty);}
+ list.append(make('h2',chatSearch?tr('搜索结果'):tr('最近聊天')));
  for(const card of shown.filter(c=>!c.is_helper))add(list,card);
  const helpers=shown.filter(c=>c.is_helper);if(helpers.length){const section=make('details');section.className='chat-project';section.append(make('summary',tr('协助助手的工作 · ')+helpers.length));for(const card of helpers)add(section,card);list.append(section);}
- if(!shown.length){const message=make('p',chatSearch?tr('没有找到相符的聊天。'):chatFilter==='working'?tr('暂时没有确认正在工作的聊天。'):chatFilter==='inactive'?tr('暂时没有确认已结束的聊天。'):tr('还没有读到聊天记录。'));message.className='chat-list-empty';list.append(message);}
+ if(!shown.length){const message=make('p',chatSearch?tr('没有找到相符的聊天。'):tr('还没有读到聊天记录。'));message.className='chat-list-empty';list.append(message);}
  $('chatListNote').textContent=chatLimited?tr('先显示最近读到的聊天；更早的内容可在记录详情查看。'):tr('按本机读到的记录整理。缺少依据时保留“状态待确认”。');
  restore?.focus();
 }
@@ -211,7 +207,6 @@ async function automatic(){
  }finally{if(autoRun===run){autoRun=null;modelPending=false;if(!pageClosed&&current)render(current);}}
 }
 $('chat').onchange=()=>choose($('chat').value);$('reload').onclick=()=>refresh(true);
-for(const [filter,id] of [['recent','filterRecent'],['working','filterWorking'],['inactive','filterInactive']])$(id).onclick=()=>{chatFilter=filter;renderChatNavigation();};
 $('chatSearch').oninput=()=>{chatSearch=$('chatSearch').value;renderChatNavigation();};
 $('chatBrowse').onclick=()=>toggleChatBrowser(true);$('chatNavClose').onclick=()=>toggleChatBrowser(false);$('chatBackdrop').onclick=()=>toggleChatBrowser(false);
 window.addEventListener('keydown',event=>{if(event.key==='Escape')toggleChatBrowser(false);});

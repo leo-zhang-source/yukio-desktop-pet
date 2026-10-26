@@ -24,7 +24,7 @@ def build(destination,macos=False):
 
 这是独立活动工作台的便携源码目录，不会替换桌宠。本目录的脚本需要 Python 3.9 或更新版本。
 
-Mac 独立 App 0.3.6 已内置运行环境：直接打开外层“雪绪活动工作台.app”，无需安装 Python。本目录的 start-macos.command 供使用源码的人运行。Windows 当前为之后的可选任务，不作为本次交付或验收范围。
+Mac 独立 App 0.3.7 已内置运行环境：直接打开外层“雪绪活动工作台.app”，无需安装 Python。本目录的 start-macos.command 供使用源码的人运行。Windows 当前为之后的可选任务，不作为本次交付或验收范围。
 也可运行 python3 launcher.py --collect，随后打开 http://127.0.0.1:8767/ 。
 
 首页选择聊天名称，直接看“内容、解释、原因”。 点“深入解释”可展开当前工作的做法、前后联系、用途和限制；点“之前做了什么”按每次要求回顾，一次三段，每段先由千问简短总结，再按需深入查看。两处只发送有限公开摘录，共用模型次数上限。点“任务与交接小结”可看整体目标、之前进展、当前结果、后续安排和各助手回复；缺失与采用未知分别保留。详细操作和依据默认收起，需要查旧记录时再点“记录详情”。
@@ -62,7 +62,7 @@ Mac 独立 App 0.3.6 已内置运行环境：直接打开外层“雪绪活动�
         if sys.platform!='darwin':raise ValueError('macOS build needs macOS')
         app=destination/'Yukio Activity Workbench.app';contents=app/'Contents';(contents/'MacOS').mkdir(parents=True);(contents/'Resources').mkdir()
         shutil.copytree(package,contents/'Resources/workbench')
-        with (contents/'Info.plist').open('wb') as f:plistlib.dump(dict(CFBundleExecutable='YukioWorkbench',CFBundleIdentifier='local.yukio.activity-workbench.preview',CFBundleName='Yukio Activity Workbench',CFBundleShortVersionString='0.3.6',CFBundleVersion='25',LSMinimumSystemVersion='13.0',NSHighResolutionCapable=True),f)
+        with (contents/'Info.plist').open('wb') as f:plistlib.dump(dict(CFBundleExecutable='YukioWorkbench',CFBundleIdentifier='local.yukio.activity-workbench.preview',CFBundleName='Yukio Activity Workbench',CFBundleShortVersionString='0.3.7',CFBundleVersion='26',LSMinimumSystemVersion='13.0',NSHighResolutionCapable=True),f)
         subprocess.run(['swiftc',str(ROOT/'WorkbenchApp.swift'),'-o',str(contents/'MacOS/YukioWorkbench'),'-framework','AppKit'],check=True)
         subprocess.run(['codesign','--force','--sign','-',str(app)],check=True,capture_output=True)
         result.update(macos_app=str(app),macos_binary_sha256=hashlib.sha256((contents/'MacOS/YukioWorkbench').read_bytes()).hexdigest(),signature='local_ad_hoc_not_notarized')
