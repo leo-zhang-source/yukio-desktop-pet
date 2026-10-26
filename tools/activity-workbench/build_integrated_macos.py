@@ -74,6 +74,9 @@ def build(base_app, workbench_app, binary, source, output, version=None, build_n
     # Permit only local networking; external HTTPS trust checks are unchanged.
     info.setdefault('NSAppTransportSecurity', {})['NSAllowsLocalNetworking'] = True
     plist.write_bytes(plistlib.dumps(info))
+    for language, name in [('en', 'Yukio'), ('zh-Hans', '雪绪')]:
+        folder=resources/(language+'.lproj');folder.mkdir(exist_ok=True)
+        (folder/'InfoPlist.strings').write_text('"CFBundleDisplayName" = "'+name+'";\n"CFBundleName" = "'+name+'";\n')
     subprocess.run(['codesign', '--force', '--sign', '-', str(app)], check=True)
     subprocess.run(['codesign', '--verify', '--deep', '--strict', str(app)], check=True)
     assert all(digest(resources / name) == sha for name, sha in before.items())

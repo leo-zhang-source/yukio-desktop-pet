@@ -18,6 +18,7 @@ struct SettingsSnapshot {
     var automaticUpdates: Bool = true
     var hideWhenIdle: Bool = true
     var skin: PetSkin = .yukio
+    var englishStatus: String? = nil
 }
 
 enum SettingsChange {
@@ -45,6 +46,9 @@ enum SettingsChange {
 
 final class SettingsPanelController: NSWindowController, NSWindowDelegate, NSMenuDelegate {
     var onChange: ((SettingsChange) -> Void)?
+    var presentationLanguage: UILanguage?
+    private var labelLanguage: UILanguage = .english
+    private func tr(_ en: String, _ zh: String) -> String { labelLanguage == .chinese ? zh : en }
 
     private let outsideClickMonitor = SettingsOutsideClickMonitor()
 
@@ -180,8 +184,10 @@ final class SettingsPanelController: NSWindowController, NSWindowDelegate, NSMen
         updating = true
         defer { updating = false }
 
-        refreshLabels(language: snapshot.language)
-        statusLabel.stringValue = snapshot.status
+        let displayLanguage = presentationLanguage ?? snapshot.language
+        refreshLabels(language: displayLanguage)
+        statusLabel.stringValue = displayLanguage == .english
+            ? (snapshot.englishStatus ?? (snapshot.language == .english ? snapshot.status : "Activity status unavailable")) : snapshot.status
         updateSwitch.state = snapshot.automaticUpdates ? .on : .off
         followSwitch.state = snapshot.following ? .on : .off
         idleHideSwitch.state = snapshot.hideWhenIdle ? .on : .off
@@ -194,14 +200,14 @@ final class SettingsPanelController: NSWindowController, NSWindowDelegate, NSMen
         loginItemsButton.isHidden = !needsApproval
         updateSettingsLayout()
 
-        sync(skinPopup, items: PetSkin.allCases.map { ($0.name(chinese: snapshot.language == .chinese), $0.rawValue) })
+        sync(skinPopup, items: PetSkin.allCases.map { ($0.name(chinese: displayLanguage == .chinese), $0.rawValue) })
         select(skinPopup, value: snapshot.skin.rawValue)
 
-        sync(providerPopup, items: AgentProvider.allCases.map { ($0.displayName, $0.rawValue) })
+        sync(providerPopup, items: AgentProvider.allCases.map { ($0 == .auto ? tr("Auto (whoever is working)", "自动（谁在干活跟谁）") : $0.displayName, $0.rawValue) })
         select(providerPopup, value: snapshot.provider.rawValue)
 
         let chatItems = [(tr("Automatic", "自动选择"), "")]
-            + snapshot.chats.map { ($0.menuLabel, $0.id) }
+            + snapshot.chats.map { (chatLabel($0, language: displayLanguage), $0.id) }
         sync(chatPopup, items: chatItems)
         if let pinned = snapshot.chats.first(where: \.pinned) {
             select(chatPopup, value: pinned.id)
@@ -215,11 +221,28 @@ final class SettingsPanelController: NSWindowController, NSWindowDelegate, NSMen
         scaleReadout.stringValue = "\(Int((snapped * 100).rounded()))%"
 
         sync(languagePopup, items: [("English", UILanguage.english.rawValue),
-                                    ("中文", UILanguage.chinese.rawValue)])
+                                    (tr("Chinese (Simplified)", "中文"), UILanguage.chinese.rawValue)])
         select(languagePopup, value: snapshot.language.rawValue)
         demoButton.title = snapshot.demoPlaying ? tr("Stop demo", "停止演示") : tr("Play demo", "播放演示")
         hideButton.title = snapshot.hidden ? tr("Show Yukio", "显示雪绪") : tr("Hide Yukio", "收起雪绪")
         updateSettingsLayout()
+    }
+
+    private func chatLabel(_ chat: SessionSummary, language: UILanguage) -> String {
+        guard language == .english else { return chat.menuLabel }
+        let title = chat.title?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let name = title?.isEmpty == false ? chat.name : "Unnamed chat"
+        let status: String
+        if chat.signYielded { status = "Holding the sign for you (stepped aside)" }
+        else if chat.raisedSign || chat.state == .task_complete { status = "Holding the sign, click her" }
+        else if chat.live { status = L10n.stateName(chat.state, in: .english) }
+        else if chat.state == .respond { status = "Just answered" }
+        else if chat.state == .failed { status = "Stopped on an error" }
+        else {
+            let seconds = Int(max(0, chat.quietMs) / 1000)
+            status = seconds < 60 ? "just now" : seconds < 3600 ? "\(seconds / 60) min ago" : "\(seconds / 3600) h ago"
+        }
+        return "\(name) · \(status)"
     }
 
     /// 定时刷新时大多数选项没有变化，不要反复拆掉 AppKit 正在使用的 NSMenu。
@@ -429,6 +452,7 @@ final class SettingsPanelController: NSWindowController, NSWindowDelegate, NSMen
     }
 
     private func refreshLabels(language: UILanguage) {
+        labelLanguage = language
         for (index, name) in [tr("Appearance", "外观与显示"), tr("Chats & notices", "聊天与提醒"), tr("More", "更多设置")].enumerated() {
             categoryPicker.setLabel(name, forSegment: index)
         }

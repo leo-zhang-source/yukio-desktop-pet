@@ -1,6 +1,10 @@
-> **Mac 0.4.9**：聊天侧栏按“项目、最近聊天”排列，工作状态只在聊天旁标记。工作台跟随系统显示中文或英文；说明交代具体内容、前后联系和用途，不展示代码、路径或文件名。[发布说明](docs/releases/0.4.9.md) · [实现与限制](docs/ACTIVITY-LANGUAGE-AND-CONTEXT.md)。Windows 测试仍是之后可选。
+> **Mac 0.4.11**：选English后，工作台、设置、动态状态和生成说明一并使用英文；聊天名称、项目名称与引用原话保留原语言。[发布说明](docs/releases/0.4.11.md) · [本轮核验](docs/validation/mac-english-0.4.11/README.md)。
 
-> **新版已可下载：**[Mac 0.4.9完整安装包](https://github.com/leozhang8654/yukio-desktop-pet/releases/tag/v0.4.9)。桌面与公开包的468个程序文件一致。自动安装尚未通过，按你的安排留到之后修复；[查看核对结果](docs/validation/mac-workbench-0.4.9/README.md)。
+> 本轮先用完整安装包。测试Mac桌面新增“Yukio English”，原App保留；原有替换问题之后处理。桌面完整页面的最后核对被系统使用时间限制挡住，没有更改限制；Windows仍为之后可选。
+
+> **旧版记录 — Mac 0.4.9**：聊天侧栏按“项目、最近聊天”排列，工作状态只在聊天旁标记。工作台跟随系统显示中文或英文；说明交代具体内容、前后联系和用途，不展示代码、路径或文件名。[发布说明](docs/releases/0.4.9.md) · [实现与限制](docs/ACTIVITY-LANGUAGE-AND-CONTEXT.md)。Windows 测试仍是之后可选。
+
+> **新版下载：**[Mac 0.4.11完整安装包](https://github.com/leozhang8654/yukio-desktop-pet/releases/tag/v0.4.11)。桌面英文副本与完整包的470个程序文件一致。[查看核对结果与限制](docs/validation/mac-english-0.4.11/README.md)。
 
 
 > **独立 Mac 活动工作台 0.3.0（Apple 芯片预览版）**：内置运行环境，按聊天看内容、解释和原因。第8、9步按Mac范围交付；Windows以后可选，不替换原桌宠。 [下载与使用说明](https://github.com/leozhang8654/yukio-desktop-pet/releases/tag/activity-workbench-v0.3.0) · [版本与核验范围](docs/releases/activity-workbench-0.3.0.md)。
@@ -60,7 +64,7 @@
 
 | 你用的是 | 下载 | 怎么开 |
 | --- | --- | --- |
-| macOS 13 或更新 · Apple 芯片（0.4.8） | [Yukio-0.4.9-macOS-arm64.dmg](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.9/Yukio-0.4.9-macOS-arm64.dmg) · [ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.9/Yukio-0.4.9-macOS-arm64.zip) | 打开 DMG，把 `Yukio.app` 拖进「应用程序」，第一次按下面放行一次 |
+| macOS 13 或更新 · Apple 芯片（0.4.11） | [Yukio-0.4.11-macOS-arm64.dmg](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.11/Yukio-0.4.11-macOS-arm64.dmg) · [ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.11/Yukio-0.4.11-macOS-arm64.zip) | 打开 DMG，把 `Yukio.app` 拖进「应用程序」，第一次按下面放行一次 |
 | Intel Mac · 0.4.6 | [DMG](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-macOS.dmg) · [ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-macOS.zip) | 保留上一版；本轮工作台未在 Intel 验收 |
 | Windows 10 / 11（64 位） | [Yukio-0.4.6-Windows-Setup.exe](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-Windows-Setup.exe) | 双击安装，之后从新快捷方式打开；内置自动检查和一键更新 |
 

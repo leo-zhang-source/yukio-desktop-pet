@@ -5,6 +5,42 @@ import YukioCore
 @testable import YukioPlayer
 
 @Suite @MainActor struct WorkbenchPanelTests {
+    @Test func explicitAppLanguageWinsAndSwitchingRefreshesTheWholeWorkbench() throws {
+        _ = NSApplication.shared
+        #expect(WorkbenchPanelController.preferredLanguage(["zh-Hans"], appPreference: "en") == "en")
+        #expect(WorkbenchPanelController.preferredLanguage(["en-US"], appPreference: "zh") == "zh")
+        #expect(WorkbenchPanelController.preferredLanguage(["zh-Hans"]) == "zh")
+        let runtime = Runtime()
+        let panel = WorkbenchPanelController(runtime: runtime, preferredLanguages: ["zh-Hans"])
+        defer { panel.shutdown(); panel.close() }
+        panel.apply(snapshot); panel.showSettings()
+        panel.setLanguage(.english); panel.apply(snapshot)
+        #expect(panel.showingSettings && panel.uiLanguage == "en")
+        #expect(panel.window?.title == "Yukio · Activity workbench")
+        let root = try #require(panel.window?.contentView)
+        #expect(try #require(find(root, "workbenchTab", as: NSButton.self)).title == "Activity workbench")
+        #expect(try #require(find(root, "petSettingsTab", as: NSButton.self)).title == "Settings")
+        #expect(runtime.starts == 0)
+        let url=panel.localizedURL(URL(string: "http://127.0.0.1:8767/?client=codex&key=preserved&lang=zh")!)
+        #expect(url.query?.contains("key=preserved") == true && url.query?.contains("lang=en") == true)
+    }
+    @Test func embeddedEnglishSettingsDoNotFollowThePetsChinesePreference() throws {
+        _ = NSApplication.shared
+        let saved = L10n.language
+        L10n.language = .chinese
+        defer { L10n.language = saved }
+        let app = WorkbenchPanelController(runtime: Runtime(), preferredLanguages: ["en-US"])
+        defer { app.shutdown(); app.close() }
+        app.apply(snapshot)
+        let root = try #require(app.window?.contentView)
+        let settings = try #require(find(root, "petSettingsTab", as: NSButton.self))
+        settings.performClick(nil)
+        let picker = try #require(find(root, "settingsCategoryPicker", as: NSSegmentedControl.self))
+        #expect((0..<picker.segmentCount).compactMap { picker.label(forSegment: $0) } == ["Appearance", "Chats & notices", "More"])
+        #expect(try #require(find(root, "hideWhenIdleSwitch", as: NSSwitch.self)).toolTip == "Hide while idle and appear when working or showing a notice.")
+        #expect(L10n.language == .chinese)
+        #expect(L10n.stateName(.verify, in: .english) == "Running tests")
+    }
     private final class Runtime: WorkbenchStarting {
         var starts = 0, stops = 0
         var pending: ((Result<URL, Error>) -> Void)?

@@ -8,6 +8,7 @@ import time
 from contextlib import closing
 from pathlib import Path
 from source_context import clean
+from localization import current_language, english_text
 
 
 def catalog_card(history, reader, client, group, clock):
@@ -56,9 +57,9 @@ def catalog_card(history, reader, client, group, clock):
 def readable_title(value):
     text = clean(value, 100)
     if not text or '暂未取得聊天名称' in text:
-        return '未命名聊天'
+        return english_text('未命名聊天') if current_language()=='en' else '未命名聊天'
     if re.search(r'<(?:bash|tool|command)[\s>-]|(?:^|\s)(?:pkill\s|rm\s+-|python3?\s+-|curl\s)|^[/\\]|^@?[\x22\x27]?~[/\\]|^[A-Za-z]:[/\\]|^\[代码略\]', text, re.I):
-        return '本机操作记录'
+        return english_text('本机操作记录') if current_language()=='en' else '本机操作记录'
     return text
 
 

@@ -77,8 +77,8 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
   <key>CFBundleExecutable</key><string>YukioPlayer</string>
   <key>CFBundleIconFile</key><string>AppIcon</string>
   <key>CFBundlePackageType</key><string>APPL</string>
-  <key>CFBundleShortVersionString</key><string>0.4.9</string>
-  <key>CFBundleVersion</key><string>30</string>
+  <key>CFBundleShortVersionString</key><string>0.4.11</string>
+  <key>CFBundleVersion</key><string>32</string>
   <key>CFBundleLocalizations</key><array><string>zh-Hans</string><string>en</string></array>
   <key>LSMinimumSystemVersion</key><string>13.0</string>
   <key>SUFeedURL</key><string>https://github.com/leozhang8654/yukio-desktop-pet/releases/latest/download/appcast.xml</string>
@@ -113,5 +113,8 @@ mkdir -p "$APP/Contents/Frameworks"
 ditto "$SPARKLE" "$APP/Contents/Frameworks/Sparkle.framework"
 install_name_tool -add_rpath @executable_path/../Frameworks "$APP/Contents/MacOS/YukioPlayer"
 # 本机自用的临时签名；分发给他人需要正式签名与公证。
+mkdir -p "$APP/Contents/Resources/en.lproj" "$APP/Contents/Resources/zh-Hans.lproj"
+echo '"CFBundleDisplayName" = "Yukio"; "CFBundleName" = "Yukio";' > "$APP/Contents/Resources/en.lproj/InfoPlist.strings"
+echo '"CFBundleDisplayName" = "雪绪"; "CFBundleName" = "雪绪";' > "$APP/Contents/Resources/zh-Hans.lproj/InfoPlist.strings"
 codesign --force --sign - "$APP" >/dev/null
 echo "$APP"

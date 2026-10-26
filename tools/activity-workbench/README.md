@@ -1,4 +1,6 @@
-当前 Mac 内置工作台0.3.7（雪绪0.4.9）：项目在上、最近聊天在下，工作状态只作旁边标识；按系统显示中英文，说明交代背景及用途。旧版发布记录见下文。Windows继续留作之后可选。
+本轮英文补齐：工作台0.3.8 / Mac雪绪0.4.11。英文模式统一界面、状态、交接和生成说明；聊天名称、项目名称与引用原话保留原文。桌面英文副本与安装包已核对；完整页面最后复查受系统使用时间限制影响。[说明](../../docs/ACTIVITY-ENGLISH-COMPLETENESS.md)。
+
+旧版 Mac 内置工作台0.3.7（雪绪0.4.9）：项目在上、最近聊天在下，工作状态只作旁边标识；按系统显示中英文，说明交代背景及用途。旧版发布记录见下文。Windows继续留作之后可选。
 
 > Mac 0.4.8 embeds workbench 0.3.6: system language, Chinese/English explanations, readable context and no raw diagnostic prose. [Details and limits](../../docs/ACTIVITY-LANGUAGE-AND-CONTEXT.md).
 

@@ -23,7 +23,8 @@ public enum L10n {
     }
 
     /// 菜单第一行与工具提示里的状态名（不是气泡文字）。
-    public static func stateName(_ state: PetState) -> String {
+    public static func stateName(_ state: PetState, in language: UILanguage? = nil) -> String {
+        func tr(_ en: String, _ zh: String) -> String { (language ?? self.language) == .chinese ? zh : en }
         switch state {
         case .thinking: return tr("Thinking", "思考")
         case .read_file: return tr("Reading a file", "读文件")
