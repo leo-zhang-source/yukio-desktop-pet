@@ -156,7 +156,7 @@ async function loadHandoffs(){
  if(!data.items.length)box.append(make('p',tr('这段记录里还没有可确认的助手交接。')));
  const states={pending_init:tr('等待准备'),running:tr('当时正在工作'),completed:tr('当时这一轮已结束'),interrupted:tr('当时被打断'),errored:tr('当时遇到错误'),shutdown:tr('当时已关闭'),not_found:tr('当时未找到'),unknown:tr('状态不明确')};
  for(const item of data.items){const card=make('section');card.className='handoff-card';card.append(make('h3',item.title),make('p',item.sent),make('p',item.status));
- for(const target of item.targets){const p=make('p');if(target.key){const a=make('a',target.label+' ↗');a.href='/?'+new URLSearchParams({client:selection.client,key:target.key});p.append(a);}else p.append(make('span',target.label));p.append(make('span',' · '+(states[target.state]||states.unknown)));card.append(p,make('p',target.input_note||item.input_note));}
+ for(const target of item.targets){const p=make('p');if(target.key){const a=make('a',target.label+' ↗');a.href='/?'+new URLSearchParams({client:selection.client,key:target.key,lang:uiLanguage});p.append(a);}else p.append(make('span',target.label));p.append(make('span',' · '+(states[target.state]||states.unknown)));card.append(p,make('p',target.input_note||item.input_note));}
  if(!item.targets.length)card.append(make('p',item.input_note));
  for(const reply of item.returns)card.append(make('blockquote',reply.who+tr('回复：')+reply.text));
  if(!item.returns.length)card.append(make('p',tr('这次交接没有可显示的回复正文。')));

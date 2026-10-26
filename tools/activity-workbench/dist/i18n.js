@@ -17,6 +17,12 @@
   document.title=t(document.title);
   for(const node of document.querySelectorAll('[aria-label],[placeholder],[title]'))
    for(const key of ['aria-label','placeholder','title'])if(node.hasAttribute(key))node.setAttribute(key,t(node.getAttribute(key)));
+  for(const link of document.querySelectorAll('a[href]')){
+   const href=link.getAttribute('href');
+   if(!href?.startsWith('/')||href.startsWith('//'))continue;
+   const url=new URL(href,location.href);url.searchParams.set('lang',language);
+   link.setAttribute('href',url.pathname+url.search+url.hash);
+  }
  };
  globalThis.YukioI18n={language,t,apply};
  apply();
