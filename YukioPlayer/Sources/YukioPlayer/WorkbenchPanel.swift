@@ -214,7 +214,7 @@ final class WorkbenchPanelController: NSWindowController, NSWindowDelegate, WKNa
         settingsButton.toolTip = localized("雪绪的大小、显示、聊天、换装与其他设置", "Yukio’s size, appearance, chats, outfits and other settings")
         if wasShowingSettings { showSettings() }
         else if window?.isVisible == true { showWork() }
-        if window?.isVisible == true {
+        if let window, window.isVisible {
             outsideClickMonitor.start(window: window, isInteracting: { [weak self] in self?.settings.isTrackingPopup ?? false },
                                       dismiss: { [weak self] in self?.close() })
         }
