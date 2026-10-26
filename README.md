@@ -1,6 +1,6 @@
 > **Mac 0.4.9**: Projects above recent chats, with work status shown only beside each chat. The workbench follows your Mac’s language and explains the current action, earlier progress and purpose in everyday language. [Release notes](docs/releases/0.4.9.md) · [Design and limits](docs/ACTIVITY-LANGUAGE-AND-CONTEXT.md). Windows testing remains optional.
 
-> Desktop and public 0.4.9 packages match (468 files). The unlocked-desktop retest still waits during App replacement and is **not accepted**; see [verification and remaining issue](docs/validation/mac-workbench-0.4.9/README.md).
+> **Download available:** use the [Mac 0.4.9 DMG or ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/tag/v0.4.9). The desktop and public packages match all 468 App files. Automatic installation remains unaccepted and is deferred at the user’s request; [verification and remaining issue](docs/validation/mac-workbench-0.4.9/README.md).
 
 
 > **独立 Mac 活动工作台 0.3.0（Apple 芯片预览版）**：内置运行环境，按聊天看内容、解释和原因。第8、9步按Mac范围交付；Windows以后可选，不替换原桌宠。 [下载与使用说明](https://github.com/leozhang8654/yukio-desktop-pet/releases/tag/activity-workbench-v0.3.0) · [版本与核验范围](docs/releases/activity-workbench-0.3.0.md)。
@@ -42,7 +42,7 @@ She follows three families of agent, and you pick which one in her menu under **
 - Yukio immediately lowers the ❓ sign after GPT confirms an answer sent from the card. A failed send leaves the sign and answer available for retry.
 - Answering directly in the GPT chat also lowers the sign as soon as Yukio reads the accepted answer from the session log.
 
-- In-app updates show release notes and let you install and restart after confirming. macOS uses Sparkle; Windows uses a Velopack installer.
+- Update checks show release notes. On this Mac, automatic replacement remains unaccepted; use the complete 0.4.9 download for now. Windows retains its earlier Velopack installer.
 - GPT / Codex question cards now answer through the desktop app in the background on macOS and Windows. No focus switching, clipboard changes or simulated keystrokes.
 - Support the current canonical conversation history so live questions are no longer mistaken for expired ones.
 - Failed sends preserve your answer and allow retry; successful receipts dismiss only the matching question.

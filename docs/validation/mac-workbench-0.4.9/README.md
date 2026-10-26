@@ -22,3 +22,9 @@
 - Windows保持之后可选，本轮没有进行Windows测试。
 
 本次复查的公开结果见[updater-unlocked-retest.json](updater-unlocked-retest.json)。原验证记录保留，未改写成成功。
+
+## GitHub交付与之后安排
+
+按用户最新安排，自动安装修复留到之后。本轮先提供已经完成的工作台更新：主分支、README、0.4.9完整Mac安装包和桌面版本一致。0.4.10自动安装候选保持草稿，不作为已经修好的版本发布。Windows测试仍为之后可选。
+
+重新从公开地址下载ZIP、DMG、更新列表和文件清单，并分别核对公开摘要、包内全部程序文件、桌面版本以及更新签名。结果见[github-delivery-check.json](github-delivery-check.json)。这次核对没有再次运行自动安装。
