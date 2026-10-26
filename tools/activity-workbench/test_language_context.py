@@ -11,6 +11,75 @@ import test_glance
 
 
 class LanguageAndContextTests(unittest.TestCase):
+    def test_dynamic_english_ui_is_complete_without_translating_source_names_or_quotes(self):
+        from localization import english_text
+        with language_context('en'):
+            shown=localize(dict(client='codex',key='private_key',title='最近的工作',title_source='客户端聊天名称',
+                status='这一轮已结束',quote='这次操作报告失败',
+                action='请求查看 /tmp/main.py',
+                note='请求查看 the program；尚未见到可配对的回执。不表示仍在运行，也不证明执行失败；结果可能尚未出现或未被观察到。'))
+        self.assertEqual(shown['title'],'最近的工作')
+        self.assertEqual(shown['quote'],'这次操作报告失败')
+        self.assertEqual(shown['key'],'private_key')
+        for key in ['title_source','status','action','note']:
+            self.assertNotRegex(shown[key],r'[\u3400-\u9fff]',key)
+        self.assertEqual(english_text('This is an English update.'),'This is an English update.')
+        self.assertEqual(english_text('原文有尚未翻译的内容。'),'原文有尚未翻译的内容。')
+        with language_context('en'):
+            self.assertEqual(localize(dict(kind='assistant',text='这次操作报告失败'))['text'],'这次操作报告失败')
+            inferred=localize(dict(text='前面进展：尚未翻译的项目背景。',basis='inference',evidence=[dict(quote='项目原文')]))
+            self.assertNotRegex(inferred['text'],r'[\u3400-\u9fff]')
+            self.assertEqual(inferred['evidence'][0]['quote'],'项目原文')
+
+    def test_generated_fallback_names_are_english_but_actual_chat_names_are_preserved(self):
+        from chat_catalog import readable_title
+        with language_context('en'):
+            self.assertEqual(readable_title(''),'Unnamed chat')
+            self.assertEqual(readable_title('python3 -c print(1)'),'Local activity record')
+            self.assertEqual(readable_title('调查雪绪的活动记录'),'调查雪绪的活动记录')
+
+    def test_home_and_task_recap_use_english_for_generated_notes(self):
+        fx=test_glance.GlanceTests();fx.setUp()
+        try:
+            for row in fx.rows:
+                message=row.get('payload',{})
+                for item in message.get('content',[]):
+                    if 'text' in item:item['text']='Please simplify the home page.' if message.get('role')=='user' else 'I will inspect the home page. This helps preserve the current controls.'
+            fx.write();fx.ingest();fx.key=fx.history.groups('codex')['groups'][0]['key']
+            (fx.root/'session_index.jsonl').write_text(json.dumps(dict(id='chat-one',thread_name='Improve the workbench'))+'\n')
+            def check(value):
+                if isinstance(value,str):self.assertNotRegex(value,r'[\u3400-\u9fff]')
+                elif isinstance(value,list):
+                    for item in value:check(item)
+                elif isinstance(value,dict):
+                    for item in value.values():check(item)
+            with language_context('en'):
+                check(localize(fx.glance.cards()))
+                check(localize(fx.detail()))
+                check(localize(fx.glance.summary('codex',fx.key)))
+        finally:fx.tearDown()
+
+    def test_all_operation_outcomes_and_handoff_limits_are_english(self):
+        from context_view import STATUS
+        from localization import english_text
+        for status,(label,note) in STATUS.items():
+            with self.subTest(status=status):
+                self.assertNotRegex(english_text(label),r'[\u3400-\u9fff]')
+                self.assertNotRegex(english_text('请求查看 the document；'+label+'。'+note),r'[\u3400-\u9fff]')
+        for message in ['接收者实际拿到的完整背景尚不可确认。','尚未观察到回复如何被采用；收到回复不代表已经采用。','这次交接没有可确认的回复正文。']:
+            self.assertNotRegex(english_text(message),r'[\u3400-\u9fff]')
+
+    def test_english_generated_prose_rejects_mixed_language_but_chinese_is_unchanged(self):
+        payload,items=fixture()
+        payload['scope']['language']='en'
+        for item,text in zip(items,['The assistant is checking the home page.','This check connects the page change to the user’s request.','It helps the user understand the current work.']):item['text']=text
+        complete_response(encode(dict(explanations=items)),payload)
+        items[1]['text']='The assistant is checking 工作台.'
+        with self.assertRaises(ExplanationError):complete_response(encode(dict(explanations=items)),payload)
+        payload['scope']['language']='zh'
+        self.assertIn('工作台',complete_response(encode(dict(explanations=items)),payload)[1]['text'])
+        self.assertIn('entirely in English',output_system({'scope':{'language':'en','reading':'summary'}}))
+
     def test_language_is_request_local_and_chinese_variants_share_the_translation(self):
         self.assertEqual(normalize_language('zh-Hant-TW,en;q=0.8'),'zh')
         self.assertEqual(normalize_language('en-GB,zh;q=0.7'),'en')

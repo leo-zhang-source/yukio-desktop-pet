@@ -1973,6 +1973,10 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
             ? router.sessionSummaries(now: nowMs(), quietWithinMs: Self.chatListWindowMs, limit: Self.chatListLimit)
             : []
         let activity = swing != nil ? L10n.heldName : L10n.stateName(shownState)
+        let englishActivity = swing != nil ? "Picked up" : L10n.stateName(shownState, in: .english)
+        let feedNames = feeds.statuses.filter(\.found).map(\.label).joined(separator: " + ")
+        let englishStatus = simulation != nil ? "Demo · \(englishActivity)" : !following ? "Following paused"
+            : feedNames.isEmpty ? "No local session logs found" : "Following \(feedNames) · \(englishActivity)"
         let status: String
         if simulation != nil {
             status = tr("Demo · \(activity)", "模拟演示 · \(activity)")
@@ -1998,7 +2002,8 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
                                 launchAtLogin: launchAtLogin.status,
                                 automaticUpdates: softwareUpdates.automaticallyChecks,
                                 hideWhenIdle: hideWhenIdle,
-                                skin: skin)
+                                skin: skin,
+                                englishStatus: englishStatus)
     }
 
     private func showSettings() {

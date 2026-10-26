@@ -17,8 +17,8 @@ import sys
 import zipfile
 from build_bundle import ROOT, build
 
-VERSION = '0.3.7'
-BUILD = '26'
+VERSION = '0.3.8'
+BUILD = '27'
 
 
 def build_macos(destination):
@@ -55,7 +55,7 @@ def build_macos(destination):
     with (contents / 'Info.plist').open('wb') as f:
         plistlib.dump(dict(CFBundleExecutable='YukioWorkbench',
             CFBundleIdentifier='local.yukio.activity-workbench.preview',
-            CFBundleName='雪绪活动工作台', CFBundleShortVersionString=VERSION,
+            CFBundleName='Yukio Activity Workbench', CFBundleShortVersionString=VERSION,
             CFBundleVersion=BUILD, LSMinimumSystemVersion='13.0',
             NSHighResolutionCapable=True), f)
     subprocess.run(['swiftc', str(ROOT / 'WorkbenchApp.swift'), '-o',

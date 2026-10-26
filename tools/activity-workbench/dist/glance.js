@@ -87,7 +87,14 @@ function render(data){current=data;$('chatName').textContent=data.title;$('chatL
  // Navigation reads the latest lifecycle marker independently. The bounded
  // explanation excerpt may omit that marker in a long turn; it must not
  // replace the catalogue's state with a less complete observation.
- renderChatNavigation();if($('handoffBox').open)loadHandoffs();if($('taskSummaryBox').open)loadTaskSummary();$('work').hidden=false;$('empty').hidden=true;$('title').textContent=data.title;$('status').textContent=data.status;$('status').className='status '+data.tone;$('goal').textContent=data.goal;$('goalShort').textContent=data.project_context?.goal||data.goal_short||data.goal;$('goalLabel').textContent=data.project_context?tr('整个任务'):tr('这次的要求');$('projectFocus').hidden=!data.project_context;$('projectFocus').textContent=data.project_context?.now||'';$('projectBox').hidden=!data.project_context;$('projectText').textContent=data.project_context?[tr('前面：')+data.project_context.before,tr('现在：')+data.project_context.now,tr('接下来：')+data.project_context.next,tr('来源：')+data.project_context.source_note].join('\n\n'):'';$('attention').hidden=data.tone!=='attention';$('attention').textContent=data.needs_you;
+ renderChatNavigation();if($('handoffBox').open)loadHandoffs();if($('taskSummaryBox').open)loadTaskSummary();$('work').hidden=false;$('empty').hidden=true;$('title').textContent=data.title;$('status').textContent=data.status;$('status').className='status '+data.tone;$('goal').textContent=data.goal;const brief=data.project_context;
+ const originalBrief=uiLanguage==='en'&&brief&&/[\u3400-\u9fff]/.test(brief.goal+brief.now);
+ $('goalShort').textContent=originalBrief?(data.goal_short||data.goal):(brief?.goal||data.goal_short||data.goal);
+ $('goalLabel').textContent=originalBrief?tr('这次的要求（原文）'):brief?tr('整个任务'):tr('这次的要求');
+ $('projectFocus').hidden=!brief||originalBrief;$('projectFocus').textContent=originalBrief?'':brief?.now||'';
+ $('projectBox').hidden=!brief;
+ $('projectText').textContent=brief?[tr('前面：')+brief.before,tr('现在：')+brief.now,tr('接下来：')+brief.next,tr('来源：')+brief.source_note].join('\n\n'):'';
+ $('attention').hidden=data.tone!=='attention';$('attention').textContent=data.needs_you;
  $('latestStep').hidden=!data.last_step;if(data.last_step){$('stepAction').textContent=data.last_step.action;$('stepResult').textContent=data.last_step.result;}
  $('historyLink').href='/history?'+new URLSearchParams({client:data.client,key:data.key,lang:uiLanguage});
  $('scope').textContent=(data.source_unavailable?tr('这段原文暂时读不到，等待来源恢复。'):data.partial?tr('这次只看到一部分，缺失内容没有补猜。'):tr('依据最近可读取的一段聊天。'))+' '+(uiLanguage==='en'?'Last activity: '+age(data.last_activity_ms)+'.':age(data.last_activity_ms)+tr('有活动。'));

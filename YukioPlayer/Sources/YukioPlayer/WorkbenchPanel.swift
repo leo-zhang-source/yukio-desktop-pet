@@ -129,6 +129,7 @@ final class WorkbenchPanelController: NSWindowController, NSWindowDelegate, WKNa
         panel.minSize = NSSize(width: 760, height: 520)
         panel.appearance = NSAppearance(named: .aqua)
         super.init(window: panel)
+        settings.presentationLanguage = UILanguage(code: uiLanguage)
         workButton.title = localized("活动工作台", "Activity workbench")
         settingsButton.title = localized("设置", "Settings")
         retryButton.title = localized("重新连接", "Reconnect")
