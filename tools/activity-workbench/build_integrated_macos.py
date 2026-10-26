@@ -61,6 +61,7 @@ def build(base_app, workbench_app, binary, source, output, version=None, build_n
             raise ValueError('Private profile data must not enter the package')
     plist = app / 'Contents/Info.plist'
     info = plistlib.loads(plist.read_bytes())
+    info['CFBundleLocalizations'] = ['zh-Hans', 'en']
     workbench_info = plistlib.loads((workbench_app / 'Contents/Info.plist').read_bytes())
     workbench_version = workbench_info['CFBundleShortVersionString']
     info.update(CFBundleVersion=build_number or '27.3', YukioLocalFeature='chat-navigation-and-settings-layout',
