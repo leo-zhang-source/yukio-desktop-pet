@@ -79,8 +79,9 @@ function partProof(part,kind,refs){
  if(!refs.length)box.append(make('p',tr('这部分暂时没有足够依据，先保留未知。')));
 }
 function showStory(data){for(const part of ['content','explanation','reason']){
- $(part).textContent=uiLanguage==='en'&&/[\u4e00-\u9fff]/.test(data[part])?({content:'The assistant has shared an update in this chat. An English explanation is being prepared.',explanation:'Supporting records are available. The connection with earlier work has not yet been explained in English.',reason:'The purpose of this step needs to be explained using the request and previous progress; a tool reply alone cannot establish it.'})[part]:data[part];const ref=data.evidence[part==='explanation'?'fragment':part];
- partProof(part,data[part+'_basis'],data.part_evidence?.[part]||(ref?[{quote:ref.text}]:[]));
+ const untranslated=uiLanguage==='en'&&/[\u4e00-\u9fff]/.test(data[part]);
+ $(part).textContent=untranslated?({content:'An English explanation of the latest activity is not available yet. Supporting notes show what was actually read.',explanation:'The source notes are in another language. Their connection with earlier work has not yet been explained in English.',reason:'The purpose has not yet been explained in English using this chat’s request and earlier progress.'})[part]:data[part];const ref=data.evidence[part==='explanation'?'fragment':part];
+ partProof(part,untranslated?'unknown':data[part+'_basis'],data.part_evidence?.[part]||(ref?[{quote:ref.text}]:[]));
 }}
 function showAnswer(result,refs,snapshot,revision){
  if(result.mode!=='model'){attemptMessage=result.message||tr('千问暂时没能解释，先保留已有说明。');render(current);return;}
