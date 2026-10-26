@@ -22,3 +22,7 @@ The page, loading/error messages, navigation and model explanations use the same
 Only the selected chat's bounded public excerpts are used. This change adds no destination, paid service, whole-chat export, hidden-reasoning access or background model scheduler. The hourly call limit and minimum refresh interval remain; longer explanations have a bounded output budget. Close/switch cancellation and the page lease remain in place.
 
 Neither a word budget nor reference validation proves that an explanation is correct or easy to understand. Missing context must stay unknown; a filename cannot establish a file's purpose. Chinese and English example-isolation checks use an explicitly simulated workbench task containing an unrelated example. A bounded excerpt from the current real Yukio chat is checked separately. This checks those cases, not every possible summary. Windows remains optional and untested for this release.
+
+## Native update boundary in 0.4.10
+
+The standard Sparkle UI replaces the custom immediate-install callback. A signed loopback-only test reached the final install prompt and terminated the test host, but the helper remained inside `renamex_np` while replacing the test App directory. This also happened with the standard driver, so the custom callback is not established as the root cause. No trust checks or macOS protections were disabled. Automatic replacement remains unverified; the desktop is retained at the intact, verified 0.4.9. This 0.4.10 candidate is not published; a clean restart/retest is still needed.
