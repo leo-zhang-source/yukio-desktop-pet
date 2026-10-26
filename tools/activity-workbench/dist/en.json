@@ -474,5 +474,7 @@
   "已保留这条活动的来源和对应关系，原始记录不在这里直接展示。": "The source and matching records are kept locally. Raw program details are not shown here.",
   "一段已保存的聊天": "A saved chat",
   "来源和对应关系已保存在本机": "Source and matching notes are kept on this computer",
-  "模拟时间": "Simulated time"
+  "模拟时间": "Simulated time",
+  "暂时无法生成说明。": "An explanation could not be prepared.",
+  "不发送聊天正文、代码、命令、文件路径、工具原名、聊天或助手编号、时间与内容指纹。": "This sends only the displayed fact labels and limits, not chat messages, code, commands, file locations, original tool names, chat or assistant identifiers, times or content fingerprints."
 }

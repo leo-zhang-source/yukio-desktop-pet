@@ -4,7 +4,8 @@ from pathlib import Path
 import unittest
 from localization import current_language,language_context,localize,normalize_language
 from plain_language import plain_words,readable_fragment
-from explanation import complete_response,encode,ExplanationError,output_system,schema_for,RESULT_SENTENCES_EN
+from explanation import complete_response,encode,ExplanationError,ExplanationService,output_system,schema_for,RESULT_SENTENCES_EN
+from test_explanation import config
 from test_plain_language import fixture
 import test_glance
 
@@ -71,4 +72,18 @@ class LanguageAndContextTests(unittest.TestCase):
         words=json.loads((Path(__file__).parent/'dist/en.json').read_text())
         for phrase in ['内容','解释','原因','深入解释','之前做了什么','搜索聊天或项目','任务背景','任务与交接小结']:
             self.assertTrue(words[phrase]);self.assertNotEqual(words[phrase],phrase)
+
+    def test_record_explanations_keep_their_own_contract_and_language_cache(self):
+        service=ExplanationService(config())
+        tokens=[]
+        for language in ['en','zh']:
+            payload={'scope':{},'facts':[{'evidence_id':'E1','record_marker':'工具提出请求','boundary':'结果尚不明确'}]}
+            with language_context(language):preview=service.preview_prepared({'client':'codex','key':'synthetic'},payload,[])
+            self.assertEqual(preview['payload']['scope']['language'],language)
+            if language=='en':
+                self.assertIn('one item per fact',preview['instructions'])
+                result=complete_response(encode({'explanations':[{'evidence_id':'E1','text':'The assistant requested an operation. Its result is not known yet.'}]}),preview['payload'])
+                self.assertEqual(result[0]['evidence_id'],'E1')
+            tokens.append(preview['token'])
+        self.assertNotEqual(*tokens)
 
