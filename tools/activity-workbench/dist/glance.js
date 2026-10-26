@@ -27,7 +27,7 @@ function chatRow(card){
  const text=make('span');text.className='chat-row-text';const title=make('span',card.title);title.className='chat-row-title';
  const meta=make('span',names[card.client]+(card.is_helper?tr(' · 协助助手'):'')+' · '+age(card.last_activity_ms));meta.className='chat-row-meta';text.append(title,meta);
  const state=card.activity_state||'unknown',dot=make('span');dot.className='chat-state '+state;dot.setAttribute('aria-hidden','true');dot.title=activityLabels[state];
- const badge=make('span');badge.className='chat-status';badge.append(dot,make('span',activityLabels[state]||activityLabels.unknown));
+ const badge=make('span');badge.className='chat-status '+state;badge.title=activityLabels[state]||activityLabels.unknown;const label=make('span',badge.title);label.className='chat-status-label';badge.append(dot,label);
  button.append(text,badge);button.onclick=()=>{toggleChatBrowser(false);void choose(chatValue(card));};return button;
 }
 function renderChatNavigation(){
