@@ -1,3 +1,5 @@
+最新Mac版本0.4.11补齐英文。桌面Yukio English另存，原App保留；完整页面最后复查被系统使用时间限制阻挡，未更改限制。自动安装仍之后处理，Windows仍可选。
+
 # Yukio 开发进度网站
 
 [打开网站](https://leozhang8654.github.io/yukio-desktop-pet/)
