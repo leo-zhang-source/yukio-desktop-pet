@@ -91,6 +91,9 @@ def add_object_names(facts,references,brief):
     if not text:return None
     alias='E'+str(len(facts)+1)
     quote=text+'；来源：'+brief.get('source_note','本机项目名称对照，非活动记录')
+    if current_language()=='en':
+        translated=[(n,english_text(n)) for n in re.findall(r'“([^”]{1,35})”',text) if english_text(n)!=n]
+        if translated:quote+='; English UI labels (names only, not evidence of actions): '+', '.join('“'+a+'” = “'+b+'”' for a,b in translated)
     facts.append(dict(evidence_id=alias,record_marker='已核对的对象名称，仅作名称对照、不能证明动作',excerpt=quote,evidence_class='project_context'))
     references.append(dict(evidence_id=alias,title='本机名称对照（不是活动结果）',quote=quote,record_id='本机项目说明'))
     return alias
@@ -108,7 +111,8 @@ def validate_named_subject(text,payload):
     names=re.findall(r'“([^”]{1,35})”',fact.get('excerpt',''))
     if payload.get('scope',{}).get('language')=='en':names+= [english_text(n) for n in names]
     if re.search(r'(?:修正|优化|改善|区分|明确|写清|调整).{0,18}(?:命名|名称|指代)',text):return
-    if names and not any(name in text for name in names) and not re.search(r'名称.*(?:未读到|不清楚|不明|未知)|具体对象不清楚',text):
+    english=payload.get('scope',{}).get('language')=='en'
+    if names and not any(name.casefold() in text.casefold() if english else name in text for name in names) and not re.search(r'名称.*(?:未读到|不清楚|不明|未知)|具体对象不清楚|(?:name|subject).*(?:unknown|unclear|not (?:read|available))',text,re.I):
         raise ExplanationError('unnamed_subject')
 
 

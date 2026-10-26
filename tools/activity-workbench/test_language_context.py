@@ -4,7 +4,7 @@ from pathlib import Path
 import unittest
 from localization import current_language,language_context,localize,normalize_language
 from plain_language import plain_words,readable_fragment
-from explanation import complete_response,encode,ExplanationError,ExplanationService,output_system,schema_for,RESULT_SENTENCES_EN
+from explanation import complete_response,encode,ExplanationError,ExplanationService,output_system,schema_for,RESULT_SENTENCES_EN,add_object_names,validate_named_subject
 from test_explanation import config
 from test_plain_language import fixture
 import test_glance
@@ -86,4 +86,14 @@ class LanguageAndContextTests(unittest.TestCase):
                 self.assertEqual(result[0]['evidence_id'],'E1')
             tokens.append(preview['token'])
         self.assertNotEqual(*tokens)
+
+    def test_english_button_names_are_supplied_without_turning_the_glossary_into_progress(self):
+        facts=[];refs=[]
+        with language_context('en'):
+            alias=add_object_names(facts,refs,{'object_names':'“深入解释”和“之前做了什么”是两个不同入口。','source_note':'仅供称呼'})
+        self.assertIn('More detail',facts[0]['excerpt']);self.assertIn('Earlier work',facts[0]['excerpt'])
+        self.assertEqual(facts[0]['evidence_class'],'project_context')
+        payload={'scope':{'language':'en','naming_context_evidence_id':alias},'facts':facts}
+        validate_named_subject('The More Detail button opens a fuller explanation.',payload)
+        with self.assertRaises(ExplanationError):validate_named_subject('The two buttons were changed.',payload)
 
