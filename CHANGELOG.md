@@ -1,3 +1,9 @@
+## 0.4.11 — Complete English workbench presentation
+
+- Apply the chosen app language to the workbench, native settings and dynamic notes.
+- Translate remaining operation, handoff and error text; require English generated prose while retaining original names and quotations.
+- Mac delivery retains the old App and provides a separate verified English copy. Final native page review remains blocked by system Screen Time; automatic installation and Windows testing are deferred.
+
 ## 0.4.9
 
 - Arrange chat selection as Projects then Recent chats; work status remains a per-chat label.

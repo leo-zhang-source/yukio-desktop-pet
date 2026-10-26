@@ -1,6 +1,10 @@
-> **Mac 0.4.9**: Projects above recent chats, with work status shown only beside each chat. The workbench follows your Mac’s language and explains the current action, earlier progress and purpose in everyday language. [Release notes](docs/releases/0.4.9.md) · [Design and limits](docs/ACTIVITY-LANGUAGE-AND-CONTEXT.md). Windows testing remains optional.
+> **Mac 0.4.11**: English now covers the workbench, settings, dynamic status/results and generated explanations. Selecting English in Yukio also updates the workbench; actual chat/project names and original quotations retain their language. [Release notes](docs/releases/0.4.11.md) · [Verification](docs/validation/mac-english-0.4.11/README.md).
 
-> **Download available:** use the [Mac 0.4.9 DMG or ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/tag/v0.4.9). The desktop and public packages match all 468 App files. Automatic installation remains unaccepted and is deferred at the user’s request; [verification and remaining issue](docs/validation/mac-workbench-0.4.9/README.md).
+> Use the complete Mac download. Automatic installation after confirmation remains unaccepted and deferred; Windows testing remains optional. The delivery Mac keeps its old App and has a separate **Yukio English** copy; a system Screen Time limit currently blocks its final full-page review.
+
+> **Earlier release — Mac 0.4.9**: Projects above recent chats, with work status shown only beside each chat. The workbench follows your Mac’s language and explains the current action, earlier progress and purpose in everyday language. [Release notes](docs/releases/0.4.9.md) · [Design and limits](docs/ACTIVITY-LANGUAGE-AND-CONTEXT.md). Windows testing remains optional.
+
+> **Current download:** [Mac 0.4.11 DMG or ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/tag/v0.4.11). All 470 App files match the desktop English copy. [Verification and remaining limits](docs/validation/mac-english-0.4.11/README.md).
 
 
 > **独立 Mac 活动工作台 0.3.0（Apple 芯片预览版）**：内置运行环境，按聊天看内容、解释和原因。第8、9步按Mac范围交付；Windows以后可选，不替换原桌宠。 [下载与使用说明](https://github.com/leozhang8654/yukio-desktop-pet/releases/tag/activity-workbench-v0.3.0) · [版本与核验范围](docs/releases/activity-workbench-0.3.0.md)。
@@ -64,8 +68,8 @@ Grab the file for your system from the [latest release](https://github.com/leozh
 
 | You use | Download | Then |
 | --- | --- | --- |
-| macOS 13+ · Apple silicon (0.4.9) | [Yukio-0.4.9-macOS-arm64.dmg](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.9/Yukio-0.4.9-macOS-arm64.dmg) · [ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.9/Yukio-0.4.9-macOS-arm64.zip) | Open the DMG and drag `Yukio.app` into Applications; allow it once (below) |
-| Intel Mac · 0.4.6 | [DMG](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-macOS.dmg) · [ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-macOS.zip) | 保留上一版；本轮工作台未在 Intel 验收 |
+| macOS 13+ · Apple silicon (0.4.11) | [Yukio-0.4.11-macOS-arm64.dmg](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.11/Yukio-0.4.11-macOS-arm64.dmg) · [ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.11/Yukio-0.4.11-macOS-arm64.zip) | Open the DMG and drag `Yukio.app` into Applications; allow it once (below) |
+| Intel Mac · 0.4.6 | [DMG](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-macOS.dmg) · [ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-macOS.zip) | Previous release retained; this workbench has not been tested on Intel |
 | Windows 10 / 11, 64-bit | [Yukio-0.4.6-Windows-Setup.exe](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-Windows-Setup.exe) | Run Setup once, then use the new shortcut. Future updates install inside Yukio |
 
 <details>

@@ -1,3 +1,5 @@
+> Updated in 0.4.11: an explicit language chosen in Yukio also controls the workbench. With no saved choice, the workbench follows the system. Dynamic UI text and generated explanations have English coverage; actual names and original quotations retain their language. [Current details](ACTIVITY-ENGLISH-COMPLETENESS.md). The 0.4.9 behavior below is retained as history.
+
 # Workbench language and understandable context
 
 Mac 0.4.9 embeds workbench 0.3.7. The native workbench uses the first macOS preferred language: Chinese variants share the Chinese UI; English and unsupported languages use English. The page receives that choice, and standalone browser use follows the browser language. Reopening the App after changing the system language applies the new preference. The pet's existing manual language preference is not overwritten.
