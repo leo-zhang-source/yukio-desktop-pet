@@ -1,4 +1,4 @@
-> **Mac 0.4.9**：聊天侧栏按“项目、最近聊天”排列，工作状态只在聊天旁标记。工作台跟随系统显示中文或英文；说明交代具体内容、前后联系和用途，不展示代码、路径或文件名。[发布说明](docs/releases/0.4.9.md) · [实现与限制](docs/ACTIVITY-LANGUAGE-AND-CONTEXT.md)。Windows 测试仍是之后可选。
+> **Mac 0.4.10**：聊天侧栏按“项目、最近聊天”排列，工作状态只在聊天旁标记。工作台跟随系统显示中文或英文；说明交代具体内容、前后联系和用途，不展示代码、路径或文件名。[发布说明](docs/releases/0.4.10.md) · [实现与限制](docs/ACTIVITY-LANGUAGE-AND-CONTEXT.md)。Windows 测试仍是之后可选。
 
 
 > **独立 Mac 活动工作台 0.3.0（Apple 芯片预览版）**：内置运行环境，按聊天看内容、解释和原因。第8、9步按Mac范围交付；Windows以后可选，不替换原桌宠。 [下载与使用说明](https://github.com/leozhang8654/yukio-desktop-pet/releases/tag/activity-workbench-v0.3.0) · [版本与核验范围](docs/releases/activity-workbench-0.3.0.md)。
@@ -58,7 +58,7 @@
 
 | 你用的是 | 下载 | 怎么开 |
 | --- | --- | --- |
-| macOS 13 或更新 · Apple 芯片（0.4.8） | [Yukio-0.4.9-macOS-arm64.dmg](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.9/Yukio-0.4.9-macOS-arm64.dmg) · [ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.9/Yukio-0.4.9-macOS-arm64.zip) | 打开 DMG，把 `Yukio.app` 拖进「应用程序」，第一次按下面放行一次 |
+| macOS 13 或更新 · Apple 芯片（0.4.8） | [Yukio-0.4.10-macOS-arm64.dmg](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.10/Yukio-0.4.10-macOS-arm64.dmg) · [ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.10/Yukio-0.4.10-macOS-arm64.zip) | 打开 DMG，把 `Yukio.app` 拖进「应用程序」，第一次按下面放行一次 |
 | Intel Mac · 0.4.6 | [DMG](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-macOS.dmg) · [ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-macOS.zip) | 保留上一版；本轮工作台未在 Intel 验收 |
 | Windows 10 / 11（64 位） | [Yukio-0.4.6-Windows-Setup.exe](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-Windows-Setup.exe) | 双击安装，之后从新快捷方式打开；内置自动检查和一键更新 |
 

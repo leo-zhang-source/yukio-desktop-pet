@@ -1,3 +1,8 @@
+## 0.4.10
+
+- Restore Sparkle’s standard install/relaunch flow after real review found an installation-order error and a repeated pending-install offer.
+- Retain project/recent chat selection, status markers and system-language explanations from 0.4.9.
+
 ## 0.4.9
 
 - Arrange chat selection as Projects then Recent chats; work status remains a per-chat label.

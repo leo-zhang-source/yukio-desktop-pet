@@ -1,6 +1,6 @@
 # Workbench language and understandable context
 
-Mac 0.4.9 embeds workbench 0.3.7. The native workbench uses the first macOS preferred language: Chinese variants share the Chinese UI; English and unsupported languages use English. The page receives that choice, and standalone browser use follows the browser language. Reopening the App after changing the system language applies the new preference. The pet's existing manual language preference is not overwritten.
+Mac 0.4.10 embeds workbench 0.3.7. The native workbench uses the first macOS preferred language: Chinese variants share the Chinese UI; English and unsupported languages use English. The page receives that choice, and standalone browser use follows the browser language. Reopening the App after changing the system language applies the new preference. The pet's existing manual language preference is not overwritten.
 
 The page, loading/error messages, navigation and model explanations use the same language. Chat titles, user requests and quoted source notes remain in their original language; the model writes the explanation in the selected UI language. A temporary local note never pretends to translate an arbitrary source message without a model.
 

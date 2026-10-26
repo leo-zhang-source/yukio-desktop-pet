@@ -2,35 +2,11 @@ import AppKit
 import Sparkle
 import YukioCore
 
-/// Keep Sparkle's release-notes/error/progress UI, but honour the user's Install
-/// click through download and restart instead of asking for a second install click.
-final class YukioUpdateDriver: SPUStandardUserDriver {
-    private var installWasRequested = false
-
-    override func showUpdateFound(with appcastItem: SUAppcastItem, state: SPUUserUpdateState,
-                                  reply: @escaping (SPUUserUpdateChoice) -> Void) {
-        installWasRequested = false
-        super.showUpdateFound(with: appcastItem, state: state) { [weak self] choice in
-            self?.installWasRequested = choice == .install
-            reply(choice)
-        }
-    }
-
-    override func showReady(toInstallAndRelaunch reply: @escaping (SPUUserUpdateChoice) -> Void) {
-        guard installWasRequested else {
-            super.showReady(toInstallAndRelaunch: reply)
-            return
-        }
-        installWasRequested = false
-        reply(.install)
-    }
-}
-
 /// Sparkle verifies signed archives and performs the quit/replace/relaunch handoff.
 /// No updater runs in command-line checks, tests, or unbundled development builds.
 final class SoftwareUpdates: NSObject {
     private var updater: SPUUpdater?
-    private var driver: YukioUpdateDriver?
+    private var driver: SPUStandardUserDriver?
 
     var automaticallyChecks: Bool {
         get { updater?.automaticallyChecksForUpdates ?? true }
@@ -40,7 +16,7 @@ final class SoftwareUpdates: NSObject {
     func start() {
         guard Bundle.main.bundleURL.pathExtension == "app",
               Bundle.main.object(forInfoDictionaryKey: "SUFeedURL") != nil else { return }
-        let driver = YukioUpdateDriver(hostBundle: .main, delegate: nil)
+        let driver = SPUStandardUserDriver(hostBundle: .main, delegate: nil)
         let updater = SPUUpdater(hostBundle: .main, applicationBundle: .main, userDriver: driver, delegate: nil)
         self.driver = driver
         self.updater = updater
