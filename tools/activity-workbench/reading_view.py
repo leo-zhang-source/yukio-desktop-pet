@@ -11,6 +11,7 @@ from history_view import CLIENT, SOURCE, GENERATION, SESSION, AGENT, SIDECHAIN, 
 from glance_view import IGNORED,meaningful_request
 from explanation import ExplanationError,add_object_names
 from plain_language import plain_words
+from localization import current_language
 
 
 class ReadingView:
@@ -23,7 +24,7 @@ class ReadingView:
 
     @staticmethod
     def payload(facts,parts,*,kind='detail',historical=False,state='unknown',naming=None):
-        scope=dict(reading=kind,reading_parts=parts,historical=historical,
+        scope=dict(reading=kind,language=current_language(),reading_parts=parts,historical=historical,
                                history_order='newest_first' if historical else None,
                                current_turn_state=state,bounded_context=True,whole_task_status='unknown')
         if naming:scope['naming_context_evidence_id']=naming

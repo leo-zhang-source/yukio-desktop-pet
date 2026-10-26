@@ -1,3 +1,5 @@
+> **Mac 0.4.8**: The workbench follows your Mac’s language, with Chinese and English explanations that describe the background and purpose. Program output stays out of readable explanations. [Release notes](docs/releases/0.4.8.md) · [Design and limits](docs/ACTIVITY-LANGUAGE-AND-CONTEXT.md). Windows tests remain optional.
+
 > **Mac 0.4.7**：工作台已内置在桌面雪绪中，聊天可按项目、最近和工作状态查找；设置分成三组。Apple 芯片版下载与应用内更新见 [发布说明](docs/releases/0.4.7.md)。Windows 新版测试继续留作之后可选。 桌面0.4.7与下载包已逐项核对，应用内检查更新正常；[查看验收结果](docs/validation/mac-workbench-0.4.7/README.md)。
 
 > **独立 Mac 活动工作台 0.3.0（Apple 芯片预览版）**：内置运行环境，按聊天看内容、解释和原因。第8、9步按Mac范围交付；Windows以后可选，不替换原桌宠。 [下载与使用说明](https://github.com/leozhang8654/yukio-desktop-pet/releases/tag/activity-workbench-v0.3.0) · [版本与核验范围](docs/releases/activity-workbench-0.3.0.md)。
@@ -61,7 +63,7 @@ Grab the file for your system from the [latest release](https://github.com/leozh
 
 | You use | Download | Then |
 | --- | --- | --- |
-| macOS 13+ · Apple silicon (0.4.7) | [Yukio-0.4.7-macOS-arm64.dmg](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.7/Yukio-0.4.7-macOS-arm64.dmg) · [ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.7/Yukio-0.4.7-macOS-arm64.zip) | Open the DMG and drag `Yukio.app` into Applications; allow it once (below) |
+| macOS 13+ · Apple silicon (0.4.8) | [Yukio-0.4.8-macOS-arm64.dmg](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.8/Yukio-0.4.8-macOS-arm64.dmg) · [ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.8/Yukio-0.4.8-macOS-arm64.zip) | Open the DMG and drag `Yukio.app` into Applications; allow it once (below) |
 | Intel Mac · 0.4.6 | [DMG](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-macOS.dmg) · [ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-macOS.zip) | 保留上一版；本轮工作台未在 Intel 验收 |
 | Windows 10 / 11, 64-bit | [Yukio-0.4.6-Windows-Setup.exe](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-Windows-Setup.exe) | Run Setup once, then use the new shortcut. Future updates install inside Yukio |
 

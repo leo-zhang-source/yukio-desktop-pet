@@ -1,5 +1,11 @@
 # Changelog / 更新记录
 
+## 0.4.8 · Mac language and context
+
+- Chinese/English workbench follows the system language.
+- Keep diagnostics out of prose and explain object purpose, previous work and task value.
+- Preserve records, pet preferences and the signed update chain; Windows remains optional.
+
 ## 0.4.7 · Mac Apple silicon — 2026-10-25
 
 - 活动工作台内置进桌面雪绪，原右键／重开入口保留，设置搬到工作台顶部右侧。

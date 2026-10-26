@@ -101,19 +101,37 @@ final class WorkbenchPanelController: NSWindowController, NSWindowDelegate, WKNa
     private(set) var showingSettings = false
     private var selectionURL: URL?
     private var opening = UUID()
+    let uiLanguage: String
 
-    init(runtime: WorkbenchStarting = WorkbenchRuntime()) {
+    static func preferredLanguage(_ languages: [String]) -> String {
+        (languages.first ?? "en").lowercased().hasPrefix("zh") ? "zh" : "en"
+    }
+
+    private func localized(_ zh: String, _ en: String) -> String { uiLanguage == "zh" ? zh : en }
+
+    func localizedURL(_ url: URL) -> URL {
+        var parts = URLComponents(url: url, resolvingAgainstBaseURL: false)!
+        var query = (parts.queryItems ?? []).filter { $0.name != "lang" }
+        query.append(URLQueryItem(name: "lang", value: uiLanguage)); parts.queryItems = query
+        return parts.url!
+    }
+
+    init(runtime: WorkbenchStarting = WorkbenchRuntime(), preferredLanguages: [String] = Locale.preferredLanguages) {
         self.runtime = runtime
+        self.uiLanguage = Self.preferredLanguage(preferredLanguages)
         let panel = NSPanel(contentRect: NSRect(x: 0, y: 0, width: 1100, height: 760),
                             styleMask: [.titled, .closable, .resizable, .nonactivatingPanel],
                             backing: .buffered, defer: false)
-        panel.title = "Yukio · 活动工作台"
+        panel.title = uiLanguage == "zh" ? "Yukio · 活动工作台" : "Yukio · Activity workbench"
         panel.level = .floating
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.hidesOnDeactivate = false; panel.isReleasedWhenClosed = false
         panel.minSize = NSSize(width: 760, height: 520)
         panel.appearance = NSAppearance(named: .aqua)
         super.init(window: panel)
+        workButton.title = localized("活动工作台", "Activity workbench")
+        settingsButton.title = localized("设置", "Settings")
+        retryButton.title = localized("重新连接", "Reconnect")
         panel.delegate = self
         settings.onChange = { [weak self] in self?.onChange?($0) }
         settings.onEmbeddedDone = { [weak self] in self?.showWork() }
@@ -136,7 +154,7 @@ final class WorkbenchPanelController: NSWindowController, NSWindowDelegate, WKNa
         settingsButton.imagePosition = .imageLeading
         settingsButton.contentTintColor = .controlAccentColor
         settingsButton.widthAnchor.constraint(equalToConstant: 110).isActive = true
-        settingsButton.toolTip = "雪绪的大小、显示、聊天、换装与其他设置"
+        settingsButton.toolTip = localized("雪绪的大小、显示、聊天、换装与其他设置", "Yukio’s size, appearance, chats, outfits and other settings")
         let header = NSStackView(views: [heading, workButton, NSView(), settingsButton])
         header.orientation = .horizontal; header.spacing = 18; header.alignment = .centerY
         for view in [header, body] { view.translatesAutoresizingMaskIntoConstraints = false; root.addSubview(view) }
@@ -204,7 +222,7 @@ final class WorkbenchPanelController: NSWindowController, NSWindowDelegate, WKNa
             webView.evaluateJavaScript("window.dispatchEvent(new Event('pageshow'))", completionHandler: nil)
             return
         }
-        message.stringValue = "正在打开工作台…"
+        message.stringValue = localized("正在打开工作台…", "Opening the workbench…")
         let loading = NSStackView(views: [message, retryButton])
         loading.orientation = .vertical; loading.alignment = .centerX; loading.spacing = 18
         fill(loading)
@@ -217,9 +235,9 @@ final class WorkbenchPanelController: NSWindowController, NSWindowDelegate, WKNa
                 configuration.websiteDataStore = .nonPersistent()
                 let web = WKWebView(frame: .zero, configuration: configuration)
                 web.navigationDelegate = self; self.webView = web; self.fill(web)
-                web.load(URLRequest(url: self.selectionURL ?? url))
+                web.load(URLRequest(url: self.localizedURL(self.selectionURL ?? url)))
             case .failure:
-                self.message.stringValue = "工作台暂时没连上。可以点“重新连接”，右上角的“设置”仍可使用。"
+                self.message.stringValue = self.localized("工作台暂时没连上。可以点“重新连接”，右上角的“设置”仍可使用。", "The workbench is not connected. Try Reconnect; Settings is still available at the top right.")
             }
         }
     }

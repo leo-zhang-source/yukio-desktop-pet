@@ -100,7 +100,7 @@ class TaskSummaryTests(unittest.TestCase):
         self.assertIn('入口文件',f.glance.summary('codex',f.key)['before'][0]['text'])
         good=test_glance.result(payload);good[0]['basis']='assistant';good[0]['text']='这一轮已结束，助手已汇报整理页面。'
         good[1]['text']='前面已报告查看入口，随后整理页面，按钮仍需验收。';good[1]['evidence_ids']+=ids
-        good[2].update(text='帮助核对首页是否可以使用。',basis='inference',evidence_ids=['E1','E2'])
+        good[2].update(text='帮助核对首页是否可以使用。',basis='inference',evidence_ids=['E1','E2',payload['scope']['project_goal_evidence_id']])
         self.assertEqual(validate_output(encode(dict(explanations=good)),payload),good)
         bad=json.loads(encode(good));bad[1]['evidence_ids']=['E1','E2']
         with self.assertRaises(ExplanationError) as exc:validate_output(encode(dict(explanations=bad)),payload)

@@ -56,6 +56,12 @@ test('the page has no manual-start explanation controls and distinguishes tempor
  const html=fs.readFileSync(path.join(__dirname,'dist/index.html'),'utf8');
  assert.doesNotMatch(html,/id="(?:explain|stopAuto)"/);
 });
+test('an untranslated local note does not promise a model call or invent an assistant update',()=>{
+ const f=setup();f.context.data=currentWork();f.run('uiLanguage="en";model={configured:false};render(data)');
+ assert.match(f.elements.get('content').textContent,/not available yet/);
+ assert.doesNotMatch(f.elements.get('content').textContent,/being prepared|assistant has shared/i);
+ assert.match(f.elements.get('contentBasis').textContent,/尚不清楚/);
+});
 test('a model answer stays readable while new work is marked for automatic update',()=>{
  const f=setup();f.context.data=currentWork();f.run('model={configured:true,automatic_on_open:true};render(data)');
  f.context.result={mode:'model',explanations:['content','explanation','reason'].map(part=>({part,text:'模型'+part,basis:'inference',evidence_ids:[]}))};

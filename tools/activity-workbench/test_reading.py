@@ -171,7 +171,7 @@ class ReadingTests(unittest.TestCase):
 
     def test_model_cutoff_at_length_boundary_keeps_complete_sentences(self):
         page=self.reading.history_page(self.grant);payload=self.service.entries[page['token']]['payload']
-        value=[dict(part=p['part'],text='助手汇报已经检查了工作台首页的显示方式。'+'接下来准备'+('检查'*36)+'确保其',basis='inference',evidence_ids=p['required']) for p in payload['scope']['reading_parts']]
+        value=[dict(part=p['part'],text='助手汇报已经检查了工作台首页的显示方式。'+'接下来准备'+('检查'*46)+'确保其',basis='inference',evidence_ids=p['required']) for p in payload['scope']['reading_parts']]
         checked=validate_output(encode(dict(explanations=with_titles(payload,value))),payload)
         self.assertEqual(checked[0]['text'],'助手汇报已经检查了工作台首页的显示方式。')
 

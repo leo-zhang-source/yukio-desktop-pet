@@ -78,7 +78,8 @@ def check(archive, output):
                 assert detail['explanation_basis']=='inference' and '调整' in detail['explanation']
                 assert detail['part_evidence']['reason']
                 assert '模拟验收' in detail['goal_short']
-                assert detail['last_step']['action']=='请求查看 index.html'
+                assert detail['last_step']['action']=='请求查看 相关页面'
+                assert '.html' not in detail['last_step']['action']
                 assert detail['last_step']['result']=='这次操作报告成功'
                 assert cards[0]['session_id']=='mac-synthetic-chat' and not cards[0]['is_helper']
                 context=get('context?'+urlencode(dict(client='codex',key=card['key'])))

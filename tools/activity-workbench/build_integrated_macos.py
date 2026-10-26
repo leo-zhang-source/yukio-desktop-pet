@@ -61,13 +61,14 @@ def build(base_app, workbench_app, binary, source, output, version=None, build_n
             raise ValueError('Private profile data must not enter the package')
     plist = app / 'Contents/Info.plist'
     info = plistlib.loads(plist.read_bytes())
+    info['CFBundleLocalizations'] = ['zh-Hans', 'en']
     workbench_info = plistlib.loads((workbench_app / 'Contents/Info.plist').read_bytes())
     workbench_version = workbench_info['CFBundleShortVersionString']
     info.update(CFBundleVersion=build_number or '27.3', YukioLocalFeature='chat-navigation-and-settings-layout',
                 YukioWorkbenchVersion=workbench_version, YukioIntegrationSourceSHA256=hashlib.sha256(json.dumps(sources, sort_keys=True).encode()).hexdigest())
     if version:
         info.update(CFBundleShortVersionString=version, YukioSourceRevision=revision,
-                    YukioFeature='activity-workbench-chat-navigation')
+                    YukioFeature='activity-workbench-language-and-context')
         for key in ('YukioLocalFeature', 'YukioLocalRepair'):
             info.pop(key, None)
     # Permit only local networking; external HTTPS trust checks are unchanged.
