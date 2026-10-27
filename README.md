@@ -6,7 +6,7 @@
 
 **See your agents at work. Understand the progress. Step in when it matters.**
 
-<img src="docs/readme/desk.gif" width="224" alt="Yukio reads, writes, checks her work and raises a completion card">
+<img src="docs/readme/desk.gif" width="192" alt="Yukio reads, writes, checks her work and raises a completion card">
 
 <p>
 <a href="https://github.com/leozhang8654/yukio-desktop-pet/releases/latest"><img src="https://img.shields.io/github/v/release/leozhang8654/yukio-desktop-pet?label=Latest%20release&color=426854" alt="Latest public release"></a>
@@ -115,7 +115,7 @@ Adjust the character from **50% to 200%**, drag her to a comfortable spot, switc
 
 | Platform | Download | Included experience |
 | --- | --- | --- |
-| **Apple silicon Mac · macOS 13+** | **[v0.4.11 DMG](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.11/Yukio-0.4.11-macOS-arm64.dmg)** · [ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.11/Yukio-0.4.11-macOS-arm64.zip) | Desktop companion + integrated activity workbench |
+| **Apple silicon Mac · macOS 13+** | **[v0.4.12 DMG](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.12/Yukio-0.4.12-macOS-arm64.dmg)** · [ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.12/Yukio-0.4.12-macOS-arm64.zip) | Desktop companion + integrated activity workbench |
 | **Intel Mac** | [v0.4.6 DMG](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-macOS.dmg) · [ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-macOS.zip) | Earlier desktop companion release |
 | **Windows 10 / 11 · 64-bit** | [v0.4.6 Setup](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-Windows-Setup.exe) · [Portable ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/YukioDesktop-win-Portable.zip) | Earlier desktop companion release |
 

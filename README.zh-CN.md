@@ -6,7 +6,7 @@
 
 **看见 AI 正在做什么，读懂工作进展，在需要时接过决定权。**
 
-<img src="docs/readme/desk.gif" width="224" alt="雪绪阅读、书写、核对工作，最后举起完成牌">
+<img src="docs/readme/desk.gif" width="192" alt="雪绪阅读、书写、核对工作，最后举起完成牌">
 
 <p>
 <a href="https://github.com/leozhang8654/yukio-desktop-pet/releases/latest"><img src="https://img.shields.io/github/v/release/leozhang8654/yukio-desktop-pet?label=Latest%20release&color=426854" alt="最新公开版本"></a>
@@ -115,7 +115,7 @@ Yukio 读取三类助手的本机活动记录。你可以指定一个来源，�
 
 | 平台 | 下载 | 提供的体验 |
 | --- | --- | --- |
-| **Apple 芯片 Mac · macOS 13+** | **[v0.4.11 DMG](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.11/Yukio-0.4.11-macOS-arm64.dmg)** · [ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.11/Yukio-0.4.11-macOS-arm64.zip) | 桌面角色 + 内置活动工作台 |
+| **Apple 芯片 Mac · macOS 13+** | **[v0.4.12 DMG](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.12/Yukio-0.4.12-macOS-arm64.dmg)** · [ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.12/Yukio-0.4.12-macOS-arm64.zip) | 桌面角色 + 内置活动工作台 |
 | **Intel Mac** | [v0.4.6 DMG](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-macOS.dmg) · [ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-macOS.zip) | 保留的早期桌面角色版本 |
 | **Windows 10 / 11 · 64 位** | [v0.4.6 安装版](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-Windows-Setup.exe) · [便携 ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/YukioDesktop-win-Portable.zip) | 保留的早期桌面角色版本 |
 
