@@ -1,4 +1,4 @@
-本轮英文补齐：工作台0.3.8 / Mac雪绪0.4.11。英文模式统一界面、状态、交接和生成说明；聊天名称、项目名称与引用原话保留原文。桌面英文副本与安装包已核对；完整页面最后复查受系统使用时间限制影响。[说明](../../docs/ACTIVITY-ENGLISH-COMPLETENESS.md)。
+本轮工作台0.3.9 / Mac雪绪0.4.12：修复英文历史总结生成失败，已检查真实英文首页、设置和历史总结。聊天名称、项目名称与引用原话保留原文。桌面可启动App与ZIP、DMG核对一致；多余测试副本可恢复地归档。[说明与范围](../../docs/ACTIVITY-ENGLISH-COMPLETENESS.md)。
 
 旧版 Mac 内置工作台0.3.7（雪绪0.4.9）：项目在上、最近聊天在下，工作状态只作旁边标识；按系统显示中英文，说明交代背景及用途。旧版发布记录见下文。Windows继续留作之后可选。
 
@@ -35,7 +35,7 @@ Mac构建需Apple芯片Mac、Swift命令行工具、Python3.9+及requirements-bu
 ```sh
 python3 -m venv .build-venv
 .build-venv/bin/python -m pip install -r tools/activity-workbench/requirements-build-macos.txt
-.build-venv/bin/python tools/activity-workbench/build_macos.py --out build/mac-preview
+.build-venv/bin/python tools/activity-workbench/build_macos.py --out build/mac-preview.noindex
 ```
 
 最终构建使用Python3.12.14、PyInstaller6.22.3，Swift目标macOS13。本地临时签名，未完成Apple公证。不得关闭系统安全保护来运行。
