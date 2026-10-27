@@ -421,7 +421,6 @@ final class SettingsPanelController: NSWindowController, NSWindowDelegate, NSMen
         updateSwitch.target = self
         updateSwitch.action = #selector(updatePreferenceChanged)
         updateSwitch.setAccessibilityIdentifier("automaticUpdatesSwitch")
-        updateSwitch.toolTip = tr("Check for new versions and remind me. Download and install only after I choose Install Update.", "自动检查并提醒；点击“安装更新”后才会下载和安装。")
         updateButton.bezelStyle = .rounded
         updateButton.target = self
         updateButton.action = #selector(checkForUpdates)
@@ -484,6 +483,7 @@ final class SettingsPanelController: NSWindowController, NSWindowDelegate, NSMen
         languageTitle.stringValue = tr("Language", "语言")
         resetButton.title = tr("Reset position", "复位位置")
         updateTitle.stringValue = tr("Automatically check for updates", "自动检查新版本")
+        updateSwitch.toolTip = tr("Check for new versions and remind me. Download and install only after I choose Install Update.", "自动检查并提醒；点击“安装更新”后才会下载和安装。")
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "dev"
         updateButton.title = tr("Check for updates…", "检查更新…") + " (" + version + ")"
         quitButton.title = tr("Quit Yukio", "退出雪绪")

@@ -1,8 +1,32 @@
 import AppKit
 import Testing
+import YukioCore
 @testable import YukioPlayer
 
 @Suite @MainActor struct SoftwareUpdateSettingsTests {
+    @Test func updateHintFollowsInterfaceLanguageChanges() throws {
+        _ = NSApplication.shared
+        let panel = SettingsPanelController()
+        defer { panel.close() }
+        let root = try #require(panel.window?.contentView)
+        func toggle(in view: NSView) -> NSSwitch? {
+            if view.accessibilityIdentifier() == "automaticUpdatesSwitch" { return view as? NSSwitch }
+            return view.subviews.compactMap { toggle(in: $0) }.first
+        }
+        let control = try #require(toggle(in: root))
+        for language in [UILanguage.chinese, .english, .chinese] {
+            panel.apply(SettingsSnapshot(status: "", following: true, hidden: false,
+                provider: .auto, chats: [], showBubble: true, showCards: true,
+                showQuestionCard: true, scale: 1, language: language, demoPlaying: false))
+            let hint = try #require(control.toolTip)
+            if language == .chinese { #expect(hint.contains("安装更新")) }
+            else {
+                #expect(hint.contains("Install Update"))
+                #expect(hint.range(of: "[\\p{Han}]", options: .regularExpression) == nil)
+            }
+        }
+    }
+
     @Test func updateControlsSendDistinctActionsAndFitInsideSettings() throws {
         _ = NSApplication.shared
         let panel = SettingsPanelController()
