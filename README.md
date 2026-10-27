@@ -113,15 +113,15 @@ Adjust the character from **50% to 200%**, drag her to a comfortable spot, switc
 
 ## Download
 
-**Next release: 1.0 (not published).** Public versions will use 1.0, 1.1, 1.2, then 2.0 for a major release. The existing-user Install Update option and readable English/Chinese notes have been restored in the candidate, but final installation is still blocked on the test Mac. The public downloads below and the installed desktop App remain 0.4.13. [Current verification](docs/validation/mac-update-1.0/README.md).
+**Mac 1.0 restores in-app updates.** Choose **Install Update** when reminded; Yukio downloads, installs and reopens after your click. Versions now use 1.0, 1.1, 1.2, then 2.0 for a major release. 0.4.13 users need to install the complete 1.0 app once. [Update guide](docs/MANUAL-UPDATES.md).
 
 | Platform | Download | Included experience |
 | --- | --- | --- |
-| **Apple silicon Mac · macOS 13+** | **[v0.4.13 DMG](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.13/Yukio-0.4.13-macOS-arm64.dmg)** · [ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.13/Yukio-0.4.13-macOS-arm64.zip) | Desktop companion + integrated activity workbench |
+| **Apple silicon Mac · macOS 13+** | **[v1.0 DMG](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v1.0/Yukio-1.0-macOS-arm64.dmg)** · [ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v1.0/Yukio-1.0-macOS-arm64.zip) | Desktop companion + integrated activity workbench |
 | **Intel Mac** | [v0.4.6 DMG](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-macOS.dmg) · [ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-macOS.zip) | Earlier desktop companion release |
 | **Windows 10 / 11 · 64-bit** | [v0.4.6 Setup](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-Windows-Setup.exe) · [Portable ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/YukioDesktop-win-Portable.zip) | Earlier desktop companion release |
 
-The integrated workbench is currently available on Apple silicon Mac. Intel and Windows downloads remain on v0.4.6. Mac updates now check and remind you, then open the official download page. Download the complete DMG or ZIP, quit Yukio and replace the current copy in the same location. [Update guide](docs/MANUAL-UPDATES.md). [All releases and checksums](https://github.com/leozhang8654/yukio-desktop-pet/releases).
+The integrated workbench is currently available on Apple silicon Mac. Intel and Windows downloads remain on v0.4.6. Mac updates check automatically and remind you. Choose **Install Update** to download, install and reopen; nothing is installed without your click. If macOS requests access to the app’s installation folder, confirm it in the system prompt. [Update guide](docs/MANUAL-UPDATES.md). [All releases and checksums](https://github.com/leozhang8654/yukio-desktop-pet/releases).
 
 <details>
 <summary><b>First launch on macOS or Windows</b></summary>
