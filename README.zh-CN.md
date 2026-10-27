@@ -113,11 +113,11 @@ Yukio 读取三类助手的本机活动记录。你可以指定一个来源，�
 
 ## 下载
 
-**Mac 1.0 已恢复软件内更新。** 收到提醒后点击“安装更新”，软件会下载、安装并重新打开。版本按1.0、1.1、1.2继续，大更新再用2.0。0.4.13用户需先安装完整1.0包一次。[更新方法](docs/MANUAL-UPDATES.md)。
+**Mac 5.3 已包含通过验证的软件内更新。** 收到提醒后点击“安装更新”，软件会下载、安装并重新打开。当前版本为5.3，之后按5.4、5.5继续，大更新再用6.0。0.4.13用户需先安装完整5.3包一次。[更新方法](docs/MANUAL-UPDATES.md)。
 
 | 平台 | 下载 | 提供的体验 |
 | --- | --- | --- |
-| **Apple 芯片 Mac · macOS 13+** | **[v1.0 DMG](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v1.0/Yukio-1.0-macOS-arm64.dmg)** · [ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v1.0/Yukio-1.0-macOS-arm64.zip) | 桌面角色 + 内置活动工作台 |
+| **Apple 芯片 Mac · macOS 13+** | **[v5.3 DMG](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v5.3/Yukio-5.3-macOS-arm64.dmg)** · [ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v5.3/Yukio-5.3-macOS-arm64.zip) | 桌面角色 + 内置活动工作台 |
 | **Intel Mac** | [v0.4.6 DMG](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-macOS.dmg) · [ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-macOS.zip) | 保留的早期桌面角色版本 |
 | **Windows 10 / 11 · 64 位** | [v0.4.6 安装版](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-Windows-Setup.exe) · [便携 ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/YukioDesktop-win-Portable.zip) | 保留的早期桌面角色版本 |
 
