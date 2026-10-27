@@ -48,7 +48,7 @@ echo "$ZIP"
 DMG="$DIST/Yukio-$VERSION-macOS.dmg"
 sh ./scripts/package-macos-dmg.sh "$APP" "$DMG"
 if [ "${YUKIO_SIGN_UPDATES:-1}" = "1" ]; then
-  python3 ../scripts/make_appcast.py --archive "$ZIP" --notes "../docs/releases/$VERSION.md" --sign-tool .build/artifacts/sparkle/Sparkle/bin/sign_update --output "$DIST/appcast.xml"
+  python3 ../scripts/make_appcast.py --archive "$ZIP" --notes "../docs/releases/$VERSION-update.en.md" --notes-zh "../docs/releases/$VERSION-update.zh.md" --sign-tool .build/artifacts/sparkle/Sparkle/bin/sign_update --output "$DIST/appcast.xml"
 else
   echo "Update feed is NOT signed yet; these packages are not ready to publish."
 fi
