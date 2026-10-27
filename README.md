@@ -1,211 +1,150 @@
-> **Mac 0.4.12**: Fix English history summaries; the English native home and settings were inspected. Actual chat/project names and original quotations retain their language. [Release notes](docs/releases/0.4.12.md) · [Verification](docs/validation/mac-english-0.4.12/README.md).
+<div align="center">
 
-> Use the complete Mac download. The delivery Mac retains one launchable Yukio English App; redundant test copies are archived with their contents preserved. System search indexes one App; the user also confirmed one icon after reopening application search. Automatic installation and Windows testing remain deferred.
+# Yukio
 
-> **Earlier release — Mac 0.4.9**: Projects above recent chats, with work status shown only beside each chat. The workbench follows your Mac’s language and explains the current action, earlier progress and purpose in everyday language. [Release notes](docs/releases/0.4.9.md) · [Design and limits](docs/ACTIVITY-LANGUAGE-AND-CONTEXT.md). Windows testing remains optional.
+### A desktop companion for coding with AI.
 
-> **Current download:** [Mac 0.4.12 DMG or ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/tag/v0.4.12). All 470 App files match the desktop English copy. [Verification and remaining limits](docs/validation/mac-english-0.4.12/README.md).
+**See your agents at work. Understand the progress. Step in when it matters.**
 
+<img src="docs/readme/desk.gif" width="192" alt="Yukio reads, writes, checks her work and raises a completion card">
 
-> **独立 Mac 活动工作台 0.3.0（Apple 芯片预览版）**：内置运行环境，按聊天看内容、解释和原因。第8、9步按Mac范围交付；Windows以后可选，不替换原桌宠。 [下载与使用说明](https://github.com/leozhang8654/yukio-desktop-pet/releases/tag/activity-workbench-v0.3.0) · [版本与核验范围](docs/releases/activity-workbench-0.3.0.md)。
-
-> **0.4.6**: GPT plugin chats retain their Chrome tab destination; visible chats acknowledge completion reminders. Includes Qianxia, idle hiding, approval cards and answer pasting. [Release notes and verification limits](docs/releases/0.4.6.md).
+<p>
+<a href="https://github.com/leozhang8654/yukio-desktop-pet/releases/latest"><img src="https://img.shields.io/github/v/release/leozhang8654/yukio-desktop-pet?label=Latest%20release&color=426854" alt="Latest public release"></a>
+<img src="https://img.shields.io/badge/macOS-13%2B-222222?logo=apple&logoColor=white" alt="macOS 13 or newer">
+<img src="https://img.shields.io/badge/Windows-10%20%2F%2011-3578B8" alt="Windows 10 and 11">
+<img src="https://img.shields.io/badge/Language-English%20%2F%20中文-426854" alt="English and Chinese interfaces">
+</p>
 
 **English** · [简体中文](README.zh-CN.md)
 
-<h1>Yukio · the desktop pet that works alongside your coding agent</h1>
-
-<img src="docs/readme/states-en.png" width="900" alt="Twelve things Yukio does at her desk: thinking, reading files, viewing an image, writing files, running tests, browsing the web, handing in the answer, holding up the done card, holding up the question card, other work, something failed, idle">
-
-<p>
-<a href="https://github.com/leozhang8654/yukio-desktop-pet/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/leozhang8654/yukio-desktop-pet?label=download&color=2f6feb"></a>
-<a href="https://github.com/leozhang8654/yukio-desktop-pet/releases"><img alt="Total downloads" src="https://img.shields.io/github/downloads/leozhang8654/yukio-desktop-pet/total?color=2f6feb"></a>
-<img alt="macOS 13 or newer" src="https://img.shields.io/badge/macOS-13%2B-000000?logo=apple&logoColor=white">
-<img alt="Windows 10 and 11" src="https://img.shields.io/badge/Windows-10%20%2F%2011-0078D4">
-<img alt="Swift, AppKit and Sparkle" src="https://img.shields.io/badge/Swift%20%2B%20AppKit-Sparkle-F05138?logo=swift&logoColor=white">
-<img alt="Python, Tk, Pillow and Velopack" src="https://img.shields.io/badge/Python%20%2B%20Tk%20%2B%20ctypes-Pillow%20%2B%20Velopack-3776AB?logo=python&logoColor=white">
-</p>
+[Download](#download) · [Features](#features) · [Character & animation gallery](#character--animation-gallery) · [Get started](#get-started)
 
 </div>
 
-**Yukio (雪绪)** is a white-haired, blue-eyed girl in a navy butler's uniform who sits in the corner of your screen and acts out what your AI coding agent is doing, as it happens. Claude Code reads a file, she opens a book. It edits, she picks up the pen. Tests run, she checks two sheets against each other. It finishes, and she holds up a ✅ card until you open the corresponding chat or click her. Chat destinations depend on the connected source.
+Yukio brings AI-assisted development onto your desktop with an animated companion and a clear view of the work behind it. Follow **Codex, Claude Code and DeepSeek's Deep Code CLI**, catch the moments that need your attention, and explore what the agent is doing through the integrated **Mac activity workbench**.
 
-She follows three families of agent, and you pick which one in her menu under **Assistant**: **Claude Code**, **DeepSeek's [Deep Code CLI](https://api-docs.deepseek.com/quick_start/agent_integrations/deepcode/)**, and **GPT's [Codex](https://developers.openai.com/codex/)** (the desktop app and the CLI both write the same session logs). The default, **Auto**, follows all three at once and shows whichever chat has something to say. Both builds use native windows and work entirely from local session logs.
+The character keeps progress in view while you work. The workbench helps you pick up the context, inspect an explanation and decide what to do next.
 
-## New in 0.4.6
+## Features
 
-- Recognized visible chats acknowledge completion reminders; seeing a question or approval never answers or approves it. Official GPT Chrome sidepanel chats retain their browser tab, including full-screen duplicate-node and older-title fixes. [Actual verification scope](docs/validation/plugin-signs-0.4.6.md).
+| Stay in the flow | Take a closer look |
+| --- | --- |
+| **Live activity, expressed through animation.** Twelve distinct states turn reading, writing, testing and other agent activity into a glanceable desktop presence. | **Work explained in everyday language.** The Mac workbench brings together the current action, its context and why it matters. |
+| **Attention where it counts.** Pending questions, blocking errors and completion notices take priority over routine activity. | **Projects and conversations, organized.** Browse projects, return to recent chats and search locally, with status shown beside each conversation. |
+| **Respond beside the character.** Answer supported questions and review approval requests through connected chat cards. | **Context you can revisit.** Open a deeper explanation or browse earlier work grouped by your requests, with expandable supporting excerpts. |
 
-- Choose Yukio or Qianxia in **Settings → Display → Skin**. Selection persists after restart. Qianxia includes twelve activities, independent blinking and a dedicated held pose.
-- Dragging swings the character and restores the current activity after release. Repeated macOS drags now preserve the release position.
-- **Hide when idle** is enabled by default. Work, questions, completion and errors bring the pet back; turn it off to keep her visible.
-- Actionable approval cards, reliable answer pasting, and UTF-8 Windows approval receipts. See the [answer guide](YukioPlayer/Resources/BACKGROUND-ANSWERS.md) for experimental web and plugin compatibility.
+### Your agents, at a glance
 
-### Recent updates
+Yukio follows local activity from all three supported agent families. Choose one source, use **Auto** to follow them together, or pin a conversation. A compact speech bubble shows the chat title, current step and task-list progress when available.
 
-- Yukio immediately lowers the ❓ sign after GPT confirms an answer sent from the card. A failed send leaves the sign and answer available for retry.
-- Answering directly in the GPT chat also lowers the sign as soon as Yukio reads the accepted answer from the session log.
+When several chats are active, the others appear as stacked cards. Expand the stack to switch conversations; supported chat links take you back to the relevant destination.
 
-- Update checks show release notes. On this Mac, automatic replacement remains unaccepted; use the complete current Mac download for now. Windows retains its earlier Velopack installer.
-- GPT / Codex question cards now answer through the desktop app in the background on macOS and Windows. No focus switching, clipboard changes or simulated keystrokes.
-- Support the current canonical conversation history so live questions are no longer mistaken for expired ones.
-- Failed sends preserve your answer and allow retry; successful receipts dismiss only the matching question.
-- macOS no longer requires Accessibility for answering. Claude Code and Deep Code background setup is described in the [answer guide](YukioPlayer/Resources/BACKGROUND-ANSWERS.md).
+<p align="center">
+<img src="docs/readme/cards.png" width="600" alt="Compact and expanded chat cards with waiting, error, completion and working indicators">
+</p>
 
-Launch at login, question cards, activity following and the existing pet controls remain available. See the [startup guide](docs/STARTUP.md) and [assistant status](docs/ASSISTANT.md).
+### Understand the work as it happens
 
-<img src="docs/readme/settings-macos.png" width="420" alt="Yukio settings with a large Lower sign button">
+Right-click the character on Mac to open the activity workbench. Its home view answers three questions: **What is happening? What does this mean? Why does it matter?** With a configured model, explanations can refresh as the selected conversation progresses while the workbench is open.
 
-[Full changelog](CHANGELOG.md)
+<a href="docs/readme/workbench-current.png"><img src="docs/readme/workbench-current.png" width="100%" alt="English Mac workbench with a project sidebar, current work, context and purpose"></a>
 
-## Development process
+Choose **More detail** to explore the current work, its purpose, results and unclear parts. Choose **Earlier work** to revisit short summaries organized by user request, then expand the segment you want to inspect. Supporting excerpts let you compare an explanation with the recorded activity.
 
-[Development evidence archive](docs/development-evidence/2026-10-21/README.en.md): design and animation iterations, failure reviews, diagnostic records, local source snapshots and research documents, with downloadable archives and checksums. Local experiments are labeled separately from released features.
-
-## Download
-
-Grab the file for your system from the [latest release](https://github.com/leozhang8654/yukio-desktop-pet/releases/latest). Nothing to compile, nothing else to install.
-
-| You use | Download | Then |
-| --- | --- | --- |
-| macOS 13+ · Apple silicon (0.4.12) | [Yukio-0.4.12-macOS-arm64.dmg](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.12/Yukio-0.4.12-macOS-arm64.dmg) · [ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.12/Yukio-0.4.12-macOS-arm64.zip) | Open the DMG and drag `Yukio.app` into Applications; allow it once (below) |
-| Intel Mac · 0.4.6 | [DMG](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-macOS.dmg) · [ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-macOS.zip) | Previous release retained; this workbench has not been tested on Intel |
-| Windows 10 / 11, 64-bit | [Yukio-0.4.6-Windows-Setup.exe](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-Windows-Setup.exe) | Run Setup once, then use the new shortcut. Future updates install inside Yukio |
-
-<details>
-<summary><b>macOS says "Apple could not verify Yukio…"</b></summary>
-
-The app carries only an ad-hoc signature and is not notarized (that needs a paid developer account), so Gatekeeper stops it once. You can inspect the source and verify the download checksum before opening it.
-
-1. Double-click `Yukio.app` and click **Done** on the warning.
-2. Open **System Settings › Privacy & Security**, scroll to **Security**, click **Open Anyway** next to the Yukio line, confirm, and enter your password.
-
-If you trust this download, you can also remove its quarantine flag from Terminal:
-
-```sh
-xattr -dr com.apple.quarantine /Applications/Yukio.app
-```
-
-Builds you compile yourself are not quarantined and never show this.
-
-</details>
-
-<details>
-<summary><b>Windows says "Windows protected your PC"</b></summary>
-
-The exe is not code-signed. Click **More info**, then **Run anyway**. Only proceed if you trust the download.
-
-</details>
-
-The SHA-256 of every file is on the release page if you want to check a download.
-
-Once running, Yukio appears in the bottom-right corner of the screen and a small avatar of her appears in the macOS menu bar or the Windows tray. Right-click Yukio or launch the app again for compact settings; click outside to close. Use the menu-bar/tray avatar for the full pet menu. Pet settings let you hide Yukio and bring her back; on macOS, Space in pet settings also toggles visibility. Want a tour first? Pick **Play demo** from Settings or the menu and she walks through every state in 60 seconds. English is the default, 中文 is one click away in Settings, and the choice is remembered.
-
-## What she does
-
-- **Twelve states, one character.** Thinking, reading files, viewing an image, writing files, running tests, browsing the web, handing in the answer, the ✅ done card, the ❓ question card, other work, something failed, idle. The mapping from each agent's tools to a state is explicit and covered by tests (one set of rules for all three: shell commands are classified the same way whether they arrive as Claude's `Bash`, Deep Code's `bash`, or Codex's `exec`). Unknown work falls back to typing at the computer instead of guessing.
-- **Micro-motions, not slideshows.** Every state is one approved base image that a generator brings to life in small, continuous moves: the pen travels along the line, the magnifier sweeps the photo, a finger scrolls the tablet, two hands take turns on the keyboard, eyes blink in the right skin tone. The desk and chair never shift by a pixel, and the generator checks that. The artwork uses a 50 fps timeline; the desktop player updates at 30 Hz.
-- **She tells you when it is your turn.** The ✅ completion reminder is acknowledged when its chat is recognized as visible. Questions and approvals raise ❓ and remain pending until actually handled. Plugin chat entry points retain the original browser tab.
-- **Answer without leaving your seat.** Question and approval cards show beside the pet. Connected local sources support replies; approval choices first open the full request. Failed sends preserve your answer. Web/plugin integrations remain experimental; see the [answer guide](YukioPlayer/Resources/BACKGROUND-ANSWERS.md).
-- **A bubble over her head.** The session title on top, the current step below, taken from the task list when there is one and otherwise from the tool: "Edit main.swift", "$ swift test", "developer.apple.com". A progress count and a thin bar sit beside it. Only file names, the first words of a command, and domains ever appear.
-- **Several chats at once.** She can only act out one chat, so she picks the one that needs you: waiting for your answer, then stopped on an error, then done and holding a card, then whatever is still running. Every other chat becomes a small card stacked on top of the bubble. Click the bubble to fan them out, click a card to switch to that chat, or pin one chat from the menu.
-- **Pick her up.** Drag her and she dangles from an invisible hand like a kitten held by the scruff: a damped pendulum with inertia, air drag, and a little sag when you yank upward. Let go and she settles in about a second.
-- **Local activity processing.** Session logs and permitted window information are processed locally. Answer and approval connections require their corresponding setup. Optional update checks contact GitHub; chat logs are not uploaded.
-- **Paged artwork, bounded memory.** Release builds render from small, pixel-identical pages derived from the original lossless atlases. The page cache is capped at 32 MiB on macOS and 64 MiB on Windows instead of expanding the roughly 1 GB full atlas set at once. The macOS app still has no third-party runtime dependencies.
-
-## A day at the desk
-
-<table>
+<table align="center" width="100%">
 <tr>
-<td><img src="docs/readme/desk.gif" width="192" alt="Yukio thinking, reading, checking a screenshot with the magnifier, writing, running tests, failing, fixing, passing, tidying the report and holding up the done card"></td>
-<td>
-
-Thinking → reading the code → checking a screenshot → editing → tests fail → fixing → tests pass → tidying the report → ✅.
-
-These are the actual motion strips the app plays, exported at a slightly lower frame rate to keep the file small. Right after the answer she straightens the stack of papers, taps it twice on the desk, and only then raises the card.
-
-</td>
+<th width="50%">Go deeper</th>
+<th width="50%">Pick up where you left off</th>
+</tr>
+<tr>
+<td><a href="docs/readme/workbench-deep.png"><img src="docs/readme/workbench-deep.png" alt="Expanded explanation of the current change, the user's decision and how to check it"></a></td>
+<td><a href="docs/readme/workbench-history.png"><img src="docs/readme/workbench-history.png" alt="Earlier work grouped into requests with summaries and expandable details"></a></td>
 </tr>
 </table>
 
-## The bubble and the card stack
+<sub>Workbench images use the current interface with preset demonstration data. Click an image to view it at full size. Model explanations require a compatible configured service.</sub>
 
-<img src="docs/readme/bubble.png" width="900" alt="Six bubble samples above Yukio: a step with 3 of 7 done, a long title cut short, thinking, an error on swift test, the question card with 'Your turn · click to open', and the done card with 'Done · click to open'">
+### Be there when your input is needed
 
-<img src="docs/readme/cards.png" width="470" alt="Left: the bubble with a '5 more' hint above it. Right: fanned out, five other chats stacked over the bubble, each with a colour bar for its state: waiting, failed, ready, running">
+Question cards keep the prompt and answer close to the character. Connected Codex desktop chats on macOS can receive answers in the background, so you can keep your focus. Failed sends preserve your text for retry. Approval cards show the full request before you choose whether to proceed.
 
-Left: normally there is just the bubble and a thin "5 more" hint. Right: fanned out, with the most urgent chat closest to the bubble. Orange is waiting for you, red stopped on an error, green finished, blue still running. The ✕ dismisses one card until that chat does something new. Cards fold back after 12 seconds on their own.
+Completion reminders help you return to finished work. Questions and approvals remain pending until handled; opening a chat does not answer or approve them.
 
-## Picking her up
+Reply support depends on the source and its connection. See the [connection guide](YukioPlayer/Resources/BACKGROUND-ANSWERS.md) for setup and supported routes; web and browser-plugin connections are experimental.
 
-<img src="docs/readme/drag.gif" width="236" alt="Yukio dangling from an invisible hand: swinging while dragged, settling after release, sagging and bouncing back when lifted sharply">
+## Character & animation gallery
 
-Straight out of the app's own swing model, with the camera following her so you see the tilt rather than the travel. Dragged sideways she lags behind the hand and swings past centre when it stops. Let go and she settles in about a second. A sharp lift makes her sag and spring back. The hand is invisible: the grip is a point just above her head, and the pendulum length is measured from the artwork itself, so a larger Yukio swings less.
+### Two companions. One workspace.
 
-## How she knows
+Choose a look that fits your desktop. **Yukio (雪绪)** pairs white hair and blue eyes with a navy uniform. **Qianxia (千夏)** brings mint-green hair, pink accents and playful electronic details. Both include twelve activity animations, independent blinking and a dedicated picked-up pose.
 
-**Where she reads from.** Claude Code writes a transcript for every session under `~/.claude/projects`; Codex writes one per chat under `~/.codex/sessions/<year>/<month>/<day>/rollout-*.jsonl`; Deep Code keeps its sessions under `~/.deepcode/projects`. Yukio tails whichever of those you picked, read-only, and turns tool calls into states. A tool call shows up about 0.2 seconds after it starts, then a 0.4 second debounce keeps her from twitching between quick calls. Claude Code's official hooks can be wired in as a second source; the script and settings snippet are in `YukioPlayer/integrations/claude-hooks/`, and enabling them is your call.
+<table align="center" width="100%">
+<tr>
+<th width="50%">Yukio · 雪绪</th>
+<th width="50%">Qianxia · 千夏</th>
+</tr>
+<tr>
+<td align="center"><img src="YukioPlayer/Resources/Assets/base/held@2x.png" height="256" alt="Yukio's picked-up pose, with white hair, blue eyes and a navy uniform"></td>
+<td align="center"><img src="YukioPlayer/Resources/Assets/skins/qianxia/base/held.png" height="256" alt="Qianxia's picked-up pose, with mint-green hair, pink sleeves and a blue bow"></td>
+</tr>
+<tr>
+<td align="center">Quiet colors. A familiar desk companion.</td>
+<td align="center">Bright details. A playful change of pace.</td>
+</tr>
+</table>
 
-**Windows.** The same three families, at `%USERPROFILE%\.deepcode\projects`, `%USERPROFILE%\.claude\projects`, and `%USERPROFILE%\.codex\sessions`; for Deep Code she also reads the session index, which is the only place "waiting for your approval" is written. Point Claude Code at DeepSeek's Anthropic-compatible endpoint and its transcripts are followed the same way. Any other tool can drive her by appending JSON lines to `%LOCALAPPDATA%\Yukio\inbox.jsonl`.
+### Twelve ways to show the work
 
-These logs are internal to those tools, not public APIs. If a format changes she shows fewer events and drifts back to idle instead of crashing.
+Reading becomes a book. Editing becomes a moving pen. Image inspection becomes a magnifying glass. Testing, browsing, questions and completion each have their own visual language.
 
-## Build from source
+<img src="docs/readme/states-en.png" width="100%" alt="Twelve Yukio states: thinking, reading files, viewing an image, writing files, running tests, browsing the web, responding, completed, waiting for input, other work, failed and idle">
 
-**macOS** needs only the Xcode Command Line Tools to build and run. Making the official low-memory release zip also uses Python and Pillow once at build time to derive pixel-identical artwork pages; the packaged app itself has no Python dependency.
+### Small motions, full of character
 
-```sh
-git clone https://github.com/leozhang8654/yukio-desktop-pet
-cd yukio-desktop-pet/YukioPlayer
-swift test                      # 172 tests: routing, blink timing, classification, parsers, bubble text, timelines, chat picking, questions
-./scripts/build-app.sh          # build/Yukio.app
-open build/Yukio.app
-cd ../YukioWin && pip3 install pillow && python3 scripts/prepare-windows-assets.py
-cd ../YukioPlayer && ./scripts/package-release.sh  # universal binary zip in dist/
-```
+The pen follows the page, the magnifier moves across an image, and the hands take turns at the keyboard. Independent blinks and reading gaze add life to each activity. Pick the character up and she swings with your movement, then settles after release.
 
-**Windows** needs Python 3.9 or newer.
+<p align="center">
+<img src="docs/readme/drag.gif" width="236" alt="Yukio swings while being dragged and settles after release">
+</p>
 
-```bat
-cd yukio-desktop-pet\YukioWin
-pip install pillow
-python run.py
-python run.py --selftest                                          # 219 tests, runs on any OS
-powershell -ExecutionPolicy Bypass -File scripts\build-exe.ps1    # dist\Yukio.exe, artwork included
-```
+The previews above show the animation artwork and drag behavior. The artwork uses reviewed transparent layers and coordinated hand-and-prop motion. Explore the [animation inputs and workflow](sources/approved-animation-rig/README.md).
 
-No Windows machine? The GitHub Actions workflow builds the exe on a real Windows runner and smoke-tests it there: it launches the exe, finds her windows, checks the pose against a staged Deep Code session, and compares screenshots pixel by pixel at 100% and 150% scaling.
+Adjust the character from **50% to 200%**, drag her to a comfortable spot, switch skins, or enable **Hide when idle** for a quieter desktop. English and Chinese interfaces are available; real chat names and quoted source text retain their original language.
 
-Both players have window-less modes for poking around: `--demo`, `--replay session.jsonl`, `--watch 60`, `--chats`, `--snapshot`, `--bubble`, `--cards`, `--hang`. See the two player READMEs for the full list.
+## Download
 
-## Repository map
+| Platform | Download | Included experience |
+| --- | --- | --- |
+| **Apple silicon Mac · macOS 13+** | **[v0.4.13 DMG](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.13/Yukio-0.4.13-macOS-arm64.dmg)** · [ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.13/Yukio-0.4.13-macOS-arm64.zip) | Desktop companion + integrated activity workbench |
+| **Intel Mac** | [v0.4.6 DMG](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-macOS.dmg) · [ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-macOS.zip) | Earlier desktop companion release |
+| **Windows 10 / 11 · 64-bit** | [v0.4.6 Setup](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-Windows-Setup.exe) · [Portable ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/YukioDesktop-win-Portable.zip) | Earlier desktop companion release |
 
-| Path | What is in it |
-| --- | --- |
-| `YukioPlayer/` | macOS player: Swift sources and tests, bundled artwork and app icon, the motion, icon, and drag-pose generators under `tools/`, build and release scripts. [README](YukioPlayer/README.md) |
-| `YukioWin/` | Windows player: Python and ctypes layered window, tests, PyInstaller spec, the smoke test CI runs. [README](YukioWin/README.md) |
-| `assets/` | Final transparent artwork: the seven activity strips, the desk, the two cards, the base poses |
-| `sources/` | High-resolution generation sources, magenta-keyed |
-| `references/` | Contact sheet, generation prompts, image inventory |
-| `docs/readme/` | The images on this page, and `make_images.py` to regenerate them |
-| [`docs/HANDOFF.md`](docs/HANDOFF.md) | Design log: requirements, feedback, and changes (Chinese) |
-| [`docs/history/`](docs/history/README.md) | Original hand-off bundle and early native pet snapshot |
-| [`sources/approved-animation-rig/`](sources/approved-animation-rig/README.md) | Reviewed artwork, component masks and reproducible animation inputs |
+The integrated workbench is currently available on Apple silicon Mac. Intel and Windows downloads remain on v0.4.6. Mac updates now check and remind you, then open the official download page. Download the complete DMG or ZIP, quit Yukio and replace the current copy in the same location. [Update guide](docs/MANUAL-UPDATES.md). [All releases and checksums](https://github.com/leozhang8654/yukio-desktop-pet/releases).
 
-## Good to know
+<details>
+<summary><b>First launch on macOS or Windows</b></summary>
 
-- English by default. Open the assistant, then Pet settings, where Language can be switched to 中文; the choice is remembered. Descriptions already attached to earlier events keep their language until the next event arrives. The command-line check modes still print their diagnostics in Chinese.
-- The current animations use reviewed 384×416 artwork directly (384×480 for the picked-up pose), displayed at 192×208 points by default. The production workflow preserves these 2x sources without another upscaling pass. The old thick, blurry dark fringe from keying is gone; a thin half-point outline is drawn around her instead. She stays crisp on Retina and HiDPI screens; above 200% she starts to soften again.
-- Click-to-jump needs a desktop app: the Claude app for Claude Code chats, the Codex app for Codex chats (`codex://threads/<id>`). An agent run in a terminal has no chat window to open, so a click only brings that app to the front. Deep Code chats live in the terminal, so there a click simply lowers the card. Verified on macOS; the Windows path is written the same way but has not been tried on a real machine yet.
-- Size is a 50 to 200% slider in pet settings on both platforms; Windows also keeps fixed steps and ±5% nudges in the tray menu.
-- The macOS app is ad-hoc signed and not notarized; the Windows exe is unsigned. Building from source avoids the first-launch prompts.
+On Mac, open the DMG, drag `Yukio.app` into **Applications**, then launch it. The Mac build is ad-hoc signed and is not Apple-notarized. If macOS blocks a download you trust, use **System Settings → Privacy & Security → Open Anyway** after the first launch attempt.
 
-## How the art is made
+On Windows, run Setup and open the installed shortcut. The Windows executable is unsigned; SmartScreen may display **More info → Run anyway**. Verify the download source and release checksum before proceeding.
 
-Each state uses approved artwork and corrected SAM 2.1 component masks. The head and neck stay fixed, while hands, attached props, reading gaze and independent eyelids retain their reviewed animation. The production generator reuses the existing 2x sources directly; see [animation inputs and workflow](sources/approved-animation-rig/README.md).
+</details>
 
-If Yukio makes your day at the keyboard a little nicer, a ⭐ helps other people find her.
+## Get started
 
-Settings now includes a large **Lower sign** icon button. It lowers the current completion sign without opening the chat; later completed turns can raise the sign again.
+1. **Launch Yukio.** Choose your character, language and size in pet settings. **Play demo** gives you a tour of the activity animations.
+2. **Start your coding agent.** Choose Codex, Claude Code, Deep Code or Auto in the assistant setting. Yukio reads the supported local activity records as work progresses.
+3. **Open the workbench on Mac.** Right-click the character, choose a project or recent chat, and explore its current work. Pet settings are available from the workbench's upper-right corner.
+4. **Connect the features you want.** Use the [reply setup guide](YukioPlayer/Resources/BACKGROUND-ANSWERS.md) for question cards and the [model configuration guide](docs/activity-workbench-model-configuration.md) for richer explanations. Basic activity following works without an explanation model.
 
-Completion signs are acknowledged when the matching tracked chat is visible in its app, a web page, or an extension’s embedded chat document. Browser detection on macOS requires Accessibility access, enabled from Yukio settings. See [chat visibility and supported routes](docs/BROWSER-CHAT-VISIBILITY.md). Unknown or unmapped chat IDs keep their reminders.
+## Your work, handled with care
+
+Activity monitoring and local search run on your computer. Optional model explanations send limited excerpts from the selected conversation to your configured service. The current explanation adapter supports a local or LAN OpenAI-compatible endpoint without API-key authentication. Closing the workbench stops new explanation requests; a request already sent may still finish.
+
+Explanations are based on the activity that is available. They can be incomplete or mistaken, so supporting excerpts and missing-context notices stay accessible. Connection details and personal activity history are not included in the download.
+
+## Explore the project
+
+[Documentation](docs/README.md) · [macOS source & build guide](YukioPlayer/README.md) · [Windows source & build guide](YukioWin/README.md) · [Release notes](CHANGELOG.md) · [Report an issue](https://github.com/leozhang8654/yukio-desktop-pet/issues)
+
+Yukio combines a native **Swift / AppKit** Mac companion, a **Python** Windows companion and a **Python / JavaScript** activity workbench. Character artwork, animation inputs and the player source live in this repository.
