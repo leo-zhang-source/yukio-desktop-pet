@@ -31,3 +31,7 @@ The check schedule remains six hours, with a due startup check after about 15 se
 Users already on the interim **1.0** can update normally inside the app to **5.3**. It is retained as a historical release; it is not the current version.
 
 目前使用临时编号1.0的用户，可以直接在软件里更新到5.3；无需自己再替换一次。当前正式编号为5.3，后续继续5.4、5.5。
+
+## Standard installation and the Desktop shortcut
+
+This Mac keeps the actual App in the user Applications folder with one Finder alias named **Yukio** on Desktop. The actual 1.0 to 5.3 in-app update completed there; after replacement, the alias still opens the updated App. The old Desktop App is fully archived and recoverable. Updating no longer needs to access Desktop just to replace the App. No security control or signing trust policy was disabled. Other users should also keep one actual App in Applications and use an alias if they want a Desktop entry.
