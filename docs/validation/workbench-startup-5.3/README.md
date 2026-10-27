@@ -8,14 +8,14 @@ The original launcher reproduced the failure when the preferred port belonged to
 
 ## Repair
 
-- The Mac host opts into `--fallback-port`. The launcher retains strict build/profile matching for reuse, and otherwise lets the OS atomically reserve a free loopback port when the preferred port is occupied. Existing owners and recorder leases are preserved. Explicit CLI port use without the flag remains strict.
+- The Mac host requests an OS-reserved loopback port (`--port 0`), including on reconnect, so it never borrows a previous attempt's service while it is shutting down. CLI users can also opt into `--fallback-port`; explicit fixed-port use without that flag remains strict and reuse requires matching build/profile identity. Existing owners and recorder leases are preserved.
 - An explicit readiness message delivers the actual URL. The native host and navigation policy accept only that loopback origin; arbitrary log lines containing a URL do not indicate readiness.
 - Startup failures retain safe diagnostic codes. No private configuration, paths or chat text are copied into the UI diagnostics. Silent startup has a timeout. Reconnect cancels the failed attempt and starts again. Failed page navigation also exposes Reconnect.
 - A standalone Mac diagnostic script tests the installed runtime with empty and existing profiles on free ports. It does not collect chats, call a model, edit settings, disable protections, or stop an existing process.
 
 ## Verification
 
-- 236 backend tests passed, including occupied foreign ports, different workbench identity, same-service reuse and invalid-configuration diagnostics.
+- Backend checks cover OS-reserved ports, occupied foreign ports, different workbench identity, same-service reuse and invalid-configuration diagnostics; final counts are in the delivery receipt.
 - 240 native tests passed in the final serial run, including split readiness output, immediate reuse/exit, error and timeout paths, retry, diagnostic UI, and navigation restrictions. Earlier UI test attempts did not complete; those runs are not counted as passes. The final unit tests do not activate an AppKit window outside the native integration check.
 - The frozen Mac runtime passed the existing package check: no system Python, Unicode/space paths, synthetic collectors, handoffs, history preservation across restart, process cleanup and source manifest hashes. No real model request was made.
 - The actual native window loaded the bundled service on port 57631 while the installed 5.3 service retained 8767. Both the page and API connected. Switching to Settings and back kept the same page. The generated screenshot was inspected and shows “Connected · Waiting for chat.”

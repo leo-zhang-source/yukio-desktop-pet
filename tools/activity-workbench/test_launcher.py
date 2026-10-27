@@ -50,6 +50,13 @@ class LauncherTests(unittest.TestCase):
             self.assertFalse(data.exists(),'Read-only startup must not create history')
             self.assertIsNone(process.poll())
 
+    def test_zero_port_reports_the_actual_reserved_port(self):
+        data=self.root/'automatic-port'
+        process,port=self.launch_until_ready(0,data)
+        self.assertGreater(port,0)
+        self.assertEqual(check_existing(port,databases_for(data)),'same')
+        self.assertIsNone(process.poll())
+
     def test_fallback_does_not_reuse_or_stop_a_different_workbench(self):
         old_databases=databases_for(self.root/'old-profile');server=create_server(0,old_databases)
         thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()

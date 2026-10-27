@@ -65,7 +65,7 @@ private func runWorkbenchConnectionCheck(path: String, resources: URL, directory
             try FileManager.default.createDirectory(at: sources.appendingPathComponent(client), withIntermediateDirectories: true)
         }
     } catch { exit(2) }
-    let runtime = WorkbenchRuntime(resources: resources, launchArguments: ["--collect", "--no-browser", "--fallback-port",
+    let runtime = WorkbenchRuntime(resources: resources, launchArguments: ["--collect", "--no-browser", "--port", "0",
         "--data-dir", directory.appendingPathComponent("data").path, "--source-root", sources.path])
     let app = NSApplication.shared
     app.setActivationPolicy(.accessory)

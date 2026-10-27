@@ -66,7 +66,7 @@ def inspect(directory):
 def main(argv=None):
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--data-dir',type=Path,default=default_directory())
-    parser.add_argument('--port',type=int,default=8767)
+    parser.add_argument('--port',type=int,default=8767,help='Loopback port; 0 lets the OS reserve an available port')
     parser.add_argument('--fallback-port',action='store_true',help='Use an available loopback port if the preferred port is occupied')
     parser.add_argument('--collect',action='store_true',help='Collect supported recent local activity; no model transmission')
     parser.add_argument('--no-browser',action='store_true')
@@ -75,7 +75,7 @@ def main(argv=None):
     parser.add_argument('--collector',choices=CLIENTS,help=argparse.SUPPRESS)
     parser.add_argument('--parent-stdin',action='store_true',help=argparse.SUPPRESS)
     args=parser.parse_args(argv)
-    if not 1<=args.port<=65535:parser.error('Port must be 1..65535')
+    if not 0<=args.port<=65535:parser.error('Port must be 0..65535')
     directory=args.data_dir.absolute();databases=databases_for(directory)
     if args.check:print(json.dumps(inspect(directory),ensure_ascii=False));return 0
     if args.collector:
@@ -90,7 +90,7 @@ def main(argv=None):
     except (OSError,ValueError):
         startup_error('invalid_configuration')
         print('模型配置需要检查；未启动新服务。',file=sys.stderr);return 1
-    existing=check_existing(args.port,databases,config)
+    existing=check_existing(args.port,databases,config) if args.port else 'unavailable'
     if existing=='same' and not args.collect:
         url=ready(args.port)
         print('本机工作台已在运行，继续使用现有服务。',flush=True)

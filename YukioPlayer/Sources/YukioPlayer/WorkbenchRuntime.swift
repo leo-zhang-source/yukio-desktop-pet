@@ -1,7 +1,7 @@
 import Foundation
 
-/// The bundled launcher checks the build and data scope before reusing a service.
-/// A service owned by another window is never stopped by this controller.
+/// Each App-owned runtime reserves a loopback port with the OS. It never borrows
+/// a service that could belong to another App or a previous attempt shutting down.
 final class WorkbenchRuntime: WorkbenchStarting {
     enum Failure: Error {
         case missing, unavailable, timedOut
@@ -38,7 +38,7 @@ final class WorkbenchRuntime: WorkbenchStarting {
     private let startupTimeout: TimeInterval
     private let launchArguments: [String]
     init(resources: URL? = Bundle.main.resourceURL, startupTimeout: TimeInterval = 15,
-         launchArguments: [String] = ["--collect", "--no-browser", "--fallback-port"]) {
+         launchArguments: [String] = ["--collect", "--no-browser", "--port", "0"]) {
         self.resources = resources; self.startupTimeout = startupTimeout; self.launchArguments = launchArguments
     }
 
