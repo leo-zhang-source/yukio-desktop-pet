@@ -4,7 +4,7 @@
 
 **Version policy:** Public versions use 1.0, 1.1, 1.2, then 2.0 for a major release. Internal build 35 remains monotonic; historical three-component versions are still accepted and are not relabeled. Workbench 0.3.9 is unchanged.
 
-**Verified:** 231 native tests (four consent-flow tests included), one appcast test and eight progress-site checks. Candidate ZIP, DMG and the sole desktop App match 470 files. Old history prefixes, all three private configurations and the native language preference remain intact. Workbench's 233 backend and 28 page checks are the unchanged prior baseline, not newly rerun tests.
+**Verified:** 232 native tests (four consent-flow tests included), one appcast test and eight progress-site checks. Candidate ZIP, DMG and the sole desktop App match 470 files. Old history prefixes, all three private configurations and the native language preference remain intact. Workbench's 233 backend and 28 page checks are the unchanged prior baseline, not newly rerun tests.
 
 - Used the actual published 0.4.11 ZIP, SHA256 `607d9569405fc2b67cdd506ab016c1b3877b1bb002d454f657cc5a238b4be36a`. Its executable code was preserved; only isolation metadata, test feed/public key and the resulting ad-hoc signature changed. Temporary test keys were deleted before launch.
 - Chinese and English windows showed Install Update and normally formatted notes. Later preserved the old App and settings. A deliberately corrupted archive was rejected, leaving all old files and settings unchanged.
