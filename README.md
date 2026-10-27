@@ -113,6 +113,8 @@ Adjust the character from **50% to 200%**, drag her to a comfortable spot, switc
 
 ## Download
 
+**Next release: 1.0 (not published).** Public versions will use 1.0, 1.1, 1.2, then 2.0 for a major release. The existing-user Install Update option and readable English/Chinese notes have been restored in the candidate, but final installation is still blocked on the test Mac. The public downloads below and the installed desktop App remain 0.4.13. [Current verification](docs/validation/mac-update-1.0/README.md).
+
 | Platform | Download | Included experience |
 | --- | --- | --- |
 | **Apple silicon Mac · macOS 13+** | **[v0.4.13 DMG](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.13/Yukio-0.4.13-macOS-arm64.dmg)** · [ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.13/Yukio-0.4.13-macOS-arm64.zip) | Desktop companion + integrated activity workbench |

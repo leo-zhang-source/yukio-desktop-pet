@@ -113,6 +113,8 @@ Yukio 读取三类助手的本机活动记录。你可以指定一个来源，�
 
 ## 下载
 
+**下一版：1.0（尚未发布）。** 后续普通更新按1.1、1.2继续，大更新再用2.0。候选版已恢复旧用户的“安装更新”入口及易读的中英文说明，但测试Mac的最后安装仍卡住。下方公开下载与桌面程序仍为0.4.13。[当前验收情况](docs/validation/mac-update-1.0/README.md)。
+
 | 平台 | 下载 | 提供的体验 |
 | --- | --- | --- |
 | **Apple 芯片 Mac · macOS 13+** | **[v0.4.13 DMG](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.13/Yukio-0.4.13-macOS-arm64.dmg)** · [ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.13/Yukio-0.4.13-macOS-arm64.zip) | 桌面角色 + 内置活动工作台 |

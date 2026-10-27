@@ -1,5 +1,7 @@
 # Updating Yukio on Mac / Mac 雪绪更新方式
 
+> **Correction:** The download-page-only flow below describes released 0.4.13. It was an incorrect interpretation of the desired update experience. The intended flow is: check automatically, then download, install and relaunch after the user clicks Install Update. Candidate 1.0 restores this flow but final installation has not passed and it is not published. 0.4.13 users will need to install the complete 1.0 app once after release, then use in-app updates. [Current verification](validation/mac-update-1.0/README.md).
+
 Yukio 0.4.13 checks for new releases and reminds you. It does not download or install an update inside the app.
 
 1. Keep **Settings → More → Automatically check for updates** enabled for reminders. Turn it off to opt out. **Check for updates** works on demand.

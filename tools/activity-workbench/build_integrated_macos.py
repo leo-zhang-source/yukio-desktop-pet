@@ -28,7 +28,7 @@ def build(base_app, workbench_app, binary, source, output, version=None, build_n
         raise ValueError('Choose a new output directory')
     baseline_info = plistlib.loads((base_app / 'Contents/Info.plist').read_bytes())
     if version:
-        if not re.fullmatch(r'\d+\.\d+\.\d+', version) or not build_number or not re.fullmatch(r'\d+(?:\.\d+){0,2}', build_number) or not revision or not re.fullmatch(r'[0-9a-f]{40}', revision):
+        if not re.fullmatch(r'\d+\.\d+(?:\.\d+)?', version) or not build_number or not re.fullmatch(r'\d+(?:\.\d+){0,2}', build_number) or not revision or not re.fullmatch(r'[0-9a-f]{40}', revision):
             raise ValueError('A public release needs a version, numeric build and exact source revision')
         if tuple(map(int, build_number.split('.'))) <= tuple(map(int, baseline_info['CFBundleVersion'].split('.'))):
             raise ValueError('The release must be newer than its baseline')
