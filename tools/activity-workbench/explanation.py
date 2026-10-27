@@ -476,6 +476,9 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
 
 
 def call_model(config,payload):
+    if config.get('provider')=='agent':
+        from agent_explanation import call_agent
+        return call_agent(config,payload)
     reading=payload.get('scope',{}).get('reading')
     system=output_system(payload)
     request=dict(model=config['model'],messages=[dict(role='system',content=system),dict(role='user',content=encode(payload))],
@@ -510,6 +513,16 @@ def call_model(config,payload):
 
 
 MESSAGES={
+    'agent_not_found':'没有找到可用的本机 Agent。请安装并登录 Codex 或 Claude Code，再重新开启解释。',
+    'agent_start_failed':'本机 Agent 未能启动。请在终端确认 Codex 或 Claude Code 能正常打开。',
+    'agent_login_required':'Agent 登录已失效或尚未登录，请先在对应客户端登录，再重试。',
+    'agent_rate_limited':'Agent 的用量或额度已到上限，请稍后重试。',
+    'agent_incompatible':'当前 Agent 版本不支持独立解释，请升级对应客户端后重试。',
+    'agent_timeout':'Agent 解释超时，本次解释进程已停止，原聊天仍可使用。',
+    'agent_failed':'Agent 暂时无法解释，请检查该客户端是否能正常回答。已有记录仍保留。',
+    'agent_config_unsupported':'无法安全读取 Agent 的模型设置。请检查客户端配置；从源码运行自定义服务时需 Python 3.11 或更新版本。',
+    'agent_model_unavailable':'Agent 选择的模型不支持当前登录。请先在对应命令行客户端选择可用模型，再重试。',
+
     'unnamed_subject':'这次说明没说清具体是哪组按钮，暂时保留已有内容。',
     'service_unavailable':'模型暂时没有响应，仍可查看下面的本机说明。',
     'model_unavailable':'配置的模型目前不可用，没有自动切换其他模型。',
@@ -524,19 +537,20 @@ MESSAGES={
     'busy':'已有一条解释正在生成，请稍后再试。',
     'preview_expired':'发送预览已过期，请重新预览。',
     'consent_required':'请先预览内容，再确认发送。',
-    'missing_current_result':'千问漏掉了最近一步的结果，先保留本机说明。',
+    'missing_current_result':'模型漏掉了最近一步的结果，先保留本机说明。',
     'contradictory_result':'这次说明与操作记录不一致，先保留本机说明。',
-    'missing_project_context':'千问没有联系前后步骤，先保留本机说明。',
+    'missing_project_context':'模型没有联系前后步骤，先保留本机说明。',
 }
 
 
 class ExplanationService:
     def __init__(self,config, *, sender=call_model,clock=time.monotonic):
         self.config=dict(config);self.sender=sender;self.clock=clock
-        self.lock=threading.Lock();self.entries=OrderedDict();self.calls=deque();self.running=False
+        self.lock=threading.Lock();self.entries=OrderedDict();self.calls=deque();self.running=False;self.retired=False
 
     def info(self):
         return dict(configured=True,model=self.config['model'],destination=self.config['base_url'],
+                    provider=self.config.get('agent','lan'),
                     max_calls_per_hour=self.config['max_calls_per_hour'],manual_only=True)
 
     def preview(self,selection,item,warnings):
@@ -585,6 +599,7 @@ class ExplanationService:
         if consent is not True:raise ExplanationError('consent_required')
         with self.lock:
             entry=self.entries.get(token);now=self.clock()
+            if self.retired:raise ExplanationError('preview_expired')
             if not entry or now-entry['created']>300:raise ExplanationError('preview_expired')
             if entry['state']=='done':return dict(entry['result'],cached=True)
             if self.running:raise ExplanationError('busy')
@@ -593,10 +608,14 @@ class ExplanationService:
                 raise ExplanationError('rate_limited')
             self.calls.append(now);self.running=True;entry['state']='running'
         try:
-            explanations=self.sender(self.config,entry['payload'])
+            request_config=self.config
+            if self.config.get('provider')=='agent':
+                from agent_explanation import select_agent
+                request_config=select_agent(self.config,entry['selection'].get('client') if isinstance(entry['selection'],dict) else None)
+            explanations=self.sender(request_config,entry['payload'])
             # Also validate injected test transports; one validation contract.
             explanations=complete_response(encode(dict(explanations=explanations)),entry['payload'])
-            result=dict(mode='model',model=self.config['model'],explanations=explanations,cached=False,
+            result=dict(mode='model',model=request_config['model'],explanations=explanations,cached=False,
                         warning='模型解释，可能有误。引用和格式已检查，但不代表每句话已经被证明正确。')
         except ExplanationError as exc:
             result=dict(mode='fallback',reason=exc.code,message=MESSAGES.get(exc.code,'模型返回的内容未通过检查，已保留本机说明。'),

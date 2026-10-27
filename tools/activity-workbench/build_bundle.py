@@ -12,7 +12,7 @@ import sys
 import zipfile
 
 ROOT=Path(__file__).resolve().parent
-RUNTIME=('chat_catalog.py','reading_view.py','page_explanation_policy.py','plain_language.py','task_summary.py','project_context.py','handoff_view.py','source_context.py','glance_view.py','glance_automation.py','server.py','history_view.py','context_view.py','explanation.py','runtime_identity.py','localization.py','collector_status.py','launcher.py','start-macos.command','start-windows.cmd')
+RUNTIME=('agent_explanation.py','chat_catalog.py','reading_view.py','page_explanation_policy.py','plain_language.py','task_summary.py','project_context.py','handoff_view.py','source_context.py','glance_view.py','glance_automation.py','server.py','history_view.py','context_view.py','explanation.py','runtime_identity.py','localization.py','collector_status.py','launcher.py','start-macos.command','start-windows.cmd')
 
 def build(destination,macos=False):
     if destination.exists():raise ValueError('Use a new output directory')
@@ -27,9 +27,10 @@ def build(destination,macos=False):
 Mac 独立 App 0.3.9 已内置运行环境：直接打开外层“雪绪活动工作台.app”，无需安装 Python。本目录的 start-macos.command 供使用源码的人运行。Windows 当前为之后的可选任务，不作为本次交付或验收范围。
 也可运行 python3 launcher.py --collect，随后打开 http://127.0.0.1:8767/ 。
 
-首页选择聊天名称，直接看“内容、解释、原因”。 点“深入解释”可展开当前工作的做法、前后联系、用途和限制；点“之前做了什么”按每次要求回顾，一次三段，每段先由千问简短总结，再按需深入查看。两处只发送有限公开摘录，共用模型次数上限。点“任务与交接小结”可看整体目标、之前进展、当前结果、后续安排和各助手回复；缺失与采用未知分别保留。详细操作和依据默认收起，需要查旧记录时再点“记录详情”。
+首页选择聊天名称，直接看“内容、解释、原因”。 点“深入解释”可展开当前工作的做法、前后联系、用途和限制；点“之前做了什么”按每次要求回顾，一次三段，每段由所选 Agent 或模型简短总结，再按需深入查看。两处只发送有限公开摘录，共用模型次数上限。点“任务与交接小结”可看整体目标、之前进展、当前结果、后续安排和各助手回复；缺失与采用未知分别保留。详细操作和依据默认收起，需要查旧记录时再点“记录详情”。
 打开工作台会检查并接续缺少的记录器，只保存必要元数据。聊天原文和能明确配对的读取返回短片段只在本机临时读取，不复制进历史库。
 
+默认由你本机已登录的 Codex 或 Claude Code 解释，无需开发者的内网接口。首页选择解释来源并点“开启解释”；自动模式跟随所选聊天的 Agent，未安装时选择另一个已安装的 Agent。调用失败时保留本机说明，不切换服务。使用你自己的账号额度。也可选择已配置的内网模型。
 无需模型也能查看常见步骤的简短说明，推测会单独标注。在用户已明确设置自动说明的设备上，打开页面就解释当前所选聊天，并保持跟进；关闭页面停止后续发送。无变化不重复生成，至少间隔3分钟；接收位置和短摘录范围在折叠的“说明与隐私”中查看。该设置在本机绑定接收位置，不随包分发。
 模型配置从本机应用数据目录读取，不包含在包里；没有模型也能看本机原文说明。过滤不能保证隐藏所有私人信息，请在使用前了解折叠的发送范围。
 

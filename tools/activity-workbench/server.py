@@ -18,6 +18,7 @@ from runtime_identity import identity
 from collector_status import read_status
 from explanation import ExplanationService, ExplanationError, MESSAGES, load_config
 from page_explanation_policy import enabled as page_policy_enabled
+from agent_explanation import configuration, save_preferences, provider_options
 from localization import language_context,localize,catalog
 
 ROOT = Path(__file__).resolve().parent
@@ -35,15 +36,21 @@ ASSETS['/i18n.js']=('i18n.js','text/javascript; charset=utf-8')
 def create_server(port, databases, *, synthetic=False, model_config=None, explanation_service=None, source_roots=None):
     view = HistoryView(databases)
     context = ContextView(view)
-    service_identity = identity(databases,model_config)
-    explainer = explanation_service or (ExplanationService(model_config) if model_config else None)
+    parents={Path(p).parent.resolve() for p in databases.values()}
+    directory=next(iter(parents)) if len(parents)==1 else None
+    active_config=model_config or configuration(directory)
+    explainer = explanation_service or ExplanationService(active_config)
     glance = GlanceView(view,{} if synthetic and source_roots is None else source_roots)
     parents={Path(p).parent.resolve() for p in databases.values()}
     glance.project_context=ProjectContext(next(iter(parents))/'work-context.json' if len(parents)==1 else None)
     directory=next(iter(parents)) if len(parents)==1 else None
-    page_allowed=lambda:page_policy_enabled(directory,model_config)
+    page_allowed=lambda:page_policy_enabled(directory,active_config)
     automation = GlanceAutomation(glance,explainer,page_allowed=page_allowed) if explainer else None
     reading = ReadingView(glance,explainer,automation) if explainer else None
+
+    def explanation_info():
+        return dict(explainer.info(), automatic_on_open=bool(page_allowed()),
+                    providers=provider_options(directory))
 
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *_):
@@ -93,11 +100,10 @@ def create_server(port, databases, *, synthetic=False, model_config=None, explan
                 elif url.path=='/api/glance':result=glance.detail(**p)
                 elif url.path=='/api/task-summary':result=glance.summary(**p)
                 elif url.path=='/api/handoffs':result=HandoffView(view,glance.reader).detail(**p)
-                else:result = service_identity if url.path=='/api/health' else getattr(context if url.path in ('/api/context','/api/relations') else view, url.path.rsplit('/',1)[1])(**p)
+                else:result = identity(databases,active_config) if url.path=='/api/health' else getattr(context if url.path in ('/api/context','/api/relations') else view, url.path.rsplit('/',1)[1])(**p)
                 if url.path == '/api/clients':
                     result['mode'] = 'synthetic' if synthetic else 'local'
-                    result['explanation'] = explainer.info() if explainer else dict(configured=False)
-                    result['explanation']['automatic_on_open']=bool(explainer and page_allowed())
+                    result['explanation'] = explanation_info()
                     for client in result['clients']:
                         client['recorder'] = dict(state='synthetic') if synthetic else read_status(databases[client['id']],client['id'])
                 return self.reply(200, json.dumps(localize(result), ensure_ascii=False, allow_nan=False).encode(), 'application/json; charset=utf-8')
@@ -111,12 +117,13 @@ def create_server(port, databases, *, synthetic=False, model_config=None, explan
                 return self.post()
 
         def post(self):
+            nonlocal explainer, automation, reading, active_config
             host=self.headers.get('Host')
             allowed={'127.0.0.1:%d'%self.server.server_port,'localhost:%d'%self.server.server_port}
             if (host not in allowed or self.headers.get('Sec-Fetch-Site')=='cross-site' or
                     self.headers.get('Origin','http://'+host)!='http://'+host or self.headers.get('X-Yukio-Workbench')!='1'):
                 return self.reply(403,b'Local access only','text/plain')
-            if self.path not in ('/api/explanation-preview','/api/explanation-generate','/api/context-preview','/api/glance-preview','/api/glance-authorize','/api/glance-refresh','/api/glance-stop','/api/glance-heartbeat','/api/reading-current','/api/reading-history','/api/reading-explain'):
+            if self.path not in ('/api/explanation-settings','/api/explanation-preview','/api/explanation-generate','/api/context-preview','/api/glance-preview','/api/glance-authorize','/api/glance-refresh','/api/glance-stop','/api/glance-heartbeat','/api/reading-current','/api/reading-history','/api/reading-explain'):
                 return self.reply(404,b'Not found','text/plain')
             if explainer is None:
                 return self.json_reply(503,dict(error='尚未配置模型，本机记录仍可查看。'))
@@ -128,7 +135,29 @@ def create_server(port, databases, *, synthetic=False, model_config=None, explan
                 self.connection.settimeout(5)
                 data=json.loads(self.rfile.read(int(length)))
                 if not isinstance(data,dict):raise ValueError('Invalid request')
-                if self.path.startswith('/api/reading-'):
+                if self.path=='/api/explanation-settings':
+                    if set(data)!={'provider','automatic_on_open'} or not isinstance(data['provider'],str) or type(data['automatic_on_open']) is not bool:
+                        raise ValueError('Invalid explanation settings')
+                    replacement=configuration(directory,data['provider'])
+                    previous=explainer
+                    with previous.lock:
+                        if previous.retired:raise ExplanationError('busy')
+                        if not data['automatic_on_open'] and data['provider']==active_config.get('agent','lan'):
+                            save_preferences(directory,data['provider'],False)
+                            with automation.lock:automation.grants.clear()
+                            return self.json_reply(200,explanation_info())
+                        if previous.running:raise ExplanationError('busy')
+                        save_preferences(directory,data['provider'],data['automatic_on_open'])
+                        previous.retired=True
+                        # Retain the hourly budget when changing recipients.
+                        explainer=ExplanationService(replacement)
+                        explainer.calls=previous.calls.copy()
+                        active_config=replacement
+                        automation=GlanceAutomation(glance,explainer,page_allowed=page_allowed)
+                        reading=ReadingView(glance,explainer,automation)
+                    result=explanation_info()
+                elif self.path.startswith('/api/reading-'):
+
                     fields={'grant','token'} if self.path=='/api/reading-explain' else {'grant','snapshot','before'} if self.path=='/api/reading-history' else {'grant'}
                     if 'grant' not in data or set(data)-fields or not isinstance(data['grant'],str) or len(data['grant'])>100:raise ValueError('Invalid reading selection')
                     if self.path=='/api/reading-explain':
