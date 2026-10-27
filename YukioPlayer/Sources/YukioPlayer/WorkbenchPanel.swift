@@ -168,15 +168,8 @@ final class WorkbenchPanelController: NSWindowController, NSWindowDelegate, WKNa
             body.leadingAnchor.constraint(equalTo: root.leadingAnchor), body.trailingAnchor.constraint(equalTo: root.trailingAnchor),
             body.bottomAnchor.constraint(equalTo: root.bottomAnchor),
         ])
-        let settingsView = settings.embeddedView()
-        settingsScroll.documentView = settingsView
-        settingsScroll.hasVerticalScroller = true; settingsScroll.drawsBackground = true
-        settingsScroll.backgroundColor = NSColor(calibratedWhite: 0.965, alpha: 1)
+        settings.embed(in: settingsScroll)
         settingsScroll.appearance = NSAppearance(named: .aqua)
-        settingsView.appearance = NSAppearance(named: .aqua)
-        settingsView.translatesAutoresizingMaskIntoConstraints = false
-        settingsView.widthAnchor.constraint(equalTo: settingsScroll.contentView.widthAnchor).isActive = true
-        // The settings' own fixed-width rows stay readable; the scroll view handles small screens.
         message.font = .systemFont(ofSize: 16)
         retryButton.target = self; retryButton.action = #selector(retry)
         retryButton.bezelStyle = .rounded
