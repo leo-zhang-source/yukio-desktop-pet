@@ -22,6 +22,6 @@ The original launcher reproduced the failure when the preferred port belonged to
 
 ## Delivery scope
 
-This is a separate Mac connection repair candidate, retaining the public label **5.3** with internal build **36.1** so it can be distinguished from public build 36. It is not a newly announced public version. Install it by quitting Yukio and replacing the existing App in the same Applications location. Preferences and histories live outside the App bundle. Future public builds with a higher build number can still update it.
+This is a separate Mac connection repair candidate, retaining the public label **5.3** with internal build **36.2** so it can be distinguished from public build 36. It is not a newly announced public version. Install it by quitting Yukio and replacing the existing App in the same Applications location. Preferences and histories live outside the App bundle. Future public builds with a higher build number can still update it.
 
 The public GitHub release/feed and the developer's installed App have not been replaced by this repair task. The affected user's confirmation after installing the repair package remains pending. Windows, other macOS versions and Apple notarization are not newly verified. Final package checks and hashes are recorded in the local delivery receipt.
