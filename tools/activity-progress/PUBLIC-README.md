@@ -6,7 +6,7 @@
 
 [下载Mac 0.4.13完整版本](https://github.com/leozhang8654/yukio-desktop-pet/releases/tag/v0.4.13) · [手动更新方法](https://github.com/leozhang8654/yukio-desktop-pet/blob/main/docs/MANUAL-UPDATES.md)
 
-项目与最近聊天、三组设置和英文界面保留，名称与引用保持原文。只保留一个桌面App，旧记录与配置保留。工作台未变动，233项后端和28项页面检查为既有基线；其他Mac、多天体验和Apple公证尚未完成。Windows全部测试继续之后可选，旧Intel/Windows下载保留0.4.6。
+项目与最近聊天、三组设置和英文界面保留，名称与引用保持原文。只保留一个桌面App，名称统一为Yukio；英文界面不变，旧记录与配置保留。工作台未变动，233项后端和28项页面检查为既有基线；其他Mac、多天体验和Apple公证尚未完成。Windows全部测试继续之后可选，旧Intel/Windows下载保留0.4.6。
 
 这是最近一次发布的开发进度，页面每分钟检查更新。公开网站不读取实时活动、私人聊天、模型配置或密钥，不连接内网模型。每一步可展开查看具体做法、原因及验证范围。
 
