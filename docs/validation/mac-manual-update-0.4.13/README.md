@@ -8,4 +8,6 @@
 
 **Issues:** This does not repair the old installer or perform an in-app replacement. The intended user flow is now manual download and replacement. The Mac package remains ad-hoc signed, not notarized. Temporary test keys were removed; no private profiles, recovery maps or test Apps are uploaded.
 
+The one desktop App is now named **Yukio**; renaming preserved all 470 files, the bundle identity, English preference and signatures.
+
 **Next Steps:** Use the reminder/manual-download flow for the next release; keep Windows and broader compatibility work optional.
