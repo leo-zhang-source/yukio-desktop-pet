@@ -1,3 +1,9 @@
+## 0.4.12 — English history and delivery review
+
+- Use focused English summary instructions so Chinese source requests do not become generated history headings. Keep evidence, language and safety checks enabled.
+- Inspect the final English native home and settings; retain original chat/project names and source quotations.
+- Verify the complete Mac download against the single active desktop App. Archive redundant local test Apps with recovery mappings and preserved contents. Windows and automatic installation remain deferred.
+
 ## 0.4.11 — Complete English workbench presentation
 
 - Apply the chosen app language to the workbench, native settings and dynamic notes.

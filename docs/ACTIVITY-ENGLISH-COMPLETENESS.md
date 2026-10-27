@@ -1,3 +1,11 @@
+## 0.4.12 follow-up
+
+Workbench 0.3.9 fixes English history summary generation with a separate, focused summary prompt. The existing language and evidence validators, request limits and model protections remain enabled. Three real summaries passed in the local English history view. The final native English home and all three settings groups were inspected; this supersedes the earlier blocked 0.4.11 final-page check below.
+
+The delivery Mac now keeps one launchable App. Redundant build and backup bundles were archived in place as hidden non-App folders, retaining content hashes and a private recovery map; NAS copies were verified directly on NAS. System search indexes exactly one Yukio App. The user also confirmed one icon after reopening application search. Build and extraction output should use `.noindex` parent directories to avoid recreating duplicate search entries.
+
+See [0.4.12 verification](validation/mac-english-0.4.12/README.md). Windows and automatic installation remain deferred. The following 0.4.11 notes are historical.
+
 # Complete English presentation
 
 Mac 0.4.11 embeds workbench 0.3.8. The earlier 0.4.10 automatic-installer investigation remains separate and deferred. This change does not retry or repair automatic installation.
