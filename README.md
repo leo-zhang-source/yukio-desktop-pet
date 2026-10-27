@@ -51,7 +51,7 @@ Right-click the character on Mac to open the activity workbench. Its home view a
 
 Choose **More detail** to explore the current work, its purpose, results and unclear parts. Choose **Earlier work** to revisit short summaries organized by user request, then expand the segment you want to inspect. Supporting excerpts let you compare an explanation with the recorded activity.
 
-<table>
+<table align="center" width="100%">
 <tr>
 <th width="50%">Go deeper</th>
 <th width="50%">Pick up where you left off</th>
@@ -78,7 +78,7 @@ Reply support depends on the source and its connection. See the [connection guid
 
 Choose a look that fits your desktop. **Yukio (雪绪)** pairs white hair and blue eyes with a navy uniform. **Qianxia (千夏)** brings mint-green hair, pink accents and playful electronic details. Both include twelve activity animations, independent blinking and a dedicated picked-up pose.
 
-<table>
+<table align="center" width="100%">
 <tr>
 <th width="50%">Yukio · 雪绪</th>
 <th width="50%">Qianxia · 千夏</th>
