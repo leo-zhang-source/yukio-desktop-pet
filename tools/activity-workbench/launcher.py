@@ -14,6 +14,7 @@ import webbrowser
 from runtime_identity import identity
 from server import create_server
 from explanation import load_config
+from agent_explanation import configuration
 
 ROOT=Path(__file__).resolve().parent
 CLIENTS=('codex','claude','deepcode')
@@ -73,8 +74,7 @@ def main(argv=None):
         if args.source_root:collector_args+=['--sessions-dir',str(args.source_root.absolute()/args.collector)]
         if args.parent_stdin:collector_args+=['--parent-stdin']
         return run_activity_collector(collector_args)
-    config_path=directory/'lan-model.json'
-    try:config=load_config(config_path) if config_path.is_file() else None
+    try:config=configuration(directory)
     except (OSError,ValueError):print('模型配置需要检查；未启动新服务。',file=sys.stderr);return 1
     existing=check_existing(args.port,databases,config)
     if existing=='same' and not args.collect:

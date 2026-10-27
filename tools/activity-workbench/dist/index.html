@@ -26,13 +26,20 @@
       <select id="chat" hidden aria-hidden="true" tabindex="-1"><option>正在找最近的聊天…</option></select>
       <button id="reload" class="icon-button" aria-label="刷新当前工作" title="刷新当前工作">↻</button>
     </div>
+    <section class="explanation-settings" aria-label="解释来源">
+      <label for="explanationProvider">解释交给</label>
+      <select id="explanationProvider" aria-describedby="providerNote"><option value="auto">本机 Agent（跟随聊天）</option></select>
+      <button id="providerEnable" type="button">开启解释</button>
+      <button id="providerDisable" type="button" hidden>停止自动解释</button>
+      <p id="providerNote" role="status">默认使用你自己的 Codex 或 Claude Code。开启后只发送所选聊天的短摘录，会使用该 Agent 的账号额度。</p>
+    </section>
     <p id="alert" role="status" hidden></p>
     <article id="work" class="work" hidden>
       <div class="workspace-grid">
         <div class="reading-main">
           <div class="activity-card">
             <div class="work-title"><div><p class="card-eyebrow">这段聊天的进展</p><h2 id="title"></h2></div><span id="status" class="status"></span></div>
-            <div class="explanation-entry"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.2 6.8L21 12l-6.8 2.2L12 21l-2.2-6.8L3 12l6.8-2.2Z"/></svg><p id="modelNote" role="status">千问说明会自动显示在下方。</p></div>
+            <div class="explanation-entry"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.2 6.8L21 12l-6.8 2.2L12 21l-2.2-6.8L3 12l6.8-2.2Z"/></svg><p id="modelNote" role="status">模型说明会自动显示在下方。</p></div>
             <div class="story" id="story">
               <section><div class="part-label"><span class="part-number" aria-hidden="true">01</span><span class="part-title">内容</span><button id="contentBasis" class="basis-button" aria-expanded="false" aria-controls="contentProof"></button></div><div class="part-body"><p id="content" class="lead"></p><div id="contentProof" class="part-proof" hidden></div></div></section>
               <section><div class="part-label"><span class="part-number" aria-hidden="true">02</span><span class="part-title">解释</span><button id="explanationBasis" class="basis-button" aria-expanded="false" aria-controls="explanationProof"></button></div><div class="part-body"><p id="explanation"></p><div id="explanationProof" class="part-proof" hidden></div></div></section>
@@ -43,7 +50,7 @@
           <section id="deepPanel" class="reading-panel" hidden aria-labelledby="deepHeading"><h2 id="deepHeading">把眼前这件事讲清楚</h2><p id="deepNote" role="status"></p><div id="deepText"></div><button id="deepRetry" hidden>重新解释这一段</button></section>
           <section id="pastPanel" class="reading-panel" hidden aria-labelledby="pastHeading"><h2 id="pastHeading">之前做了什么</h2><p id="pastNote" role="status"></p><div id="pastText"></div><div class="reading-actions"><button id="pastNewer" hidden>回到最近</button><button id="pastOlder" hidden>再往前看</button><button id="pastRetry" hidden>重新读取这一页</button></div></section>
           <p id="attention" class="attention" role="status" hidden></p>
-          <details id="previousModel" class="more previous-model" hidden><summary>上一段的千问说明</summary><div id="previousText"></div></details>
+          <details id="previousModel" class="more previous-model" hidden><summary>上一段的模型说明</summary><div id="previousText"></div></details>
         </div>
         <aside class="context-rail" aria-label="任务背景与依据">
           <section class="context-card"><div class="rail-heading"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8v4l3 2"/><circle cx="12" cy="12" r="9"/></svg><h2>任务背景</h2></div><div class="purpose"><span id="goalLabel">这次的要求</span><p id="goalShort"></p><small id="projectFocus" hidden></small></div></section>
@@ -63,7 +70,7 @@
       </div>
     </article>
     <div id="empty" class="empty" hidden><div class="empty-mark" aria-hidden="true">雪</div><h2>等你开始一段工作。</h2><p>在 Codex、Claude 或 Deep Code 开始一个小任务，<br>雪绪读到新活动后会自动显示。</p><details><summary>已经在工作，却没有显示？</summary><p>先确认客户端已经留下本机聊天记录，再重新打开桌面上的“雪绪活动工作台”。没有显示不代表 AI 没有工作，也可能是记录暂时读不到。</p><div id="emptyClients"></div></details></div>
-    <footer><span class="refresh-note"><span class="local-dot" aria-hidden="true"></span><span id="refreshNote">自动跟进新消息</span></span><details><summary>说明与隐私</summary><p>按你的设置，打开页面后会将当前所选聊天的名称、近期要求、公开说明、项目背景和可对应的操作结果短摘录，交给你配置的千问生成说明。不会发送完整聊天、整份文件或内部思考。常见凭据会过滤；原始短片段可能包含少量代码。技术依据折叠保存，说明用普通语言描述。</p><p>点“深入解释”会展开点击时的工作片段；点“之前做了什么”才读取较早的记录，每次三段、每段最多四条短摘录，并请千问总结。每段的详细解释另按需生成；不会一次发送全部历史。首页、回顾和深入解释共用每小时次数上限。</p><p>页面打开期间持续跟进，至少间隔三分钟，有变化才更新。切换聊天后只跟进新选择的聊天；关闭页面停止后续发送。已经发出的本次请求可能返回。浏览器异常退出时，旧设置会在两分钟内失效。没有页面在运行，就没有后台解释任务。模型可能出错，操作成功不代表整项任务验收。</p><p id="modelDetails"></p></details></footer>
+    <footer><span class="refresh-note"><span class="local-dot" aria-hidden="true"></span><span id="refreshNote">自动跟进新消息</span></span><details><summary>说明与隐私</summary><p>按你的设置，打开页面后会将当前所选聊天的名称、近期要求、公开说明、项目背景和可对应的操作结果短摘录，交给你选择的本机 Agent 或内网模型生成说明。Agent 会按自己的账号与服务设置处理摘录并使用相应额度。不会发送完整聊天、整份文件或内部思考。常见凭据会过滤；原始短片段可能包含少量代码。技术依据折叠保存，说明用普通语言描述。</p><p>点“深入解释”会展开点击时的工作片段；点“之前做了什么”才读取较早的记录，每次三段、每段最多四条短摘录，并请模型总结。每段的详细解释另按需生成；不会一次发送全部历史。首页、回顾和深入解释共用每小时次数上限。</p><p>页面打开期间持续跟进，至少间隔三分钟，有变化才更新。切换聊天后只跟进新选择的聊天；关闭页面停止后续发送。已经发出的本次请求可能返回。浏览器异常退出时，旧设置会在两分钟内失效。没有页面在运行，就没有后台解释任务。模型可能出错，操作成功不代表整项任务验收。</p><p id="modelDetails"></p></details></footer>
   </main>
 </div>
 </body></html>
