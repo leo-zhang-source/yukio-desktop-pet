@@ -1,4 +1,4 @@
-> **Mac 0.4.7**：右键雪绪或再次打开 App 进入活动工作台；顶部右侧进入设置，分为外观与显示、聊天与提醒、更多设置。在更多设置中“检查更新”。当前发布面向 Apple 芯片，Intel 保留 0.4.6。 [本轮说明](../docs/releases/0.4.7.md)。
+> **Settings overview (local revision)**: Settings in the workbench now shows Appearance, Chats & notices, and General together across the window. Narrow windows wrap the groups and scroll vertically. Check for updates and Quit are directly accessible. [Layout and validation](../docs/SETTINGS-OVERVIEW.md). Public release history remains in the [5.3 release notes](../docs/releases/5.3.md).
 
 > **0.4.6**: browser chat destinations, visible-chat completion reminders, approval cards, answer pasting and Qianxia. [Release notes](../docs/releases/0.4.6.md).
 

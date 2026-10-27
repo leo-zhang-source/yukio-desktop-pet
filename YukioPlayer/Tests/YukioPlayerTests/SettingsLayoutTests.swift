@@ -13,31 +13,47 @@ import YukioCore
         while let current = node { if current.isHidden { return true }; node = current.superview }
         return false
     }
-    @Test func categoriesKeepTheSameControlsAndPreferences() throws {
+    @Test(arguments: [UILanguage.chinese, .english])
+    func overviewShowsEveryGroupAndAdaptsWithoutChangingPreferences(language: UILanguage) throws {
         _ = NSApplication.shared
         let controller = SettingsPanelController()
         defer { controller.close() }
+        let chat = SessionSummary(id: "layout-check", title: String(repeating: "Long conversation title · ", count: 12),
+            state: .default_work, live: true, raisedSign: false, quietMs: 0, focused: true, pinned: true)
         let snapshot = SettingsSnapshot(status: "正在工作", following: true, hidden: false, provider: .auto,
-            chats: [], showBubble: true, showCards: false, showQuestionCard: true, scale: 1.2,
-            language: .chinese, demoPlaying: false)
+            chats: [chat], showBubble: true, showCards: false, showQuestionCard: true, scale: 1.2,
+            language: language, demoPlaying: false, launchAtLogin: .requiresApproval)
         controller.apply(snapshot)
         let root = try #require(controller.window?.contentView)
-        let picker = try #require(find(root, "settingsCategoryPicker", as: NSSegmentedControl.self))
+        #expect(find(root, "settingsCategoryPicker", as: NSSegmentedControl.self) == nil)
         let sign = try #require(find(root, "lowerSignButton", as: NSButton.self))
         let browser = try #require(find(root, "browserChatPermissionButton", as: NSButton.self))
         let startup = try #require(find(root, "launchAtLoginSwitch", as: NSSwitch.self))
         let idle = try #require(find(root, "hideWhenIdleSwitch", as: NSSwitch.self))
-        #expect(picker.segmentCount == 3 && !hidden(sign) && hidden(browser) && hidden(startup))
+        #expect(!hidden(sign) && !hidden(browser) && !hidden(startup))
         let initial = idle.state
-        for (index, visible) in [(1, browser as NSView), (2, startup as NSView), (0, sign as NSView)] {
-            picker.selectedSegment = index
-            NSApp.sendAction(try #require(picker.action), to: picker.target, from: picker)
+        for width: CGFloat in [1100, 760, 540, 1400, 1050] {
+            controller.window?.setContentSize(NSSize(width: width, height: 650))
             controller.apply(snapshot)
-            #expect(!hidden(visible))
-            #expect(picker.selectedSegment == index && idle.state == initial)
+            root.layoutSubtreeIfNeeded()
+            root.layoutSubtreeIfNeeded()
+            let document = controller.embeddedView()
+            let groups = try ["appearanceSettingsGroup", "chatSettingsGroup", "generalSettingsGroup"].map {
+                try #require(find(root, $0, as: NSStackView.self))
+            }
+            let frames = groups.map { $0.convert($0.bounds, to: document) }
+            #expect(groups.allSatisfy { !hidden($0) })
+            #expect(frames.allSatisfy { document.bounds.contains($0) && $0.width > 250 })
+            #expect(!frames[0].intersects(frames[1]) && !frames[1].intersects(frames[2]))
+            #expect(idle.state == initial)
+            if width >= 1000 {
+                #expect(abs(frames[0].minY - frames[2].minY) < 1)
+                #expect(frames[2].maxX > width - 30)
+                for control in [sign as NSView, browser as NSView, startup as NSView] {
+                    #expect(root.bounds.contains(control.convert(control.bounds, to: root)))
+                }
+            }
         }
-        root.layoutSubtreeIfNeeded()
-        #expect(root.frame.width >= 590 && root.frame.height < 850)
         var cancelled = 0
         controller.onChange = { if case .lowerSign = $0 { cancelled += 1 } }
         sign.performClick(nil)

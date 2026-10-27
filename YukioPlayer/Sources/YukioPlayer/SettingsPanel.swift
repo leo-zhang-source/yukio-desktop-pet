@@ -53,34 +53,47 @@ final class SettingsPanelController: NSWindowController, NSWindowDelegate, NSMen
     private let outsideClickMonitor = SettingsOutsideClickMonitor()
 
     private final class ContentView: NSView {
-        var embedded = false
-        override var isFlipped: Bool { embedded }
+        var onLayout: (() -> Void)?
+        override var isFlipped: Bool { true }
+        override func layout() {
+            super.layout()
+            onLayout?()
+        }
     }
     private let root = ContentView()
     var onEmbeddedDone: (() -> Void)?
     var isTrackingPopup: Bool { trackingPopupMenu }
-    private var embeddedHeight: NSLayoutConstraint?
+    private var viewportConstraints: [NSLayoutConstraint] = []
 
-    func embeddedView() -> NSView {
-        guard embeddedHeight == nil else { return root }
-        root.embedded = true
+    func embeddedView() -> NSView { root }
+
+    func embed(in scrollView: NSScrollView) {
         window?.contentView = nil
-        for constraint in root.constraints where constraint.firstItem as? NSView === stack
-            && (constraint.firstAttribute == .leading || constraint.firstAttribute == .trailing) {
-            constraint.isActive = false
-        }
-        stack.widthAnchor.constraint(equalToConstant: 540).isActive = true
-        stack.centerXAnchor.constraint(equalTo: root.centerXAnchor).isActive = true
-        let height = root.heightAnchor.constraint(equalToConstant: contentHeight)
-        height.isActive = true; embeddedHeight = height
-        return root
+        configureScrollView(scrollView)
+    }
+
+    private func configureScrollView(_ scrollView: NSScrollView) {
+        NSLayoutConstraint.deactivate(viewportConstraints)
+        root.removeFromSuperview()
+        scrollView.documentView = root
+        scrollView.hasVerticalScroller = true
+        scrollView.hasHorizontalScroller = false
+        scrollView.autohidesScrollers = true
+        scrollView.drawsBackground = true
+        scrollView.backgroundColor = NSColor(calibratedWhite: 0.965, alpha: 1)
+        let fillHeight = root.heightAnchor.constraint(equalTo: scrollView.contentView.heightAnchor)
+        fillHeight.priority = .defaultLow
+        viewportConstraints = [
+            root.widthAnchor.constraint(equalTo: scrollView.contentView.widthAnchor),
+            root.heightAnchor.constraint(greaterThanOrEqualTo: scrollView.contentView.heightAnchor),
+            fillHeight,
+        ]
+        NSLayoutConstraint.activate(viewportConstraints)
     }
     private let stack = NSStackView()
-    private let categoryPicker = NSSegmentedControl()
-    private let categoryHost = NSView()
+    private let categoryHost = NSStackView()
     private var categoryPanes: [NSStackView] = []
-    private var categoryHeight: NSLayoutConstraint?
-    private var contentHeight: CGFloat = 620
+    private var columnCount = 0
 
     private let brandLabel = NSTextField(labelWithString: "YUKIO")
     private let statusLabel = NSTextField(wrappingLabelWithString: "")
@@ -100,7 +113,6 @@ final class SettingsPanelController: NSWindowController, NSWindowDelegate, NSMen
     private let startupSwitch = NSSwitch()
     private let startupHint = NSTextField(wrappingLabelWithString: "")
     private let loginItemsButton = NSButton()
-    private let startupHeading = NSTextField(labelWithString: "")
     private let languageTitle = NSTextField(labelWithString: "")
 
     private let followSwitch = NSSwitch()
@@ -133,8 +145,8 @@ final class SettingsPanelController: NSWindowController, NSWindowDelegate, NSMen
 
     init() {
         let panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 420, height: 770),
-            styleMask: [.titled, .closable, .nonactivatingPanel],
+            contentRect: NSRect(x: 0, y: 0, width: 1100, height: 650),
+            styleMask: [.titled, .closable, .resizable, .nonactivatingPanel],
             backing: .buffered,
             defer: false
         )
@@ -145,6 +157,7 @@ final class SettingsPanelController: NSWindowController, NSWindowDelegate, NSMen
         panel.isMovableByWindowBackground = true
         panel.appearance = NSAppearance(named: .aqua)
         panel.backgroundColor = NSColor(calibratedWhite: 0.965, alpha: 1)
+        panel.minSize = NSSize(width: 540, height: 420)
         super.init(window: panel)
         panel.delegate = self
         buildUI()
@@ -267,8 +280,11 @@ final class SettingsPanelController: NSWindowController, NSWindowDelegate, NSMen
 
     private func buildUI() {
         guard let window else { return }
-        window.contentView = root
+        let scrollView = NSScrollView(frame: NSRect(x: 0, y: 0, width: 1100, height: 650))
+        window.contentView = scrollView
         root.translatesAutoresizingMaskIntoConstraints = false
+        configureScrollView(scrollView)
+        root.onLayout = { [weak self] in self?.updateSettingsLayout() }
         root.wantsLayer = true
         root.layer?.backgroundColor = NSColor(calibratedWhite: 0.965, alpha: 1).cgColor
         stack.setAccessibilityIdentifier("settingsContentStack")
@@ -276,9 +292,9 @@ final class SettingsPanelController: NSWindowController, NSWindowDelegate, NSMen
         stack.translatesAutoresizingMaskIntoConstraints = false
         root.addSubview(stack)
         NSLayoutConstraint.activate([
-            stack.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 30),
-            stack.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -30),
-            stack.topAnchor.constraint(equalTo: root.topAnchor, constant: 28),
+            stack.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 24),
+            stack.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -24),
+            stack.topAnchor.constraint(equalTo: root.topAnchor, constant: 24),
             stack.bottomAnchor.constraint(lessThanOrEqualTo: root.bottomAnchor, constant: -24),
         ])
         brandLabel.font = .systemFont(ofSize: 23, weight: .semibold)
@@ -288,53 +304,44 @@ final class SettingsPanelController: NSWindowController, NSWindowDelegate, NSMen
         statusLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         let identity = NSStackView(views: [brandLabel, statusLabel])
         identity.orientation = .vertical; identity.alignment = .leading; identity.spacing = 7
-        identity.widthAnchor.constraint(equalToConstant: 540).isActive = true
+        statusLabel.widthAnchor.constraint(equalTo: identity.widthAnchor).isActive = true
         stack.addArrangedSubview(identity)
-        categoryPicker.segmentCount = 3; categoryPicker.selectedSegment = 0
-        categoryPicker.trackingMode = .selectOne
-        categoryPicker.target = self; categoryPicker.action = #selector(settingsCategoryChanged)
-        categoryPicker.setAccessibilityIdentifier("settingsCategoryPicker")
-        categoryPicker.widthAnchor.constraint(equalToConstant: 540).isActive = true
-        categoryPicker.heightAnchor.constraint(equalToConstant: 34).isActive = true
-        stack.addArrangedSubview(categoryPicker)
+        identity.widthAnchor.constraint(equalTo: stack.widthAnchor).isActive = true
 
         let sliderGroup = NSStackView(views: [scaleSlider, scaleReadout])
         sliderGroup.orientation = .horizontal; sliderGroup.alignment = .centerY; sliderGroup.spacing = 10
-        scaleSlider.widthAnchor.constraint(equalToConstant: 170).isActive = true
+        scaleSlider.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        scaleSlider.widthAnchor.constraint(greaterThanOrEqualToConstant: 100).isActive = true
         scaleReadout.widthAnchor.constraint(equalToConstant: 46).isActive = true
         scaleReadout.alignment = .right
         scaleReadout.font = .monospacedDigitSystemFont(ofSize: 12, weight: .regular)
         scaleReadout.textColor = .secondaryLabelColor
-        lowerSignButton.widthAnchor.constraint(equalToConstant: 508).isActive = true
-        lowerSignButton.heightAnchor.constraint(equalToConstant: 72).isActive = true
+        lowerSignButton.heightAnchor.constraint(equalToConstant: 64).isActive = true
         browserChatButton.bezelStyle = .rounded
         browserChatButton.target = self; browserChatButton.action = #selector(browserChatPermission)
         browserChatButton.setAccessibilityIdentifier("browserChatPermissionButton")
         startupHint.font = .systemFont(ofSize: 12); startupHint.textColor = .secondaryLabelColor
-        startupHint.widthAnchor.constraint(equalToConstant: 508).isActive = true
+        startupHint.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        startupHint.setAccessibilityIdentifier("startupApprovalHint")
         let updateActions = NSStackView(views: [updateButton, NSView(), quitButton])
         updateActions.orientation = .horizontal; updateActions.alignment = .centerY
-        updateActions.widthAnchor.constraint(equalToConstant: 508).isActive = true
         categoryPanes = [
-            settingsGroup(displayHeading, [row(title: skinTitle, control: skinPopup, controlWidth: 244), row(title: scaleTitle, control: sliderGroup, controlWidth: 244), row(title: idleHideTitle, control: idleHideSwitch), row(title: bubbleTitle, control: bubbleSwitch), lowerSignButton]),
-            settingsGroup(followingHeading, [row(title: followTitle, control: followSwitch), row(title: providerTitle, control: providerPopup, controlWidth: 244), row(title: chatTitle, control: chatPopup, controlWidth: 244), row(title: cardsTitle, control: cardsSwitch), row(title: questionTitle, control: questionSwitch), browserChatButton]),
-            settingsGroup(interfaceHeading, [row(title: languageTitle, control: languagePopup, controlWidth: 244), row(title: startupTitle, control: startupSwitch), startupHint, loginItemsButton, row(title: updateTitle, control: updateSwitch), updateActions])
+            settingsGroup(displayHeading, [row(title: skinTitle, control: skinPopup, stacked: true), row(title: scaleTitle, control: sliderGroup, stacked: true), row(title: idleHideTitle, control: idleHideSwitch), row(title: bubbleTitle, control: bubbleSwitch), lowerSignButton]),
+            settingsGroup(followingHeading, [row(title: followTitle, control: followSwitch), row(title: providerTitle, control: providerPopup, stacked: true), row(title: chatTitle, control: chatPopup, stacked: true), row(title: cardsTitle, control: cardsSwitch), row(title: questionTitle, control: questionSwitch), browserChatButton]),
+            settingsGroup(interfaceHeading, [row(title: languageTitle, control: languagePopup, stacked: true), row(title: startupTitle, control: startupSwitch), startupHint, loginItemsButton, row(title: updateTitle, control: updateSwitch), updateActions])
         ]
-        categoryHost.translatesAutoresizingMaskIntoConstraints = false
-        categoryHost.widthAnchor.constraint(equalToConstant: 540).isActive = true
-        let height = categoryHost.heightAnchor.constraint(equalToConstant: 370)
-        height.isActive = true; categoryHeight = height
+        categoryHost.orientation = .vertical; categoryHost.alignment = .leading; categoryHost.spacing = 16
         stack.addArrangedSubview(categoryHost)
-        for (index, pane) in categoryPanes.enumerated() {
-            pane.translatesAutoresizingMaskIntoConstraints = false; categoryHost.addSubview(pane)
-            pane.isHidden = index != 0
-            NSLayoutConstraint.activate([pane.leadingAnchor.constraint(equalTo: categoryHost.leadingAnchor), pane.trailingAnchor.constraint(equalTo: categoryHost.trailingAnchor), pane.topAnchor.constraint(equalTo: categoryHost.topAnchor)])
+        categoryHost.widthAnchor.constraint(equalTo: stack.widthAnchor).isActive = true
+        for (pane, identifier) in zip(categoryPanes, ["appearanceSettingsGroup", "chatSettingsGroup", "generalSettingsGroup"]) {
+            pane.setAccessibilityIdentifier(identifier)
         }
         let buttons = NSStackView(views: [hideButton, resetButton, demoButton, NSView(), doneButton])
         buttons.orientation = .horizontal; buttons.alignment = .centerY; buttons.spacing = 10
-        buttons.widthAnchor.constraint(equalToConstant: 540).isActive = true
         stack.addArrangedSubview(buttons)
+        buttons.widthAnchor.constraint(equalTo: stack.widthAnchor).isActive = true
         configureActions()
+        updateSettingsLayout()
     }
 
     private func settingsGroup(_ heading: NSTextField, _ controls: [NSView]) -> NSStackView {
@@ -344,19 +351,30 @@ final class SettingsPanelController: NSWindowController, NSWindowDelegate, NSMen
         pane.wantsLayer = true; pane.layer?.backgroundColor = NSColor.white.cgColor
         pane.layer?.cornerRadius = 12; pane.layer?.borderWidth = 1
         pane.layer?.borderColor = NSColor(calibratedWhite: 0.88, alpha: 1).cgColor
+        for view in [heading] + controls {
+            view.widthAnchor.constraint(equalTo: pane.widthAnchor, constant: -32).isActive = true
+        }
         return pane
     }
 
-    @objc private func settingsCategoryChanged() { updateSettingsLayout() }
-
     private func updateSettingsLayout() {
         guard !categoryPanes.isEmpty else { return }
-        let selected = max(0, min(2, categoryPicker.selectedSegment))
-        for (index, pane) in categoryPanes.enumerated() { pane.isHidden = index != selected }
-        categoryHeight?.constant = max(180, categoryPanes[selected].fittingSize.height)
-        contentHeight = max(440, stack.fittingSize.height + 52)
-        if let embeddedHeight { embeddedHeight.constant = contentHeight }
-        else { window?.setContentSize(NSSize(width: 600, height: contentHeight)) }
+        let width = root.bounds.width > 0 ? root.bounds.width : 1100
+        let columns = width >= 1000 ? 3 : (width >= 680 ? 2 : 1)
+        guard columns != columnCount else { return }
+        columnCount = columns
+        for pane in categoryPanes { pane.removeFromSuperview() }
+        for row in categoryHost.arrangedSubviews { row.removeFromSuperview() }
+        for start in stride(from: 0, to: categoryPanes.count, by: columns) {
+            let panes = Array(categoryPanes[start..<min(start + columns, categoryPanes.count)])
+            let row = NSStackView(views: panes)
+            row.orientation = .horizontal; row.alignment = .top
+            row.distribution = .fillEqually; row.spacing = 16
+            // Keep the last card the same width when the overview wraps to two columns.
+            for _ in panes.count..<columns { row.addArrangedSubview(NSView()) }
+            categoryHost.addArrangedSubview(row)
+            row.widthAnchor.constraint(equalTo: categoryHost.widthAnchor).isActive = true
+        }
     }
 
     private func configureActions() {
@@ -433,6 +451,7 @@ final class SettingsPanelController: NSWindowController, NSWindowDelegate, NSMen
         doneButton.keyEquivalent = "\r"
         doneButton.target = self
         doneButton.action = #selector(closePanel)
+        doneButton.setAccessibilityIdentifier("settingsDoneButton")
 
         // 设置窗口会定时刷新状态；菜单展开时将刷新合并到关闭之后，避免菜单跟踪死锁。
         providerPopup.menu?.delegate = self
@@ -453,16 +472,11 @@ final class SettingsPanelController: NSWindowController, NSWindowDelegate, NSMen
 
     private func refreshLabels(language: UILanguage) {
         labelLanguage = language
-        for (index, name) in [tr("Appearance", "外观与显示"), tr("Chats & notices", "聊天与提醒"), tr("More", "更多设置")].enumerated() {
-            categoryPicker.setLabel(name, forSegment: index)
-        }
-
         window?.title = tr("Yukio Settings", "雪绪设置")
         brandLabel.stringValue = tr("YUKIO SETTINGS", "雪绪设置")
-        followingHeading.stringValue = tr("FOLLOWING", "跟随")
-        displayHeading.stringValue = tr("DISPLAY", "显示")
-        interfaceHeading.stringValue = tr("INTERFACE", "界面")
-        startupHeading.stringValue = tr("STARTUP", "启动")
+        followingHeading.stringValue = tr("Chats & notices", "聊天与提醒")
+        displayHeading.stringValue = tr("Appearance", "外观与显示")
+        interfaceHeading.stringValue = tr("General", "通用设置")
         startupTitle.stringValue = tr("Launch at login", "登录时自动启动")
         startupSwitch.setAccessibilityLabel(startupTitle.stringValue)
         startupSwitch.toolTip = tr("Open Yukio automatically when you log in to your Mac.", "登录 Mac 后自动打开雪绪。")
@@ -492,40 +506,36 @@ final class SettingsPanelController: NSWindowController, NSWindowDelegate, NSMen
         lowerSignButton.toolTip = tr("Lower the current completion sign without opening the chat.", "放下当前完成牌，不打开聊天。")
         lowerSignButton.setAccessibilityLabel(lowerSignButton.title)
         browserChatButton.title = BrowserOpenChat.hasAccessibilityAccess
-            ? tr("Browser auto-lower: enabled · Permissions…", "浏览器自动放牌：已启用 · 权限…")
+            ? tr("Browser auto-lower: enabled…", "浏览器自动放牌：已启用…")
             : tr("Enable browser auto-lower…", "启用浏览器自动放牌…")
         browserChatButton.toolTip = tr("Allow Accessibility to recognize the chat you are viewing in a web page or extension.",
                                       "允许辅助功能访问，以识别网页或扩展中正在查看的聊天。")
 
 
-        for heading in [followingHeading, displayHeading, interfaceHeading, startupHeading] {
-            heading.font = .systemFont(ofSize: 11, weight: .semibold)
+        for heading in [followingHeading, displayHeading, interfaceHeading] {
+            heading.font = .systemFont(ofSize: 15, weight: .semibold)
             heading.textColor = NSColor(calibratedRed: 0.18, green: 0.40, blue: 0.30, alpha: 1)
         }
     }
 
-    private func row(title: NSTextField, control: NSView, controlWidth: CGFloat? = nil) -> NSView {
+    private func row(title: NSTextField, control: NSView, stacked: Bool = false) -> NSView {
         title.font = .systemFont(ofSize: 13)
         title.textColor = .labelColor
-        title.setContentCompressionResistancePriority(.defaultHigh, for: .horizontal)
-        title.widthAnchor.constraint(equalToConstant: 200).isActive = true
-        if let controlWidth { control.widthAnchor.constraint(equalToConstant: controlWidth).isActive = true }
-        let row = NSStackView(views: [title, NSView(), control])
-        row.orientation = .horizontal
-        row.alignment = .centerY
-        row.spacing = 8
+        title.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        title.maximumNumberOfLines = 2
+        title.cell?.wraps = true
+        let row = NSStackView(views: stacked ? [title, control] : [title, NSView(), control])
+        row.orientation = stacked ? .vertical : .horizontal
+        row.alignment = stacked ? .leading : .centerY
+        row.spacing = stacked ? 6 : 8
         row.translatesAutoresizingMaskIntoConstraints = false
-        row.widthAnchor.constraint(equalToConstant: 508).isActive = true
-        row.heightAnchor.constraint(equalToConstant: 36).isActive = true
+        row.heightAnchor.constraint(equalToConstant: stacked ? 56 : 36).isActive = true
+        if stacked {
+            title.widthAnchor.constraint(equalTo: row.widthAnchor).isActive = true
+            control.widthAnchor.constraint(equalTo: row.widthAnchor).isActive = true
+            control.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        }
         return row
-    }
-
-    private func separator() -> NSBox {
-        let box = NSBox()
-        box.boxType = .separator
-        box.translatesAutoresizingMaskIntoConstraints = false
-        box.widthAnchor.constraint(equalToConstant: 508).isActive = true
-        return box
     }
 
     private func position(near anchor: NSRect) {

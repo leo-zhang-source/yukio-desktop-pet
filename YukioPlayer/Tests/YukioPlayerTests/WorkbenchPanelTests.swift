@@ -35,8 +35,11 @@ import YukioCore
         let root = try #require(app.window?.contentView)
         let settings = try #require(find(root, "petSettingsTab", as: NSButton.self))
         settings.performClick(nil)
-        let picker = try #require(find(root, "settingsCategoryPicker", as: NSSegmentedControl.self))
-        #expect((0..<picker.segmentCount).compactMap { picker.label(forSegment: $0) } == ["Appearance", "Chats & notices", "More"])
+        let headings = try ["appearanceSettingsGroup", "chatSettingsGroup", "generalSettingsGroup"].map {
+            let group = try #require(find(root, $0, as: NSStackView.self))
+            return (group.arrangedSubviews.first as? NSTextField)?.stringValue
+        }
+        #expect(headings == ["Appearance", "Chats & notices", "General"])
         #expect(try #require(find(root, "hideWhenIdleSwitch", as: NSSwitch.self)).toolTip == "Hide while idle and appear when working or showing a notice.")
         #expect(L10n.language == .chinese)
         #expect(L10n.stateName(.verify, in: .english) == "Running tests")
