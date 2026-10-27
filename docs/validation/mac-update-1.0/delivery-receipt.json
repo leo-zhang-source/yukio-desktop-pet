@@ -1,0 +1,21 @@
+{
+  "checked_at": "2026-10-27T02:07:59.862251+00:00",
+  "version": "1.0",
+  "build": "35",
+  "source_commit": "1f5770287ffea0933bbd973cfc547eb44b48a3eb",
+  "github_release": "https://github.com/leozhang8654/yukio-desktop-pet/releases/tag/v1.0",
+  "github_published_assets_verified": 13,
+  "public_zip_and_dmg_match": true,
+  "production_feed_signature_verified": true,
+  "production_0_4_11_to_1_0_install_relaunch_verified": true,
+  "desktop_1_0_launched": true,
+  "desktop_check_updates_reports_current": true,
+  "desktop_and_downloaded_app_files_match": 470,
+  "old_history_preserved": true,
+  "private_configs_preserved": true,
+  "user_language_preserved": true,
+  "app_name": "Yukio",
+  "spotlight_app_count": 1,
+  "test_apps_stopped_and_archived": true,
+  "windows": "optional_0.4.6_unchanged_not_tested"
+}

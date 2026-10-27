@@ -1,10 +1,10 @@
 {
-  "checked_at": "2026-10-27T01:50:24.899451+00:00",
+  "checked_at": "2026-10-27T01:58:19.873568+00:00",
   "version": "1.0",
   "build": "35",
   "workbench_version": "0.3.9",
-  "source_commit": "4e37420251c97be7209cdfc666797775ffecb25c",
-  "native_tests": 231,
+  "source_commit": "1f5770287ffea0933bbd973cfc547eb44b48a3eb",
+  "native_tests": 232,
   "new_update_flow_tests": 4,
   "appcast_tests": 1,
   "progress_tests": 8,
@@ -42,5 +42,6 @@
   "windows": "optional_unchanged_0.4.6_not_tested",
   "other_macs_and_multi_day_use": "unverified",
   "apple_notarization": false,
-  "github_release_published": false
+  "update_hint_language_regression_tests": 1,
+  "public_download_checks": "recorded_after_publication_separately"
 }

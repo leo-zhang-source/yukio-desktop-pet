@@ -1,0 +1,21 @@
+{
+  "baseline_version": "0.4.11",
+  "installed_version": "1.0",
+  "installed_build": "35",
+  "source_commit": "1f5770287ffea0933bbd973cfc547eb44b48a3eb",
+  "production_https_feed": true,
+  "original_production_public_key_used": true,
+  "download_from_public_github": true,
+  "target_files_match": true,
+  "target_files": 470,
+  "strict_signature_valid": true,
+  "relaunched_pids": [
+    4488
+  ],
+  "all_existing_user_settings_preserved": true,
+  "expected_updater_metadata_changes": [
+    "SULastCheckTime",
+    "NSWindow Frame SUUpdateAlert2"
+  ],
+  "installation_verified": true
+}
