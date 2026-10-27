@@ -71,6 +71,10 @@ def build(base_app, workbench_app, binary, source, output, version=None, build_n
                     YukioFeature='activity-workbench-language-and-context')
         for key in ('YukioLocalFeature', 'YukioLocalRepair'):
             info.pop(key, None)
+    # Declare no additional writers to the application bundle. Sparkle 2.10
+    # respects this restrictive policy and uses its rollback-capable legacy move
+    # instead of an atomic bundle swap (SUPlainInstaller.m, issue #2591).
+    info['NSUpdateSecurityPolicy'] = {'AllowProcesses': {}}
     # Permit only local networking; external HTTPS trust checks are unchanged.
     info.setdefault('NSAppTransportSecurity', {})['NSAllowsLocalNetworking'] = True
     plist.write_bytes(plistlib.dumps(info))
