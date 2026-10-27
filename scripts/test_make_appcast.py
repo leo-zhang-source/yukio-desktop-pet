@@ -25,6 +25,8 @@ class AppcastTests(unittest.TestCase):
             items=ET.parse(output).findall('./channel/item');self.assertEqual(len(items),2)
             self.assertEqual(items[0].findtext('{'+NS+'}hardwareRequirements'),'arm64')
             self.assertEqual(items[0].find('enclosure').get('{'+NS+'}version'),'28')
+            self.assertIsNotNone(items[0].find('{'+NS+'}informationalUpdate'))
+            self.assertEqual(items[0].findtext('link'),'https://github.com/leozhang8654/yukio-desktop-pet/releases/tag/v0.4.7')
             self.assertEqual(items[0].find('enclosure').get('length'),str(archive.stat().st_size))
             self.assertEqual(items[1].find('enclosure').get('{'+NS+'}edSignature'),'PREVIOUS')
             self.assertIsNone(items[1].find('{'+NS+'}hardwareRequirements'))

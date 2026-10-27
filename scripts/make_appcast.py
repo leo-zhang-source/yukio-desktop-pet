@@ -33,6 +33,9 @@ ET.SubElement(channel, 'title').text = 'Yukio updates'
 item = ET.SubElement(channel, 'item')
 ET.SubElement(item, 'title').text = f'Yukio {version}'
 ET.SubElement(item, 'link').text = f'https://github.com/leozhang8654/yukio-desktop-pet/releases/tag/v{version}'
+# All clients, including older builds, should open the download page instead of
+# entering the in-app installer. Keep the signed archive for independent checks.
+ET.SubElement(item, f'{{{SPARKLE}}}informationalUpdate')
 ET.SubElement(item, 'description').text = '<pre>' + html.escape(a.notes.read_text()) + '</pre>'
 ET.SubElement(item, f'{{{SPARKLE}}}minimumSystemVersion').text = '13.0.0'
 if a.hardware:
