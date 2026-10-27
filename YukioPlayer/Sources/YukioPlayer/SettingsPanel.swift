@@ -421,6 +421,7 @@ final class SettingsPanelController: NSWindowController, NSWindowDelegate, NSMen
         updateSwitch.target = self
         updateSwitch.action = #selector(updatePreferenceChanged)
         updateSwitch.setAccessibilityIdentifier("automaticUpdatesSwitch")
+        updateSwitch.toolTip = tr("Check for new versions and remind me. Download and install manually.", "自动检查并提醒；下载和安装由你手动完成。")
         updateButton.bezelStyle = .rounded
         updateButton.target = self
         updateButton.action = #selector(checkForUpdates)

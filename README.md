@@ -115,11 +115,11 @@ Adjust the character from **50% to 200%**, drag her to a comfortable spot, switc
 
 | Platform | Download | Included experience |
 | --- | --- | --- |
-| **Apple silicon Mac · macOS 13+** | **[v0.4.12 DMG](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.12/Yukio-0.4.12-macOS-arm64.dmg)** · [ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.12/Yukio-0.4.12-macOS-arm64.zip) | Desktop companion + integrated activity workbench |
+| **Apple silicon Mac · macOS 13+** | **[v0.4.13 DMG](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.13/Yukio-0.4.13-macOS-arm64.dmg)** · [ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.13/Yukio-0.4.13-macOS-arm64.zip) | Desktop companion + integrated activity workbench |
 | **Intel Mac** | [v0.4.6 DMG](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-macOS.dmg) · [ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-macOS.zip) | Earlier desktop companion release |
 | **Windows 10 / 11 · 64-bit** | [v0.4.6 Setup](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-Windows-Setup.exe) · [Portable ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/YukioDesktop-win-Portable.zip) | Earlier desktop companion release |
 
-The integrated workbench is currently available on Apple silicon Mac. Intel and Windows downloads remain on v0.4.6. For the current Mac version, install the complete DMG or ZIP; automatic installation remains under review. [All releases and checksums](https://github.com/leozhang8654/yukio-desktop-pet/releases).
+The integrated workbench is currently available on Apple silicon Mac. Intel and Windows downloads remain on v0.4.6. Mac updates now check and remind you, then open the official download page. Download the complete DMG or ZIP, quit Yukio and replace the current copy in the same location. [Update guide](docs/MANUAL-UPDATES.md). [All releases and checksums](https://github.com/leozhang8654/yukio-desktop-pet/releases).
 
 <details>
 <summary><b>First launch on macOS or Windows</b></summary>

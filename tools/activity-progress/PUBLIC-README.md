@@ -2,16 +2,14 @@
 
 [打开网站](https://leozhang8654.github.io/yukio-desktop-pet/)
 
-九步按Mac范围交付。当前Mac 0.4.12内置工作台0.3.9：项目在上、最近聊天在下，工作状态只作标识；设置分三组。英文首页和设置已实际检查，英文历史总结已修复并用真实聊天验证；聊天名称、项目名称与引用原话保留原文。
+九步按Mac范围交付。Mac 0.4.13保留工作台0.3.9，更新改成“自动检查并提醒 → 打开官方下载页 → 手动替换”，有“稍后再说”，不会自行下载、安装或重启。232项Mac程序检查通过；两个真实隔离窗口试用都没有请求安装包，当前版本保持运行。ZIP、DMG与桌面470个文件一致。
 
-多余开发与备份App已归档并核对内容，系统搜索只找到一个Yukio。你重新打开应用列表后，也确认只剩一个图标；没有删除聊天、配置或备份内容。完整ZIP、DMG和桌面App的470个文件一致。233项工作台、28项页面检查通过；227项原生检查是未改动代码的既有基线。更多Mac与多天体验未验证。
+[下载Mac 0.4.13完整版本](https://github.com/leozhang8654/yukio-desktop-pet/releases/tag/v0.4.13) · [手动更新方法](https://github.com/leozhang8654/yukio-desktop-pet/blob/main/docs/MANUAL-UPDATES.md)
 
-[下载Mac 0.4.12完整安装包](https://github.com/leozhang8654/yukio-desktop-pet/releases/tag/v0.4.12)。Apple芯片，内置运行环境，本地临时签名、未Apple公证。Windows全部测试、自动安装问题继续之后可选；Intel和Windows保留0.4.6。
+项目与最近聊天、三组设置和英文界面保留，名称与引用保持原文。只保留一个桌面App，旧记录与配置保留。工作台未变动，233项后端和28项页面检查为既有基线；其他Mac、多天体验和Apple公证尚未完成。Windows全部测试继续之后可选，旧Intel/Windows下载保留0.4.6。
 
-本网站是最近一次发布的开发进度，每分钟检查新版；未发布的本机修改不会自动出现。公开网站不读取实时活动、私人聊天、模型配置或密钥，不连接内网模型。每一步可展开查看改了什么、为什么和验证范围。
+这是最近一次发布的开发进度，页面每分钟检查更新。公开网站不读取实时活动、私人聊天、模型配置或密钥，不连接内网模型。每一步可展开查看具体做法、原因及验证范围。
 
-本机工作台打开后跟进所选聊天，关闭后停止后续发送；深入说明和分段历史按需展开，发送范围与限制见折叠的隐私说明。右键雪绪或重开App进入工作台，顶部Settings进入设置。
+本机工作台打开后跟进所选聊天，关闭后停止后续发送；深入说明和分段历史按需展开，范围及限制见折叠的隐私说明。右键雪绪或重开App进入工作台，顶部Settings进入设置。
 
-`codex/activity-progress-pages`是网站独立发布分支，GitHub Pages从根目录发布；不是桌面源码分支。页面包含index.html、app.js、style.css、status.json、.nojekyll和本README。公开数据的collector固定为空。
-
-维护时从已审核进度导出六个文件，不读取私人数据库；发布后核对实际部署。不能把提交成功当成已经上线。
+`codex/activity-progress-pages`是网站独立发布分支，GitHub Pages从根目录发布。六个文件为index.html、app.js、style.css、status.json、.nojekyll和本README；公开数据的collector固定为空。导出前审核文字，发布后核对实际部署；不读取私人数据库。

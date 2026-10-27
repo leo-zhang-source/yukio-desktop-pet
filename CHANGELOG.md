@@ -1,3 +1,9 @@
+## 0.4.13 — Update reminders and manual downloads
+
+- Replace the stalled in-app installation interaction with an official download-page notice. Later keeps the current App running; no automatic download, exit, replacement or restart.
+- Keep signed checks and opt-out; mark the release informational for compatible older clients and cancel unexpected install callbacks.
+- Verify both actions with isolated signed newer-version fixtures, and retain one desktop App, private history/configuration and the unchanged workbench. Windows remains optional.
+
 ## 0.4.12 — English history and delivery review
 
 - Use focused English summary instructions so Chinese source requests do not become generated history headings. Keep evidence, language and safety checks enabled.
