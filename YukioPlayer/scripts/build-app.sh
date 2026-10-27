@@ -89,7 +89,7 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
   <key>SUScheduledCheckInterval</key><integer>21600</integer>
   <key>SUAutomaticallyUpdate</key><false/>
   <key>SUAllowsAutomaticUpdates</key><false/>
-  <key>SUEnableInstallerLauncherService</key><true/>
+  <key>SUEnableInstallerLauncherService</key><false/>
   <key>LSUIElement</key><true/>
   <key>NSHighResolutionCapable</key><true/>
 </dict>

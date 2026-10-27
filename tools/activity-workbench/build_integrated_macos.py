@@ -71,6 +71,9 @@ def build(base_app, workbench_app, binary, source, output, version=None, build_n
                     YukioFeature='activity-workbench-language-and-context')
         for key in ('YukioLocalFeature', 'YukioLocalRepair'):
             info.pop(key, None)
+    # Yukio is not sandboxed. Sparkle forbids opting into the sandbox-only
+    # installer launcher for this host; do not inherit a legacy true value.
+    info['SUEnableInstallerLauncherService'] = False
     # Permit only local networking; external HTTPS trust checks are unchanged.
     info.setdefault('NSAppTransportSecurity', {})['NSAllowsLocalNetworking'] = True
     plist.write_bytes(plistlib.dumps(info))
