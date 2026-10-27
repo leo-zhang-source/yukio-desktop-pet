@@ -243,14 +243,11 @@ def output_system(payload):
     system=READING_SYSTEM if scope.get('reading') else GLANCE_SYSTEM if scope.get('glance') else SYSTEM
     if scope.get('language')=='en':
         english_only = ('Write all generated prose and headings entirely in English. Translate descriptive Chinese names into English or transliterate proper names; do not quote Chinese in generated explanations. Original quotations stay in separate supporting notes. ')
-        if scope.get('reading'):
+        if scope.get('reading')=='summary':
             form=('For each supplied segment, write a new English heading in title and a short English retrospective in text. '
                   'The title is a NEW heading, never a copy or quotation of the original request. '
                   'Keep each summary to 25-45 words and at most 360 characters; title at most 120 characters. '
-                  'Describe each segment independently in the past; the segments are listed newest first. '
-                  if scope['reading']=='summary' else
-                  'Explain each scope.reading_parts item in English, using its part identifier. '
-                  'Include what happened, its context and user purpose where supported; each part is at most 1200 characters. ')
+                  'Describe each segment independently in the past; the segments are listed newest first. ')
             return (english_only+form+
                     'Return only a JSON object with explanations. Each item has part, text, basis and evidence_ids; summaries also have title. '
                     'Include every reading part exactly once. Basis is inference or unknown. '
