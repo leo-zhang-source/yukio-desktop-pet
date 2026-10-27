@@ -1,207 +1,150 @@
-> **Mac 0.4.12**：修复英文历史总结生成失败，已实际检查英文首页和设置；聊天名称、项目名称与引用原话保留原语言。[发布说明](docs/releases/0.4.12.md) · [核验范围](docs/validation/mac-english-0.4.12/README.md)。
+<div align="center">
 
-> 本轮用完整安装包更新。桌面只保留一个可启动的 Yukio English；多余测试副本已归档，内容与聊天记录保留。系统搜索和你重新打开的应用列表都确认只剩一个图标。自动安装之后处理，Windows继续可选。
+# Yukio · 雪绪
 
-> **旧版记录 — Mac 0.4.9**：聊天侧栏按“项目、最近聊天”排列，工作状态只在聊天旁标记。工作台跟随系统显示中文或英文；说明交代具体内容、前后联系和用途，不展示代码、路径或文件名。[发布说明](docs/releases/0.4.9.md) · [实现与限制](docs/ACTIVITY-LANGUAGE-AND-CONTEXT.md)。Windows 测试仍是之后可选。
+### 与 AI 一起开发时，陪在桌面上的伙伴。
 
-> **新版下载：**[Mac 0.4.12完整安装包](https://github.com/leozhang8654/yukio-desktop-pet/releases/tag/v0.4.12)。桌面英文副本与完整包的470个程序文件一致。[查看核对结果与限制](docs/validation/mac-english-0.4.12/README.md)。
+**看见 AI 正在做什么，读懂工作进展，在需要时接过决定权。**
 
+<img src="docs/readme/desk.gif" width="192" alt="雪绪阅读、书写、核对工作，最后举起完成牌">
 
-> **独立 Mac 活动工作台 0.3.0（Apple 芯片预览版）**：内置运行环境，按聊天看内容、解释和原因。第8、9步按Mac范围交付；Windows以后可选，不替换原桌宠。 [下载与使用说明](https://github.com/leozhang8654/yukio-desktop-pet/releases/tag/activity-workbench-v0.3.0) · [版本与核验范围](docs/releases/activity-workbench-0.3.0.md)。
-
-> **0.4.6**：GPT 插件聊天对应原 Chrome 标签页，看到对应聊天时自动放下完成牌。包含千夏、待机隐身、批准申请与粘贴修复。[更新说明与测试范围](docs/releases/0.4.6.md)。
+<p>
+<a href="https://github.com/leozhang8654/yukio-desktop-pet/releases/latest"><img src="https://img.shields.io/github/v/release/leozhang8654/yukio-desktop-pet?label=Latest%20release&color=426854" alt="最新公开版本"></a>
+<img src="https://img.shields.io/badge/macOS-13%2B-222222?logo=apple&logoColor=white" alt="macOS 13 或更新版本">
+<img src="https://img.shields.io/badge/Windows-10%20%2F%2011-3578B8" alt="Windows 10 和 11">
+<img src="https://img.shields.io/badge/Language-English%20%2F%20中文-426854" alt="支持英文与中文界面">
+</p>
 
 [English](README.md) · **简体中文**
 
-<h1>雪绪 · 陪着编码助手干活的桌面宠物</h1>
-
-<img src="docs/readme/states-zh.png" width="900" alt="雪绪在桌前的十二种样子：思考、读文件、看图片、写文件、跑测试、看网页、递交回答、举着勾选卡、立着问号卡、其他工作、出错、空闲">
-
-<p>
-<a href="https://github.com/leozhang8654/yukio-desktop-pet/releases/latest"><img alt="最新版本" src="https://img.shields.io/github/v/release/leozhang8654/yukio-desktop-pet?label=%E4%B8%8B%E8%BD%BD&color=2f6feb"></a>
-<a href="https://github.com/leozhang8654/yukio-desktop-pet/releases"><img alt="累计下载" src="https://img.shields.io/github/downloads/leozhang8654/yukio-desktop-pet/total?color=2f6feb"></a>
-<img alt="macOS 13 或更新" src="https://img.shields.io/badge/macOS-13%2B-000000?logo=apple&logoColor=white">
-<img alt="Windows 10 与 11" src="https://img.shields.io/badge/Windows-10%20%2F%2011-0078D4">
-<img alt="Swift、AppKit 与 Sparkle" src="https://img.shields.io/badge/Swift%20%2B%20AppKit-Sparkle-F05138?logo=swift&logoColor=white">
-<img alt="Python、Tk、Pillow 与 Velopack" src="https://img.shields.io/badge/Python%20%2B%20Tk%20%2B%20ctypes-Pillow%20%2B%20Velopack-3776AB?logo=python&logoColor=white">
-</p>
+[下载](#下载) · [功能亮点](#功能亮点) · [角色与动画](#角色与动画) · [开始使用](#开始使用)
 
 </div>
 
-**雪绪**是个白发蓝眼的管家少女，待在屏幕角落，实时演着你的 AI 编码助手正在做的事：Claude Code 读文件，她翻开书；改代码，她提起笔；跑测试，她对着两份文件逐行核对；答完了，她举起 ✅ 牌一直等你。点她一下，直接跳回刚答完的那条聊天。
+Yukio 将 AI 开发过程带到你的桌面：一位会随工作变化而行动的角色，加上一张能读懂进展的工作台。跟随 **Codex、Claude Code 与 DeepSeek 的 Deep Code CLI**，及时发现需要你参与的时刻，再通过 **Mac 内置活动工作台**了解当前动作、前后背景与工作目的。
 
-她认三家助手，在菜单「跟随的助手」里挑：**Claude Code**、**DeepSeek 的 [Deep Code CLI](https://api-docs.deepseek.com/quick_start/agent_integrations/deepcode/)**、**GPT 的 [Codex](https://developers.openai.com/codex/)**（桌面版与命令行写的是同一份会话记录）。默认的**自动**三家一起跟，谁有话说就显示谁。两版都使用原生窗口，完全基于本机会话记录工作。
+平时，看一眼角色就能掌握状态；需要了解更多时，打开工作台，接上思路，再决定下一步。
 
-## 0.4.6 更新
+## 功能亮点
 
-- 对应聊天显示后放下完成牌，不会自动回答或批准。GPT 官方 Chrome 插件记住原浏览器标签页，修复全屏重复标签和较早聊天名称遗漏。[实际检查范围](docs/validation/plugin-signs-0.4.6.md)。
+| 陪伴正在进行的工作 | 看清工作背后的进展 |
+| --- | --- |
+| **把工作状态变成动作。** 十二种动画呈现阅读、书写、测试等活动，桌面一角就能看见进度。 | **用日常语言解释工作。** Mac 工作台说明正在做什么、与前面的工作有什么关系，以及这一步为什么有用。 |
+| **优先提醒需要你的事。** 待回答的问题、阻塞错误与完成提醒，优先于普通工作展示。 | **按项目找到聊天。** 展开项目、返回最近聊天、在本机搜索，每段聊天旁都有自己的状态。 |
+| **在角色旁回答与决定。** 通过已连接的卡片回答支持的问题，查看完整申请后再决定是否批准。 | **随时接回上下文。** 深入解释当前工作，或按用户要求分段回顾历史，展开原文摘录核对依据。 |
 
-- 在「设置 → 显示 → 皮肤」切换雪绪或千夏，立即生效并记住选择。千夏包含 12 种动作、独立眨眼和专用拖动站姿。
-- 拎起时摆动，松手后恢复当前动作；修复 Mac 连续拖动后的落点偏移。
-- 默认开启「待机时隐身」，有工作、提问、完成或错误时自动出现；可在设置关闭。
-- 批准申请显示可操作的问号牌，修复回答框粘贴与 Windows 中文批准回执。网页／插件接入范围见[回答说明](YukioPlayer/Resources/BACKGROUND-ANSWERS.md)。
+### 多个助手的进展，一眼看见
 
-### 近期更新
+Yukio 读取三类助手的本机活动记录。你可以指定一个来源，让 **自动**模式同时跟随，也可以固定关注某段聊天。角色上方的简洁气泡显示聊天标题、当前步骤，以及记录中可用的任务清单进度。
 
-- 在雪绪卡片里回答后，GPT 确认收到就立即放下对应的问题牌；失败时保留答案和举牌，仍可重试。
-- 直接在 GPT 聊天中回答时，雪绪从会话记录确认答案后也立即放下问题牌。
+多段聊天同时进行时，其余聊天会收进堆叠卡片。展开即可切换关注对象；有可用聊天链接时，还能返回对应的聊天入口。
 
-- 应用内检查正式版、查看更新说明，确认后更新并重启；macOS 使用 Sparkle，Windows 使用 Velopack 安装包。
-- macOS 和 Windows 的 GPT / Codex 问题卡改为后台直传，不切换窗口、不改粘贴板、不模拟按键。
-- 兼容最新聊天记录格式，修复待答问题被误判为已结束。
-- 失败保留答案并可重试；收到回执后只收起对应问题。
-- macOS 回答不再需要辅助功能权限。Claude Code / Deep Code 后台连接见[回答说明](YukioPlayer/Resources/BACKGROUND-ANSWERS.md)。
+<p align="center">
+<img src="docs/readme/cards-zh.png" width="600" alt="收起与展开的聊天卡片，显示待回答、错误、完成和正在工作的状态">
+</p>
 
-保留原有取消举牌按钮、紧凑设置、开机启动和动画。
+### 工作正在发生，也能看懂来龙去脉
 
-## 开发过程资料
+在 Mac 上右键点击角色，打开活动工作台。首页围绕三个问题展开：**现在做什么？这意味着什么？为什么要做？** 配置模型后，只要工作台保持打开，说明就能随所选聊天的进展刷新。
 
-[查看开发过程归档](docs/development-evidence/2026-10-21/README.md)：设计与动画迭代、失败评审、排错回执、本地源码快照和需求调研，附完整下载与哈希校验。本地实验与已发布功能分别标明。
+<a href="docs/readme/workbench-current.png"><img src="docs/readme/workbench-current.png" width="100%" alt="Mac 活动工作台英文界面：项目侧栏、当前工作、背景与目的"></a>
 
-## 下载（不用编译）
+点击**深入解释**，了解当前工作的具体做法、用途、结果与仍不清楚的部分。点击**之前做了什么**，按每次用户要求浏览简短总结，再展开需要细看的段落。配套的原文摘录，让说明有处可查。
 
-到 [Releases](https://github.com/leozhang8654/yukio-desktop-pet/releases/latest) 下载对应的那个，不用装别的东西。
-
-| 你用的是 | 下载 | 怎么开 |
-| --- | --- | --- |
-| macOS 13 或更新 · Apple 芯片（0.4.12） | [Yukio-0.4.12-macOS-arm64.dmg](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.12/Yukio-0.4.12-macOS-arm64.dmg) · [ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.12/Yukio-0.4.12-macOS-arm64.zip) | 打开 DMG，把 `Yukio.app` 拖进「应用程序」，第一次按下面放行一次 |
-| Intel Mac · 0.4.6 | [DMG](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-macOS.dmg) · [ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-macOS.zip) | 保留上一版；本轮工作台未在 Intel 验收 |
-| Windows 10 / 11（64 位） | [Yukio-0.4.6-Windows-Setup.exe](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-Windows-Setup.exe) | 双击安装，之后从新快捷方式打开；内置自动检查和一键更新 |
-
-<details>
-<summary><b>macOS 第一次打开：「Apple 无法验证“Yukio”是否包含可能危害 Mac 安全或泄漏隐私的恶意软件」</b></summary>
-
-这是因为它只有本机临时签名、没有做苹果公证（需要付费的开发者账号），可以先检查源码和下载校验值，再决定是否打开：
-
-1. 双击 `Yukio.app`，在提示框上点「完成」；
-2. 打开「系统设置 › 隐私与安全性」，往下滚到「安全性」一栏，在“已阻止使用「Yukio」…”那行右边点**「仍要打开」**，在弹窗里再点一次并输入密码。
-
-确认信任下载来源后，也可以用终端移除隔离标记：
-
-```sh
-xattr -dr com.apple.quarantine /Applications/Yukio.app
-```
-
-自己从源码编译出来的 `Yukio.app` 不带隔离标记，不会有这个提示。
-
-</details>
-
-<details>
-<summary><b>Windows 第一次打开：蓝色的「Windows 已保护你的电脑」</b></summary>
-
-这个程序没有买代码签名证书。点**「更多信息」**，再点**「仍要运行」**，确认信任下载来源后再继续。
-
-</details>
-
-每个文件的 SHA-256 都写在发布页上，想核对的话对一下。
-
-打开后雪绪出现在屏幕右下角，macOS 的菜单栏、Windows 的托盘里多一个她的小头像。右键雪绪或再次打开程序进入浮动小设置，点击外部即可关闭；菜单栏／托盘小头像保留完整操作菜单。桌宠设置可以收起或显示雪绪；macOS 的桌宠设置窗口里也可用空格切换。界面默认英文，在设置里把「Language」切到「中文」即可，选择会记住。想先看看效果，可在设置或菜单里点「播放模拟演示」（英文界面下是 Play demo），60 秒走一遍所有动作。
-
-## 她会做什么
-
-- **十二种状态，同一只她。** 思考、读文件、看图片、写文件、跑测试、看网页、递交回答、✅ 勾选卡、❓ 问号卡、其他工作、出错、空闲。每家助手的工具对应哪个状态都写得清清楚楚，逐条有测试；三家共用同一套规则（同一条 shell 命令，不管是 Claude 的 `Bash`、Deep Code 的 `bash` 还是 Codex 的 `exec`，判出来一样）；认不出的工作一律坐在电脑前敲键盘，不瞎猜。
-- **小幅、连续、不抽搐。** 每个状态只有一张定稿的底图，动作由脚本生成：笔沿着一行往右写，放大镜在照片上来回扫，手指在平板上往上划，两只手轮流敲键盘，眨眼时眼皮用的是脸颊的肤色。桌椅逐像素不动，生成时会自动检查。素材时间轴为每秒 50 帧，桌面播放器以 30 Hz 更新。
-- **轮到你的时候她会举牌。** 完成时举起 ✅；认出对应聊天正在显示后，会把那一轮记作已看过并放下。问题和批准申请用 ❓ 提醒，直到真正处理才结束。插件聊天打开入口对应原浏览器标签页。
-- **不用跑回聊天也能答。** 问题与批准申请显示在身旁卡片。已连接的本机入口可回传答案；批准前先查看完整申请。发送失败保留答案。网页与插件仍属实验接入，见[回答说明](YukioPlayer/Resources/BACKGROUND-ANSWERS.md)。
-- **头顶一个小气泡。** 上行是聊天标题，下行是当前这一步：有任务清单时取进行中的那一项，没有就取正在跑的工具，“编辑 main.swift”“$ swift test”“developer.apple.com”。旁边是已完成／总数和一条细进度条。气泡里只出现文件名、命令的前几个词和网址域名。
-- **几条聊天一起跑也不乱。** 她一次只能演一条，所以先演最需要你的那条：等你回答的，然后是出错停住的，然后是答完举着牌的，最后才是还在干活的。其余每条聊天各一张小卡，压着气泡往上叠。点气泡摊开，点一张就换到那条聊天，也可以在菜单里挑定一条只跟它。
-- **拎起来会晃。** 按住她拖，她像被一只看不见的大手捏着后领的小猫：单摆带惯性，匀速时略微后仰，猛地往上一提会先坠一下再弹回来。松手大约一秒晃停。
-- **会话在本机处理。** 本地读取活动记录与已允许的窗口信息；连接问题与批准回传需设置相应入口。可关闭的更新检查连接 GitHub 获取安装包；不会上传聊天记录。
-- **分页加载，内存有上限。** 正式包运行时读取由无损原图集生成、逐像素一致的小分页；macOS 页缓存上限 32 MiB，Windows 上限 64 MiB，不再一次性展开约 1 GB 的整套图集。macOS 运行时仍然没有第三方依赖。
-
-## 桌前的一天
-
-<table>
+<table align="center" width="100%">
 <tr>
-<td><img src="docs/readme/desk.gif" width="192" alt="雪绪思考、读代码、拿放大镜看截图、写字、跑测试、出错、修正、通过、整理报告、举起勾选卡"></td>
-<td>
-
-思考 → 读代码 → 拿放大镜看截图 → 改文件 → 测试没过 → 修 → 测试通过 → 整理报告 → ✅。
-
-这就是应用里实际播放的那几条动作图条，导出时稍微降了一点帧率好让文件小一些。答完之后她会先把手里那叠纸在桌上磕两下对齐，然后才举牌。
-
-</td>
+<th width="50%">深入了解当前工作</th>
+<th width="50%">接回之前的思路</th>
+</tr>
+<tr>
+<td><a href="docs/readme/workbench-deep.png"><img src="docs/readme/workbench-deep.png" alt="深入解释：当前改变、用户决定与核对方式"></a></td>
+<td><a href="docs/readme/workbench-history.png"><img src="docs/readme/workbench-history.png" alt="历史回顾：按用户要求分段，提供总结与展开入口"></a></td>
 </tr>
 </table>
 
-## 头顶气泡与那摞卡
+<sub>工作台截图为当前英文界面，使用预设演示数据；点击图片可查看大图。界面也支持中文，模型解释需配置兼容服务。</sub>
 
-<img src="docs/readme/bubble-zh.png" width="900" alt="六种头顶气泡：带 3/7 进度的当前一步、被截短的长标题、思考中、swift test 出错、等你回答的问号卡、已完成的勾选卡">
+### 轮到你时，就在身边回应
 
-<img src="docs/readme/cards-zh.png" width="470" alt="左：气泡上方只有一条“还有 5 条”。右：摊开后五条别的聊天叠在气泡上，左边色带标出等你回答、出错、答完了、在跑">
+问题卡把提示和回答框放在角色旁。Mac 上已连接的 Codex 桌面聊天可在后台接收答案，让你保持当前窗口的焦点。发送失败时保留输入，方便重试。批准卡会先展示完整申请，再由你选择是否继续。
 
-上面两张是切成中文之后的样子。左边是平时：气泡上面只多一条细细的“还有 5 条”。右边是摊开之后，最要紧的那张挨着气泡。橙色是等你回答，红色是出错停住，绿色是答完了，蓝色是还在跑。✕ 只收起那一张，那条聊天下一轮有动静时会再出现；12 秒没人点会自己收起。
+完成提醒帮你及时回到已经结束的工作。问题与批准申请会保留到实际处理；仅仅打开聊天，不会自动回答或批准。
 
-## 拎起来
+回传能力取决于助手来源及连接配置。具体步骤见[连接指南](YukioPlayer/Resources/BACKGROUND-ANSWERS.md)；网页与浏览器插件连接目前属于实验功能。
 
-<img src="docs/readme/drag.gif" width="236" alt="雪绪被一只看不见的手拎着：拖动时晃，松手后收住，猛提时先坠再弹回">
+## 角色与动画
 
-直接用应用里那套摆动模型录的，镜头跟着她走，所以看到的是倾斜和下坠，不是位移。往旁边拖，她因为惯性落在手后面，手一停她还要荡过竖直线再收住；松手大约一秒晃停；猛地往上一提，先坠一下再弹回来。那只手是看不见的：抓手点在她头顶上方一点，摆长直接从图上量出来，所以放大之后同样的甩动摆得更小。
+### 两种风格，陪伴同一张桌面
 
-## 她是怎么知道的
+**雪绪 Yukio** 以白发、蓝眼睛与深蓝制服呈现安静的桌边气质。**千夏 Qianxia** 用浅绿头发、粉色配饰与电子元素带来更轻快的色彩。两位角色都拥有十二种工作动画、独立眨眼和专属提起姿势。
 
-**她读哪里。** Claude Code 把每条会话写在 `~/.claude/projects`；Codex 一条聊天一个文件，在 `~/.codex/sessions/<年>/<月>/<日>/rollout-*.jsonl`；Deep Code 在 `~/.deepcode/projects`。雪绪只读地跟着你挑的那一家，把工具调用翻译成状态。工具开始后大约 0.2 秒她就看到了，再加 0.4 秒防抖，免得连续的短调用把她晃来晃去。Claude Code 的官方 hooks 可以接成第二来源，脚本和设置片段在 `YukioPlayer/integrations/claude-hooks/`，开不开由你决定。
+<table align="center" width="100%">
+<tr>
+<th width="50%">Yukio · 雪绪</th>
+<th width="50%">Qianxia · 千夏</th>
+</tr>
+<tr>
+<td align="center"><img src="YukioPlayer/Resources/Assets/base/held@2x.png" height="256" alt="雪绪的提起姿势：白发、蓝眼睛与深蓝制服"></td>
+<td align="center"><img src="YukioPlayer/Resources/Assets/skins/qianxia/base/held.png" height="256" alt="千夏的提起姿势：浅绿头发、粉色衣袖与蓝色蝴蝶结"></td>
+</tr>
+<tr>
+<td align="center">安静的配色，熟悉的桌边陪伴。</td>
+<td align="center">明亮的细节，轻快的工作节奏。</td>
+</tr>
+</table>
 
-**Windows。** 同样是这三家：`%USERPROFILE%\.deepcode\projects`、`%USERPROFILE%\.claude\projects`、`%USERPROFILE%\.codex\sessions`；Deep Code 那边还要读会话索引——「等你批准」只写在索引里。把 Claude Code 指向 DeepSeek 的 Anthropic 兼容端点时，它写出来的转录照样跟得上。别的工具也能驱动她：往 `%LOCALAPPDATA%\Yukio\inbox.jsonl` 里追加一行 JSON 就行。
+### 十二种状态，各有自己的表达
 
-这些记录是各家工具的内部格式，不是公开 API。格式变了她只会少几个事件、慢慢回到空闲，不会崩。
+读文件时翻开书，编辑时拿起笔，查看图片时举起放大镜。测试、浏览网页、等待回答与完成工作，都有对应的动作和道具。
 
-## 自己编译
+<img src="docs/readme/states-zh.png" width="100%" alt="雪绪十二种状态：思考、读文件、看图片、写文件、运行测试、浏览网页、整理答复、完成、等待回答、其他工作、失败与待机">
 
-**macOS** 编译运行只需要 Xcode Command Line Tools。制作官方低内存发布包时，还会在构建阶段用一次 Python 与 Pillow 派生逐像素一致的分页；打好的 App 本身不依赖 Python。
+### 小动作，让陪伴鲜活起来
 
-```sh
-git clone https://github.com/leozhang8654/yukio-desktop-pet
-cd yukio-desktop-pet/YukioPlayer
-swift test                      # 172 个测试：路由、眨眼时序、分类、解析、气泡文字、动作时间线、聊天选择、抄题
-./scripts/build-app.sh          # 生成 build/Yukio.app
-open build/Yukio.app
-cd ../YukioWin && pip3 install pillow && python3 scripts/prepare-windows-assets.py
-cd ../YukioPlayer && ./scripts/package-release.sh  # 打通用二进制发布包到 dist/
-```
+笔尖沿着纸面移动，放大镜扫过图片，双手交替敲击键盘；独立眨眼与阅读视线，让每个状态都有细节。提起角色时，她会随拖动轻轻摆动，放下后逐渐恢复平稳。
 
-**Windows** 需要 Python 3.9 或更新。
+<p align="center">
+<img src="docs/readme/drag.gif" width="236" alt="雪绪被提起后随拖动摆动，释放后逐渐稳定">
+</p>
 
-```bat
-cd yukio-desktop-pet\YukioWin
-pip install pillow
-python run.py
-python run.py --selftest                                          # 219 个测试，任何系统上都能跑
-powershell -ExecutionPolicy Bypass -File scripts\build-exe.ps1    # 打出 dist\Yukio.exe，素材已包含
-```
+以上预览展示角色动画素材与拖动效果。动画使用已验收的透明图层，协调手部与道具的运动；制作资料见[动画输入与流程](sources/approved-animation-rig/README.md)。
 
-手边没有 Windows？仓库里的 GitHub Actions 工作流会在真的 Windows 机器上打出 exe 并实跑一遍：启动它、枚举出她的窗口、按一份造好的 Deep Code 会话核对动作，再在 100% 和 150% 两种缩放下截屏逐像素比对。
+支持 **50%–200%** 大小调整、自由拖动、角色换装和**待机隐身**，让桌面保留合适的留白。界面可切换中英文；真实聊天名称与引用原话保留原文。
 
-两个播放器都有不开窗口的检查模式：`--demo`、`--replay 会话.jsonl`、`--watch 60`、`--chats`、`--snapshot`、`--bubble`、`--cards`、`--hang`。完整列表见两个播放器各自的 README。
+## 下载
 
-## 目录
+| 平台 | 下载 | 提供的体验 |
+| --- | --- | --- |
+| **Apple 芯片 Mac · macOS 13+** | **[v0.4.12 DMG](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.12/Yukio-0.4.12-macOS-arm64.dmg)** · [ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.12/Yukio-0.4.12-macOS-arm64.zip) | 桌面角色 + 内置活动工作台 |
+| **Intel Mac** | [v0.4.6 DMG](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-macOS.dmg) · [ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-macOS.zip) | 保留的早期桌面角色版本 |
+| **Windows 10 / 11 · 64 位** | [v0.4.6 安装版](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-Windows-Setup.exe) · [便携 ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/YukioDesktop-win-Portable.zip) | 保留的早期桌面角色版本 |
 
-| 路径 | 内容 |
-| --- | --- |
-| `YukioPlayer/` | macOS 播放器：Swift 源码与测试、打包进应用的素材与图标、`tools/` 下的动作／图标／拎起姿势生成脚本、构建与发布脚本。[README](YukioPlayer/README.md) |
-| `YukioWin/` | Windows 播放器：Python + ctypes 分层窗口、测试、PyInstaller 配置、CI 用的冒烟测试。[README](YukioWin/README.md) |
-| `assets/` | 最终透明素材：七套活动图条、电脑桌、两张牌子、基础动作 |
-| `sources/` | 高分辨率生成源图（洋红底） |
-| `references/` | 动作总览、生成提示词、图片清单 |
-| `docs/readme/` | 本页用到的图，以及重新生成它们的 `make_images.py` |
-| [`docs/HANDOFF.md`](docs/HANDOFF.md) | 设计记录：需求、用户反馈、什么时候改了什么 |
-| [`docs/history/`](docs/history/README.md) | 最初的接续包与早期原生宠物快照 |
-| [`sources/approved-animation-rig/`](sources/approved-animation-rig/README.md) | 已验收主图、小部件蒙版与可复现的动画输入 |
+内置工作台目前面向 Apple 芯片 Mac。Intel 与 Windows 下载仍为 v0.4.6。更新当前 Mac 版本请使用完整 DMG 或 ZIP，自动安装功能仍在验证中。[所有版本与校验值](https://github.com/leozhang8654/yukio-desktop-pet/releases)。
 
-## 先说清楚的几件事
+<details>
+<summary><b>macOS 与 Windows 首次打开</b></summary>
 
-- 界面默认英文，右键打开桌宠设置后，可在「Language」中切换中文，选择会记住。已经写进事件里的说明文字（比如“阅读 main.swift”）要到下一条事件才换语言。
-- 当前动作直接使用已验收的 384×416 素材（被拎起来那张 384×480），默认按 192×208 点显示。正式生成流程复用现有 2 倍源图，不再额外超分。原来抠图留下的那圈又粗又糊的黑边去掉了，换成轮廓外一圈 0.5 点的细描边。Retina／高分屏上放大也是清楚的；超过 200% 才会重新变软。
-- 点一下跳回聊天需要对应的桌面版：Claude 的聊天要桌面版 Claude，Codex 的聊天要 Codex 桌面版（`codex://threads/<会话 ID>`）。在终端里跑的助手没有聊天窗口可开，点了只把那个应用带到最前面；Deep Code 的聊天在终端里，点一下只是放下牌子。这套跳转在 macOS 上实测过，Windows 那边照同一套写的，还没在实机上验过。
-- 大小：两个平台的桌宠设置都有 50%–200% 滑条；Windows 托盘菜单还保留整档与 ±5% 微调。
-- macOS 包使用临时签名、未做公证；Windows 程序没有代码签名。从源码自己编译就不会有第一次打开的那些提示。
+Mac：打开 DMG，将 `Yukio.app` 拖到**应用程序**后启动。目前采用临时签名，尚未完成 Apple 公证。若系统拦截了你信任的下载，可在首次尝试打开后前往**系统设置 → 隐私与安全性 → 仍要打开**。
 
-## 素材是怎么来的
+Windows：运行安装程序，再使用安装后的快捷方式启动。目前程序未签名；SmartScreen 可能显示**更多信息 → 仍要运行**。继续前请确认下载来源与发布页上的校验值。
 
-每个状态复用已验收的主图和修正后的 SAM 2.1 小部件蒙版。头颈固定，保留手、道具、阅读视线和独立眨眼的原动作。正式生成流程直接使用现有 2 倍素材，详见[动画输入与制作流程](sources/approved-animation-rig/README.md)。
+</details>
 
-如果雪绪让你敲键盘的日子好过了一点，点个 ⭐ 能让更多人找到她。
+## 开始使用
 
-设置顶部新增大号 **取消举牌** 图标按钮，点击放下当前完成牌，不跳转聊天；之后新的任务完成仍会正常举牌提醒。
+1. **启动 Yukio。** 在角色设置中选择外观、语言与大小；用**播放演示**快速浏览工作动画。
+2. **开始与编程助手协作。** 在助手设置中选择 Codex、Claude Code、Deep Code 或自动；Yukio 会跟随支持的本机活动记录。
+3. **在 Mac 打开工作台。** 右键点击角色，选一个项目或最近聊天，查看当前工作；右上角可进入角色设置。
+4. **按需连接更多能力。** 按[回答配置指南](YukioPlayer/Resources/BACKGROUND-ANSWERS.md)连接问题卡，按[模型配置指南](docs/activity-workbench-model-configuration.md)启用更丰富的解释。基础活动跟随无需配置解释模型。
 
-网页、Chrome 扩展侧栏与 App 中打开对应聊天后自动放下完成牌，配置与支持范围见[浏览器聊天识别](docs/BROWSER-CHAT-VISIBILITY.md)。macOS 网页识别需在雪绪设置里启用辅助功能权限。
+## 工作留在眼前，数据有据可循
+
+活动监测与搜索在本机处理。可选的模型解释只将所选聊天的有限摘录发送到已配置的服务；当前适配器支持无需 API 密钥鉴权的本机或内网 OpenAI 兼容接口。关闭工作台后停止发起新的解释请求，已经发出的请求仍可能完成。
+
+解释依据可读取的活动生成，可能不完整或有误；原文依据与上下文缺失提示始终可查。下载包不包含个人连接配置或活动历史。
+
+## 了解项目
+
+[文档](docs/README.md) · [macOS 源码与构建](YukioPlayer/README.zh-CN.md) · [Windows 源码与构建](YukioWin/README.zh-CN.md) · [版本记录](CHANGELOG.md) · [反馈问题](https://github.com/leozhang8654/yukio-desktop-pet/issues)
+
+Yukio 由 **Swift / AppKit** 原生 Mac 角色、**Python** Windows 角色，以及 **Python / JavaScript** 活动工作台组成。角色素材、动画输入与播放器源码都在本仓库中。
