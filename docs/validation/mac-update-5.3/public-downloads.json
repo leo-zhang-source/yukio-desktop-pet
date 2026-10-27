@@ -1,0 +1,28 @@
+{
+  "version": "5.3",
+  "source_commit": "cd418fb625de1049d6d5d13f5b03baf1a9a2a058",
+  "downloads": [
+    {
+      "name": "Yukio-5.3-macOS-arm64.zip",
+      "sha256": "9f674e169273521b0033f0daff19a0af0ebdf0151ea45da702bdce7fd129c700",
+      "bytes": 76480917
+    },
+    {
+      "name": "Yukio-5.3-macOS-arm64.dmg",
+      "sha256": "bc0feff742b0c000e99fbbbfdb4368c867433239923cf795e3a34b1b4fb5be8f",
+      "bytes": 76910348
+    },
+    {
+      "name": "appcast.xml",
+      "sha256": "a2dabfc690b8359d72555d28502cb5d7eff0458d0bc389a06e43311d0773ea5d",
+      "bytes": 19384
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "sha256": "0a6152aca3127566e98296b45ecd778915bb10967faee46101f9a7e114b126f3",
+      "bytes": 1057
+    }
+  ],
+  "latest_feed_bytes_match": true,
+  "latest_feed_signature_valid": true
+}

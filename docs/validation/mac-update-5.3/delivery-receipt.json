@@ -1,0 +1,23 @@
+{
+  "checked_at": "2026-10-27T02:31:55.752998+00:00",
+  "version": "5.3",
+  "build": "36",
+  "source_commit": "cd418fb625de1049d6d5d13f5b03baf1a9a2a058",
+  "release_url": "https://github.com/leozhang8654/yukio-desktop-pet/releases/tag/v5.3",
+  "published_assets_verified": 13,
+  "zip_dmg_and_installed_files_match": 470,
+  "actual_public_in_app_1_0_to_5_3_install_relaunch": true,
+  "installed_app_reports_5_3_current": true,
+  "install_location": "user_Applications",
+  "desktop_entry": "single_Finder_alias_resolves_to_updated_app",
+  "spotlight_app_count": 1,
+  "original_desktop_app_recoverably_archived": true,
+  "old_history_prefixes_preserved": true,
+  "model_and_privacy_config_bytes_unchanged": true,
+  "local_current_chat_context_only_phase_and_next_updated": true,
+  "language_preference_preserved": true,
+  "native_runtime_unchanged": true,
+  "native_tests_prior_verified": 232,
+  "windows": "optional_0.4.6_unchanged_not_tested",
+  "notarization": false
+}
