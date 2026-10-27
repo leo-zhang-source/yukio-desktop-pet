@@ -1,0 +1,38 @@
+{
+  "description": "Unmodified screenshots from the English product demonstration. The current workbench frontend displays preset example records; these are not live conversations or evidence of model accuracy.",
+  "sourceCollection": "workbench-en-v6",
+  "frontend": {
+    "index.html": {
+      "sha256": "52b3d821c715a27d6379b8afd612bddb4be38548fb47e401c2aef7d69a96fa9c"
+    },
+    "glance.css": {
+      "sha256": "350ecdb0d6419a436edda857bc11e708d69dc46dcddf072c3e12e5a3529851c2"
+    },
+    "glance.js": {
+      "sha256": "be7530651a6ffd19e525736f9318595653231df6c1d9ca1e647784888629bab0"
+    },
+    "i18n.js": {
+      "sha256": "f873f3b6b2d0f230ade48df8ea9c1c89d0f64526e1e2b9b118be2943db999e48"
+    },
+    "en.json": {
+      "sha256": "2766b58e3850251332312bfc01613838b05fd566692001423a6c7ed9541d570d"
+    }
+  },
+  "assets": [
+    {
+      "file": "workbench-current.png",
+      "sha256": "31b9dbb6c8074131ed9d321a6b6ece30c49b631ceec63c80fdc4642a993d8c38",
+      "bytes": 96526
+    },
+    {
+      "file": "workbench-deep.png",
+      "sha256": "7410d13c1844f2ed2f49a54a860b360ab6643d0e8747e731e25f15d2d623e755",
+      "bytes": 80059
+    },
+    {
+      "file": "workbench-history.png",
+      "sha256": "192dc17770bd44904056a046a4cd0a3b4bcc908257967be42398748106ae3c79",
+      "bytes": 71255
+    }
+  ]
+}
