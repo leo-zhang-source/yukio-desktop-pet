@@ -1,4 +1,8 @@
-Mac雪绪0.4.13保留工作台0.3.9，桌面应用名为Yukio；更新改成自动检查并提醒，点“打开下载页”后手动下载、退出并在原位置替换。雪绪不自行下载安装或重启。[更新方法](../../docs/MANUAL-UPDATES.md)。
+公开 Mac 版为 Yukio 5.3，保留工作台 0.3.9；支持的软件内更新会在选择“安装更新”后下载、安装并重新打开。[更新方法](../../docs/MANUAL-UPDATES.md)。
+
+5.3 连接故障修复候选：本机 8767 端口被其他程序或旧版工作台占用时，Mac App 自动选择空闲端口，窗口只连接本次启动的地址。不会结束占用端口的程序。启动失败提供可复制的诊断代码，重新连接会重新启动工作台。[复现、检查与交付范围](../../docs/validation/workbench-startup-5.3/README.md)。公开下载尚未替换。
+
+遇到旧版“工作台暂时没连上”，可运行 [Mac 连接诊断](diagnose-macos.command)。它检查 App 签名、默认端口和独立空闲端口上的启动，不采集聊天、不调用模型、不修改设置、不停止已有进程。可把显示的结果交给开发者。
 
 本轮工作台0.3.9 / Mac雪绪0.4.12：修复英文历史总结生成失败，已检查真实英文首页、设置和历史总结。聊天名称、项目名称与引用原话保留原文。桌面可启动App与ZIP、DMG核对一致；多余测试副本可恢复地归档。[说明与范围](../../docs/ACTIVITY-ENGLISH-COMPLETENESS.md)。
 
@@ -26,7 +30,7 @@ Mac雪绪0.4.13保留工作台0.3.9，桌面应用名为Yukio；更新改成自�
 
 ```sh
 python3 tools/activity-workbench/launcher.py --collect
-python3 -m unittest discover -s tools/activity-workbench -p 'test_*.py' -v
+PYTHONPATH=tools/activity-workbench/core python3 -m unittest discover -s tools/activity-workbench -p 'test_*.py' -v
 node --test tools/activity-workbench/test_glance_ui.cjs
 ```
 

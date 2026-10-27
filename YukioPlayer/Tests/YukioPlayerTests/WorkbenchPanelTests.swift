@@ -93,6 +93,33 @@ import YukioCore
         runtime.stop()
     }
 
+    @Test func failedStartupOffersDiagnosticsAndReconnectRestartsTheWorker() throws {
+        _ = NSApplication.shared
+        let runtime = Runtime(), panel = WorkbenchPanelController(runtime: runtime)
+        defer { panel.shutdown(); panel.close() }
+        panel.showWork()
+        panel.showConnectionFailure("Configuration could not be read.", code: "invalid_configuration")
+        #expect(panel.diagnosticText.contains("code=invalid_configuration"))
+        let root = try #require(panel.window?.contentView)
+        let copy = try #require(find(root, "copyWorkbenchDiagnostics", as: NSButton.self))
+        #expect(!copy.isHidden)
+        let reconnect = try #require(root.subviews.flatMap { buttons($0) }.first { $0.action == NSSelectorFromString("retry") })
+        reconnect.performClick(nil)
+        #expect(runtime.stops == 1 && runtime.starts == 2)
+        #expect(panel.diagnosticText.isEmpty)
+    }
+
+    private func buttons(_ view: NSView) -> [NSButton] {
+        (view as? NSButton).map { [$0] } ?? view.subviews.flatMap { buttons($0) }
+    }
+
+    @Test func dynamicPortNavigationRemainsBoundToTheStartedService() {
+        #expect(WorkbenchPanelController.isLocal(URL(string: "http://127.0.0.1:52123/history")!, port: 52123))
+        for address in ["http://127.0.0.1:8767/", "http://127.0.0.1:52124/", "http://localhost:52123/", "https://127.0.0.1:52123/", "http://user@127.0.0.1:52123/"] {
+            #expect(!WorkbenchPanelController.isLocal(URL(string: address)!, port: 52123))
+        }
+    }
+
     @Test func workbenchFollowsSystemLanguageWithoutChangingPetPreferences() throws {
         _ = NSApplication.shared
         #expect(WorkbenchPanelController.preferredLanguage(["zh-Hans-CN", "en-US"]) == "zh")

@@ -1,4 +1,5 @@
 import json
+import queue
 from pathlib import Path
 import sqlite3
 import socket
@@ -18,6 +19,55 @@ from test_workbench import fixture
 class LauncherTests(unittest.TestCase):
     def setUp(self):self.temp=tempfile.TemporaryDirectory();self.root=Path(self.temp.name)
     def tearDown(self):self.temp.cleanup()
+    def launch_until_ready(self,port,data):
+        process=subprocess.Popen([sys.executable,str(ROOT/'launcher.py'),'--no-browser','--fallback-port','--port',str(port),'--data-dir',str(data)],stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True)
+        lines=queue.Queue()
+        def read():
+            for line in process.stdout:lines.put(line)
+            lines.put(None)
+        threading.Thread(target=read,daemon=True).start()
+        self.addCleanup(self.stop_probe,process)
+        while True:
+            line=lines.get(timeout=8)
+            if line is None:self.fail('Launcher exited before readiness')
+            if line.startswith('YUKIO_WORKBENCH_READY '):
+                from urllib.parse import urlsplit
+                return process,urlsplit(json.loads(line.split(' ',1)[1])['url']).port
+    @staticmethod
+    def stop_probe(process):
+        if process.poll() is None:process.terminate()
+        process.wait(timeout=5)
+        process.stdout.close()
+
+    def test_fallback_binds_available_port_without_stopping_unrelated_listener(self):
+        with socket.socket() as occupied:
+            occupied.bind(('127.0.0.1',0));occupied.listen();port=occupied.getsockname()[1]
+            data=self.root/'new-profile'
+            process,new_port=self.launch_until_ready(port,data)
+            self.assertNotEqual(new_port,port)
+            self.assertEqual(check_existing(new_port,databases_for(data)),'same')
+            self.assertEqual(occupied.getsockname()[1],port)
+            self.assertFalse(data.exists(),'Read-only startup must not create history')
+            self.assertIsNone(process.poll())
+
+    def test_fallback_does_not_reuse_or_stop_a_different_workbench(self):
+        old_databases=databases_for(self.root/'old-profile');server=create_server(0,old_databases)
+        thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
+        try:
+            process,new_port=self.launch_until_ready(server.server_port,self.root/'new-profile')
+            self.assertNotEqual(new_port,server.server_port)
+            self.assertEqual(check_existing(server.server_port,old_databases),'same')
+            self.assertEqual(check_existing(new_port,databases_for(self.root/'new-profile')),'same')
+        finally:server.shutdown();server.server_close();thread.join()
+
+    def test_same_service_reuse_reports_its_actual_url_before_exiting(self):
+        dbs=databases_for(self.root);server=create_server(0,dbs)
+        thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
+        try:
+            process,port=self.launch_until_ready(server.server_port,self.root)
+            self.assertEqual(port,server.server_port);self.assertEqual(process.wait(timeout=3),0)
+            self.assertEqual(check_existing(port,dbs),'same')
+        finally:server.shutdown();server.server_close();thread.join()
     def wait_stopped(self,data):
         # Child EOF must release the history, even after Windows TerminateProcess.
         for _ in range(100):
@@ -67,6 +117,7 @@ class LauncherTests(unittest.TestCase):
         self.root.joinpath('lan-model.json').write_text(json.dumps(dict(api_key='PRIVATE')))
         result=subprocess.run([sys.executable,str(ROOT/'launcher.py'),'--no-browser','--collect','--data-dir',str(self.root)],capture_output=True,timeout=4)
         self.assertNotEqual(result.returncode,0);self.assertNotIn(b'PRIVATE',result.stderr)
+        self.assertIn(b'"code": "invalid_configuration"',result.stderr)
         self.assertEqual({p.name for p in self.root.iterdir()},{'lan-model.json'})
 
     def test_existing_page_without_collectors_starts_missing_recorders(self):

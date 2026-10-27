@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Local launcher: existing collector ownership is respected; no automatic model call."""
 import argparse
+import errno
 import json
 import os
 from pathlib import Path
@@ -17,6 +18,16 @@ from explanation import load_config
 
 ROOT=Path(__file__).resolve().parent
 CLIENTS=('codex','claude','deepcode')
+
+def ready(port):
+    url='http://127.0.0.1:%d/'%port
+    print('YUKIO_WORKBENCH_READY '+json.dumps({'url':url}),flush=True)
+    return url
+
+def startup_error(code):
+    # Stable, non-sensitive codes for the native host. Never serialize config,
+    # conversation contents or exception messages into the diagnostic protocol.
+    print('YUKIO_WORKBENCH_ERROR '+json.dumps({'code':code}),file=sys.stderr,flush=True)
 
 def default_directory():
     if sys.platform=='darwin':return Path.home()/'Library/Application Support/YukioPlayer/activity-observation'
@@ -56,6 +67,7 @@ def main(argv=None):
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--data-dir',type=Path,default=default_directory())
     parser.add_argument('--port',type=int,default=8767)
+    parser.add_argument('--fallback-port',action='store_true',help='Use an available loopback port if the preferred port is occupied')
     parser.add_argument('--collect',action='store_true',help='Collect supported recent local activity; no model transmission')
     parser.add_argument('--no-browser',action='store_true')
     parser.add_argument('--check',action='store_true',help='Read-only readiness report')
@@ -75,13 +87,17 @@ def main(argv=None):
         return run_activity_collector(collector_args)
     config_path=directory/'lan-model.json'
     try:config=load_config(config_path) if config_path.is_file() else None
-    except (OSError,ValueError):print('模型配置需要检查；未启动新服务。',file=sys.stderr);return 1
+    except (OSError,ValueError):
+        startup_error('invalid_configuration')
+        print('模型配置需要检查；未启动新服务。',file=sys.stderr);return 1
     existing=check_existing(args.port,databases,config)
     if existing=='same' and not args.collect:
+        url=ready(args.port)
         print('本机工作台已在运行，继续使用现有服务。',flush=True)
-        if not args.no_browser:webbrowser.open('http://127.0.0.1:%d/'%args.port)
+        if not args.no_browser:webbrowser.open(url)
         return 0
-    if existing=='different':
+    if existing=='different' and not args.fallback_port:
+        startup_error('port_in_use')
         print('这个端口已有不同版本或不同记录目录的服务。请关闭该服务或换一个端口；没有替换现有进程。',file=sys.stderr);return 1
     children=[];server=None;old_handlers={}
     try:
@@ -90,7 +106,14 @@ def main(argv=None):
         for sig in (signal.SIGINT,signal.SIGTERM):old_handlers[sig]=signal.signal(sig,stop)
         # Reserve the port before creating databases or starting child collectors.
         roots={c:args.source_root.absolute()/c for c in CLIENTS} if args.source_root else None
-        if existing!='same':server=create_server(args.port,databases,model_config=config,source_roots=roots)
+        if existing!='same':
+            try:
+                server=create_server(0 if existing=='different' else args.port,databases,model_config=config,source_roots=roots)
+            except OSError as error:
+                if not args.fallback_port or error.errno!=errno.EADDRINUSE:raise
+                # The OS reserves the new port atomically; never stop or reuse an
+                # unrelated service, including a stale build from another App.
+                server=create_server(0,databases,model_config=config,source_roots=roots)
         if args.collect:
             sys.path.insert(0,str(core_path()))
             from yukio.activity_collector_cli import CollectorLease
@@ -109,7 +132,7 @@ def main(argv=None):
             time.sleep(.25)
             if any(p.poll() is not None for p in children):
                 print('部分新记录器未启动；请检查记录器状态。已有历史仍可查看。',flush=True)
-        url='http://127.0.0.1:%d/'%args.port
+        url=ready(server.server_port if server else args.port)
         print('Yukio 活动工作台 '+url+'\n关闭此启动窗口或按 Ctrl-C 停止本次启动的服务；不会停止已有记录器。',flush=True)
         if not args.no_browser:webbrowser.open(url)
         if server:server.serve_forever()
@@ -119,7 +142,9 @@ def main(argv=None):
             while True:time.sleep(.5)
         else:print('本机工作台和记录器已在运行，继续使用现有服务。',flush=True)
     except KeyboardInterrupt:pass
-    except (OSError,ValueError,ImportError):
+    except (OSError,ValueError,ImportError) as error:
+        startup_error('port_in_use' if isinstance(error,OSError) and error.errno==errno.EADDRINUSE else
+                      'data_unavailable' if isinstance(error,(OSError,ValueError)) else 'runtime_unavailable')
         print('无法启动；请检查端口、Python 环境或本机记录目录。已有数据未被替换。',file=sys.stderr);return 1
     finally:
         if server:server.server_close()
