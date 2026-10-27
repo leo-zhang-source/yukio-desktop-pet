@@ -24,3 +24,11 @@
 **Next Steps:** Broader optional Mac/Windows testing, long-term use and proper Developer ID/notarization. No further Windows testing is required for this Mac delivery.
 
 References: [Sparkle configuration](https://sparkle-project.org/documentation/customization/), [publishing updates](https://sparkle-project.org/documentation/publishing/), [Sparkle 2.10 replacement code](https://github.com/sparkle-project/Sparkle/blob/2.10.0/Autoupdate/SUPlainInstaller.m). Runtime conclusions above come from the recorded local tests, not these references.
+
+## Published delivery receipt
+
+[1.0 release](https://github.com/leozhang8654/yukio-desktop-pet/releases/tag/v1.0) is public. Source tag and installed bundle point to `1f5770287ffea0933bbd973cfc547eb44b48a3eb`. All 13 GitHub asset digests match the reviewed files. Public ZIP, DMG, checksums and the production latest feed were downloaded and verified. The actual 0.4.11 client, using its original production key and HTTPS feed, also downloaded, installed and relaunched the final public 1.0 package. All 470 files match; existing user settings are retained. Only the update-check timestamp and update-dialog position changed.
+
+The sole Desktop Yukio is running 1.0; its real Check for Updates window reports 1.0 as current. All test Apps were stopped, unregistered and archived; Spotlight returns exactly one installed Yukio. Native language, old history prefixes and all three private model/context/policy files are unchanged.
+
+[Production upgrade](production-upgrade.json) · [Public downloads](public-downloads.json) · [Final receipt](delivery-receipt.json) · [Actual production prompt](production-update-prompt.png) · [Desktop current-version check](desktop-current.png).

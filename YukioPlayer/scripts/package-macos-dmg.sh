@@ -28,5 +28,5 @@ trap 'rm -rf "$STAGING"' EXIT
 swift "$SCRIPT_DIR/installer-background.swift" "$STAGING/install.tiff"
 "$DMG_PYTHON" "$SCRIPT_DIR/build-dmg.py" "$APP" "$DMG" "$STAGING/install.tiff"
 hdiutil verify "$DMG"
-shasum -a 256 "$DMG" > "$DMG.sha256"
+(cd "$(dirname "$DMG")" && shasum -a 256 "$(basename "$DMG")") > "$DMG.sha256"
 echo "$DMG"
