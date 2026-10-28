@@ -119,7 +119,10 @@ def main(argv=None):
             while True:time.sleep(.5)
         else:print('本机工作台和记录器已在运行，继续使用现有服务。',flush=True)
     except KeyboardInterrupt:pass
-    except (OSError,ValueError,ImportError):
+    except (OSError,ValueError,ImportError) as error:
+        if os.environ.get('YUKIO_DIAGNOSTICS')=='1':
+            import traceback
+            traceback.print_exc()
         print('无法启动；请检查端口、Python 环境或本机记录目录。已有数据未被替换。',file=sys.stderr);return 1
     finally:
         if server:server.server_close()
