@@ -13,6 +13,7 @@ from pathlib import Path
 import platform
 import socket
 import sqlite3
+from contextlib import closing
 import subprocess
 import sys
 import time
@@ -69,7 +70,7 @@ def run(args):
         latencies.append(time.monotonic()-start);requests+=1
         return value
     def counts():
-        with sqlite3.connect('file:'+str(data/'codex-activity-history-v1.sqlite')+'?mode=ro',uri=True) as db:
+        with closing(sqlite3.connect((data/'codex-activity-history-v1.sqlite').as_uri()+'?mode=ro',uri=True)) as db:
             return dict(db.execute('SELECT session_id,count(*) FROM events GROUP BY session_id'))
     def wait_counts():
         for _ in range(100):

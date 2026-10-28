@@ -4,6 +4,7 @@ from pathlib import Path
 import sqlite3
 import tempfile
 import unittest
+from contextlib import closing
 from chat_catalog import activity_state, readable_title, project_label, codex_project
 from source_context import SourceContext
 
@@ -37,7 +38,7 @@ class ChatCatalogTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             root=Path(temp);sessions=root/'sessions';sessions.mkdir();source=sessions/'one.jsonl';source.write_text('{}\n')
             state=root/'state_5.sqlite'
-            with sqlite3.connect(state) as c:
+            with closing(sqlite3.connect(state)) as c, c:
                 c.executescript('CREATE TABLE threads(id TEXT,cwd TEXT,rollout_path TEXT,project_id TEXT);CREATE TABLE projects(id TEXT,name TEXT);CREATE TABLE project_roots(project_id TEXT,path TEXT);')
                 c.execute('INSERT INTO threads VALUES(?,?,?,?)',('session','/work/app',str(source),None))
                 c.execute('INSERT INTO projects VALUES(?,?)',('p','雪绪'));c.execute('INSERT INTO project_roots VALUES(?,?)',('p','/work/app'))
