@@ -36,7 +36,7 @@ def build_windows(destination):
     folder = destination / 'windows/YukioWorkbench'
     (folder / 'Start Yukio.cmd').write_text('@echo off\r\ncd /d "%~dp0"\r\n"%~dp0YukioWorkbench.exe" --collect\r\nif errorlevel 1 pause\r\n', encoding='ascii')
     (folder / 'README.txt').write_text(
-        '雪绪活动工作台 Windows 试用版 0.4.1\n\n'
+        '雪绪活动工作台 Windows 试用版 0.4.2\n\n'
         '解压整个文件夹后，双击 Start Yukio.cmd。不需要另装 Python。\n'
         '首页选聊天，查看内容、解释、原因。第一次记录完成需要稍等片刻。\n'
         '关闭启动窗口会停止本次启动的记录器；历史保留，原桌宠不受影响。\n'
@@ -48,7 +48,7 @@ def build_windows(destination):
     if (package / 'LICENSE').exists():shutil.copy2(package / 'LICENSE', folder / 'LICENSE')
     files = {str(p.relative_to(folder)).replace('\\','/'): hashlib.sha256(p.read_bytes()).hexdigest()
              for p in sorted(folder.rglob('*')) if p.is_file()}
-    (folder / 'PACKAGE-MANIFEST.json').write_text(json.dumps(dict(version='0.4.1',files=files),indent=2)+'\n',encoding='utf-8')
+    (folder / 'PACKAGE-MANIFEST.json').write_text(json.dumps(dict(version='0.4.2',files=files),indent=2)+'\n',encoding='utf-8')
     archive = destination / 'Yukio-Activity-Workbench-Windows-preview.zip'
     with zipfile.ZipFile(archive,'w',zipfile.ZIP_DEFLATED) as z:
         for p in folder.rglob('*'):

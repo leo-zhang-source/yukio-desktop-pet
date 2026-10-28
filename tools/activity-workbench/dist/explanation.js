@@ -24,7 +24,7 @@ window.YukioExplanation = (() => {
     configuration = value || {configured: false};
     const status = document.getElementById('modelStatus');
     status.textContent = configuration.configured
-      ? tr('使用你设置的千问') + tr(' · 手动发送 · 每小时最多 ') + configuration.max_calls_per_hour + tr(' 次。配置就绪不代表服务一直在线。')
+      ? tr('解释交给 ') + configuration.model + tr(' · 手动发送 · 每小时最多 ') + configuration.max_calls_per_hour + tr(' 次。配置就绪不代表服务一直在线。')
       : tr('尚未配置模型，仍可查看本机说明和依据。');
   }
   function controls(selection, contextual=false) {
@@ -42,11 +42,13 @@ window.YukioExplanation = (() => {
         panel.replaceChildren();
         const review = node('div', undefined, 'send-preview');
         review.append(node('h4', tr('先看清楚会发送什么')));
-        review.append(node('p', tr('发送到 ') + tr('你设置的内网千问')));
+        review.append(node('p', tr('解释交给 ') + configuration.model));
         review.append(node('p', preview.excluded));
         review.append(node('p', (contextual ? tr('只解释本次读取范围的统计和限制，不是完整任务总结。') : tr('只解释选中的一条已保存记录。')) +
           (preview.payload.scope.blocks_in_record ? tr('消息内共有 ') + preview.payload.scope.blocks_in_record + tr(' 项，本次仅发送前 ') + preview.payload.scope.blocks_included + tr(' 项。') : '') +
-          tr(' 发送后由这台内网模型服务器处理；当前接口没有鉴权。')));
+          (configuration.provider === 'lan'
+            ? tr(' 发送后由你配置的内网模型处理；当前内网接口没有鉴权。')
+            : tr(' 发送后由工作台所选的本机 Agent 处理，使用该 Agent 的服务和账号额度。自动模式会在发送前检查可用助手，实际来源显示在结果中。'))));
         for (const fact of preview.payload.facts) {
           review.append(node('p', '' +
             (fact.evidence_class === 'self_report' ? tr('自述存在标记：') : fact.evidence_class === 'rule_summary' ? tr('本机整理：') : tr('已观察标记：')) +

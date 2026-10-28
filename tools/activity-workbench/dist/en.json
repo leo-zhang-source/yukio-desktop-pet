@@ -743,5 +743,8 @@
   "解释来源已更改，请刷新页面后继续。": "The explanation source changed. Refresh the page to continue.",
   "Agent 选择的模型不支持当前登录。请先在对应命令行客户端选择可用模型，再重试。": "The selected model is unavailable for this agent login. Choose an available model in that CLI, then try again.",
   "只解释所选聊天的短摘录，使用对应 Agent 的账号额度。自动模式优先使用该聊天的 Agent，未安装、未登录或版本不支持时选择另一个可用的 Agent；调用失败时保留本机说明。": "Only short excerpts of the selected chat are explained, using that agent’s account allowance. Auto checks the matching agent first, then another available agent if it is missing, signed out or incompatible. Generation failures keep the local notes.",
-  "检查助手是否可用时超时，尚未发送聊天摘录。请检查客户端后重试。": "The agent availability check timed out. No chat excerpts were sent. Check the client and try again."
+  "检查助手是否可用时超时，尚未发送聊天摘录。请检查客户端后重试。": "The agent availability check timed out. No chat excerpts were sent. Check the client and try again.",
+  "解释交给 ": "Explain with ",
+  " 发送后由你配置的内网模型处理；当前内网接口没有鉴权。": " Your configured LAN model will process the excerpts; this LAN connection has no authentication.",
+  " 发送后由工作台所选的本机 Agent 处理，使用该 Agent 的服务和账号额度。自动模式会在发送前检查可用助手，实际来源显示在结果中。": " The selected local agent will process the excerpts using its own service and account allowance. Auto checks available agents before sending; the result shows which agent was used."
 }

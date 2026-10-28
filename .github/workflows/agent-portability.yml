@@ -55,7 +55,7 @@ jobs:
           path: |
             build/agent-check/*.json
             build/agent-check/*.log
-            build/agent-macos/*0.4.1.zip
+            build/agent-macos/*0.4.2.zip
       - name: Publish Windows package only when distribution is enabled
         if: runner.os == 'Windows' && vars.YUKIO_WINDOWS_DISTRIBUTION == 'enabled'
         uses: actions/upload-artifact@v4

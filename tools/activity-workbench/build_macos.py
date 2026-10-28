@@ -17,8 +17,8 @@ import sys
 import zipfile
 from build_bundle import ROOT, build
 
-VERSION = '0.4.1'
-BUILD = '30'
+VERSION = '0.4.2'
+BUILD = '31'
 
 
 def build_macos(destination):

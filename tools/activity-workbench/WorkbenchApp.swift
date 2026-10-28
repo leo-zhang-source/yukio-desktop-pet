@@ -44,7 +44,7 @@ final class WorkbenchDelegate: NSObject, NSApplicationDelegate {
                 guard let self=self else{return}
                 if text.contains("已在运行") || text.contains("http://127.0.0.1:8767/") {
                     self.reuse = text.contains("已在运行")
-                    self.message.stringValue=self.text("工作台已经准备好。选择聊天后，千问会按你的设置自动解释“内容、解释、原因”；页面打开期间持续跟进，关掉页面停止后续解释。\n\n说明会结合前面的进展，用普通语言讲清正在做什么、有什么用。发送范围和接收位置在页面的“说明与隐私”中查看。此试用版不会替换原来的桌宠。退出会停止由本窗口启动的服务；已有服务继续运行。", "Ready. Choose a chat to see what is happening, what it means and why it matters.\n\nWith your saved Qwen settings, explanations follow the selected chat while its page is open. Close the page to stop further sends. See Explanation & privacy for details. Quitting stops services started by this window.")
+                    self.message.stringValue=self.text("工作台已经准备好。选择聊天和解释来源，点击“开启解释”后，会使用你自己的 Codex、Claude Code 或自选内网模型解释“内容、解释、原因”。关闭页面会停止后续解释。\n\n说明会结合前面的进展，用普通语言讲清正在做什么、有什么用。发送范围和接收位置在页面的“说明与隐私”中查看。退出会停止由本窗口启动的服务；已有服务继续运行。", "Ready. Choose a chat and an explanation source, then click Enable explanations to use your own Codex, Claude Code or selected LAN model. Close the page to stop further sends.\n\nSee Explanation & privacy for the excerpts and destination. Quitting stops services started by this window.")
                     self.openButton.isEnabled=true
                     if !self.didOpen {self.didOpen=true;self.openWorkbench()}
                 } else if text.contains("需要检查") || text.contains("无法") || text.contains("不同版本") {

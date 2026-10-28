@@ -38,3 +38,21 @@ test('history, explanation and handoff controls all have English translations',(
  }
  for(const [key,value] of Object.entries(words))assert.doesNotMatch(value,/[\u3400-\u9fff]/,key);
 });
+test('history send previews describe the chosen agent or LAN service accurately',async()=>{
+ for(const provider of ['auto','codex','claude','lan']){
+  function element(tag){return {tag,children:[],listeners:{},textContent:'',append(...items){this.children.push(...items);},replaceChildren(...items){this.children=items;},addEventListener(name,listener){this.listeners[name]=listener;}};}
+  const status=element('p'),document={createElement:element,getElementById:()=>status};
+  const context=vm.createContext({document,window:{},fetch:async()=>({ok:true,json:async()=>({payload:{scope:{},facts:[]},excluded:'Short excerpts only'})})});
+  vm.runInContext(fs.readFileSync(path.join(root,'explanation.js'),'utf8'),context);
+  const api=context.window.YukioExplanation;
+  api.configure({configured:true,provider,model:provider==='lan'?'Selected LAN model':provider==='auto'?'My agent':provider,max_calls_per_hour:20});
+  const controls=api.controls({client:'codex',key:'chat',sequence:1});
+  await controls.children[0].listeners.click();
+  const content=node=>node.textContent+' '+node.children.map(content).join(' ');
+  const text=status.textContent+' '+content(controls);
+  assert.doesNotMatch(text,/千问|Qwen/);
+  assert.match(text,/解释交给/);
+  if(provider==='lan'){assert.match(text,/内网接口没有鉴权/);assert.doesNotMatch(text,/账号额度/);}
+  else{assert.match(text,/该 Agent 的服务和账号额度/);assert.doesNotMatch(text,/内网模型|没有鉴权/);}
+ }
+});
