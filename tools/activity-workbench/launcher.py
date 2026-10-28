@@ -33,7 +33,11 @@ def databases_for(directory):return {client:directory/(client+'-activity-history
 def check_existing(port,databases,model_config=None):
     req=urllib.request.Request('http://127.0.0.1:%d/api/health'%port,headers={'X-Yukio-Workbench':'1'})
     try:
-        opener=urllib.request.build_opener(urllib.request.ProxyHandler({}))
+        # Health checks target a fixed loopback HTTP URL. Avoid initializing
+        # platform TLS/certificate stores on every startup or readiness poll.
+        opener=urllib.request.OpenerDirector()
+        for handler in (urllib.request.HTTPHandler(),urllib.request.HTTPDefaultErrorHandler(),urllib.request.HTTPErrorProcessor()):
+            opener.add_handler(handler)
         with opener.open(req,timeout=1) as r:raw=r.read(8193)
         if len(raw)>8192:return 'different'
         data=json.loads(raw)
@@ -54,6 +58,11 @@ def inspect(directory):
     return data
 
 def main(argv=None):
+    # Frozen Windows builds may use the system's legacy code page even when
+    # PYTHONUTF8 is set. Status text must not prevent a healthy service starting.
+    for stream in (sys.stdout,sys.stderr):
+        if callable(getattr(stream,'reconfigure',None)):
+            stream.reconfigure(encoding='utf-8',errors='backslashreplace')
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--data-dir',type=Path,default=default_directory())
     parser.add_argument('--port',type=int,default=8767)
@@ -103,7 +112,8 @@ def main(argv=None):
                 command=([sys.executable] if getattr(sys,'frozen',False) else [sys.executable,'-B',str(ROOT/'launcher.py')])
                 command+=['--data-dir',str(directory),'--collector',client,'--parent-stdin']
                 if args.source_root:command+=['--source-root',str(args.source_root.absolute())]
-                process=subprocess.Popen(command,stdin=subprocess.PIPE,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,
+                process=subprocess.Popen(command,stdin=subprocess.PIPE,stdout=subprocess.DEVNULL,
+                                         stderr=None if os.environ.get('YUKIO_DIAGNOSTICS')=='1' else subprocess.DEVNULL,
                                          creationflags=subprocess.CREATE_NO_WINDOW if os.name=='nt' else 0)
                 children.append(process)
             time.sleep(.25)
