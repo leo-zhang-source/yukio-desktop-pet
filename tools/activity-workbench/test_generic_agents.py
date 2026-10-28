@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 import sys
+import subprocess
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -115,6 +116,16 @@ class GenericSelectionTests(unittest.TestCase):
 
 
 class ProbeTests(unittest.TestCase):
+    @unittest.skipIf(os.name=='nt','POSIX process-group fallback')
+    def test_owned_child_stops_if_group_signaling_is_unavailable(self):
+        child=subprocess.Popen([sys.executable,'-c','import time;time.sleep(30)'],start_new_session=True)
+        try:
+            with patch('os.killpg',side_effect=PermissionError('Process-group signaling unavailable')):
+                agent.stop_process(child)
+            self.assertIsNotNone(child.poll())
+        finally:
+            if child.poll() is None:child.kill();child.wait(timeout=5)
+
     def test_help_and_login_inspection_receive_no_excerpts(self):
         for provider, help_text, auth in [('codex', CODEX_HELP, b'Logged in using ChatGPT'),
                                            ('claude', CLAUDE_HELP, b'{"loggedIn":true,"email":"PRIVATE"}')]:

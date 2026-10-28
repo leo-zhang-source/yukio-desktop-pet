@@ -183,6 +183,11 @@ def stop_process(process):
             os.killpg(process.pid, signal.SIGKILL)
         except ProcessLookupError:
             pass
+        except PermissionError:
+            # Some desktop execution policies disallow group signaling while
+            # still allowing us to stop the exact child we launched.
+            if process.poll() is None:
+                process.kill()
     process.wait(timeout=5)
 
 
