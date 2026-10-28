@@ -19,7 +19,7 @@
 
 **English** · [简体中文](README.zh-CN.md)
 
-**[Visit the website · Try the character animations](https://leozhang8654.github.io/)**
+**[Visit the website · Try the character animations](https://is.gd/yukioapp)**
 
 [Download](#download) · [Features](#features) · [Character & animation gallery](#character--animation-gallery) · [Get started](#get-started)
 
