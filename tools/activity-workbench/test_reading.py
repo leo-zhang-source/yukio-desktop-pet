@@ -2,6 +2,7 @@ import http.client
 import json
 import threading
 import unittest
+from contextlib import closing
 from explanation import ExplanationError,ExplanationService,encode,validate_output,schema_for,complete_response,concrete_title
 from project_context import ProjectContext
 from plain_language import plain_words
@@ -114,7 +115,7 @@ class ReadingTests(unittest.TestCase):
         page=self.reading.history_page(self.grant)
         self.assertIn('较早文件里的明确要求',[c['title'] for c in page['cards']])
         import sqlite3
-        with sqlite3.connect(self.fx.db) as db:
+        with closing(sqlite3.connect(self.fx.db)) as db, db:
             db.execute("UPDATE events SET record=json_set(record,'$.agent_id','another-agent') WHERE json_extract(record,'$.source_id')<>?",(__import__('history_view').key_parts(self.fx.key)[0],))
         page=self.reading.history_page(self.grant)
         self.assertNotIn('较早文件里的明确要求',[c['title'] for c in page['cards']])

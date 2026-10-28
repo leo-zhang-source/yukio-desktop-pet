@@ -123,7 +123,7 @@ def probe_agent(provider, command):
         with tempfile.TemporaryDirectory(prefix='yukio-agent-check-') as folder:
             root = Path(folder)
             args = ['exec', '--help'] if provider == 'codex' else ['--help']
-            code, out, err = run_bounded(command + args, '', root, 3)
+            code, out, err = run_bounded(command + args, '', root, 5)
             flags = set(re.findall(r'--[a-z][a-z0-9-]*', out.decode('utf-8', errors='replace')))
             if code or not required <= flags:
                 return dict(state='unavailable', reason='agent_incompatible')
@@ -131,7 +131,7 @@ def probe_agent(provider, command):
                 # Never guess a subcommand: an old CLI may treat it as a prompt.
                 return dict(state='unknown')
             args = ['login', 'status'] if provider == 'codex' else ['auth', 'status', '--json']
-            code, out, err = run_bounded(command + args, '', root, 3)
+            code, out, err = run_bounded(command + args, '', root, 5)
             if provider == 'claude':
                 try:
                     status = json.loads(out)
@@ -169,9 +169,15 @@ def select_agent(config, client=None):
 def stop_process(process):
     if os.name == 'nt':
         # Kill this invocation's tree only; never terminate a user's other chats.
-        subprocess.run(['taskkill', '/PID', str(process.pid), '/T', '/F'],
-                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                       creationflags=subprocess.CREATE_NO_WINDOW, timeout=5, check=False)
+        taskkill = Path(os.environ.get('SystemRoot', 'C:/Windows'))/'System32/taskkill.exe'
+        try:
+            subprocess.run([str(taskkill), '/PID', str(process.pid), '/T', '/F'],
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                           creationflags=subprocess.CREATE_NO_WINDOW, timeout=5, check=False)
+        except (OSError, subprocess.TimeoutExpired):
+            pass
+        if process.poll() is None:
+            process.kill()
     else:
         try:
             os.killpg(process.pid, signal.SIGKILL)
