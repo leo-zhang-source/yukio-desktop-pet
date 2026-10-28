@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 import sqlite3
 import socket
@@ -9,6 +10,7 @@ import threading
 import time
 import unittest
 import urllib.request
+from unittest.mock import patch
 
 from launcher import databases_for,inspect,check_existing,ROOT
 from runtime_identity import identity
@@ -38,7 +40,8 @@ class LauncherTests(unittest.TestCase):
         dbs=databases_for(self.root);server=create_server(0,dbs)
         t=threading.Thread(target=server.serve_forever,daemon=True);t.start()
         try:
-            self.assertEqual(check_existing(server.server_port,dbs),'same')
+            with patch('urllib.request.HTTPSHandler',side_effect=AssertionError('Loopback health must not initialize TLS')):
+                self.assertEqual(check_existing(server.server_port,dbs),'same')
             self.assertEqual(check_existing(server.server_port,databases_for(self.root/'other')),'different')
             self.assertEqual(check_existing(server.server_port,dbs,{'model':'changed'}),'different')
         finally:server.shutdown();server.server_close();t.join()
@@ -54,7 +57,8 @@ class LauncherTests(unittest.TestCase):
         before={k:v.read_bytes() for k,v in dbs.items()}
         with socket.socket() as s:s.bind(('127.0.0.1',0));port=s.getsockname()[1]
         for _ in range(2):
-            p=subprocess.Popen([sys.executable,str(ROOT/'launcher.py'),'--no-browser','--port',str(port),'--data-dir',str(self.root)],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+            p=subprocess.Popen([sys.executable,str(ROOT/'launcher.py'),'--no-browser','--port',str(port),'--data-dir',str(self.root)],stdout=subprocess.PIPE,stderr=subprocess.PIPE,
+                               env=dict(os.environ,PYTHONUTF8='0',PYTHONIOENCODING='cp1252'))
             try:
                 for attempt in range(50):
                     if check_existing(port,dbs)=='same':break
@@ -150,7 +154,8 @@ class LauncherTests(unittest.TestCase):
         sources=self.root/'kill-sources';data=self.root/'kill-data'
         for client in ('codex','claude','deepcode'):(sources/client).mkdir(parents=True)
         with socket.socket() as s:s.bind(('127.0.0.1',0));port=s.getsockname()[1]
-        p=subprocess.Popen([sys.executable,str(ROOT/'launcher.py'),'--no-browser','--collect','--port',str(port),'--data-dir',str(data),'--source-root',str(sources)],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+        p=subprocess.Popen([sys.executable,str(ROOT/'launcher.py'),'--no-browser','--collect','--port',str(port),'--data-dir',str(data),'--source-root',str(sources)],stdout=subprocess.PIPE,stderr=subprocess.PIPE,
+                           env=dict(os.environ,YUKIO_DIAGNOSTICS='1'))
         try:
             deadline=time.monotonic()+20
             while time.monotonic()<deadline:
@@ -159,7 +164,9 @@ class LauncherTests(unittest.TestCase):
                     self.fail('Launcher exited before recorder readiness: '+error.decode('utf-8',errors='replace'))
                 if all((data/(c+'-workbench-status.json')).exists() for c in ('codex','claude','deepcode')):break
                 time.sleep(.05)
-            else:self.fail('Recorders did not start')
+            else:
+                p.kill();out,error=p.communicate(timeout=5)
+                self.fail('Recorders did not start; launcher output: '+(out+error).decode('utf-8',errors='replace'))
         finally:
             p.kill();p.communicate(timeout=5)
         self.wait_stopped(data)
