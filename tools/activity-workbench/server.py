@@ -2,6 +2,7 @@
 """Serve the private workbench on loopback. Explicit databases, read-only routes."""
 import argparse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from socketserver import TCPServer
 import json
 from pathlib import Path
 import sqlite3
@@ -31,6 +32,15 @@ ASSETS = {'/': ('index.html', 'text/html; charset=utf-8'),
           '/context.js': ('context.js', 'text/javascript; charset=utf-8'),
           '/style.css': ('style.css', 'text/css; charset=utf-8')}
 ASSETS['/i18n.js']=('i18n.js','text/javascript; charset=utf-8')
+
+
+class LocalHTTPServer(ThreadingHTTPServer):
+    def server_bind(self):
+        # This service always binds to 127.0.0.1. HTTPServer's reverse hostname
+        # lookup can stall on machines with different DNS/VPN configurations.
+        TCPServer.server_bind(self)
+        self.server_name='localhost'
+        self.server_port=self.server_address[1]
 
 
 def create_server(port, databases, *, synthetic=False, model_config=None, explanation_service=None, source_roots=None):
@@ -216,7 +226,7 @@ def create_server(port, databases, *, synthetic=False, model_config=None, explan
             self.end_headers()
             self.wfile.write(data)
 
-    return ThreadingHTTPServer(('127.0.0.1',port), Handler)
+    return LocalHTTPServer(('127.0.0.1',port), Handler)
 
 
 def main():
