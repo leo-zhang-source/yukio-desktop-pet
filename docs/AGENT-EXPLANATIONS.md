@@ -14,8 +14,8 @@ Codex 使用 `exec`、临时会话、只读权限、结构化输出和隔离配�
 
 需客户端支持上述参数；旧版返回升级提示。源码运行普通配置支持 Python 3.9+，Codex 自定义服务/命名 profile 需要 Python 3.11+；Mac 包内置 Python 3.12。超时为 90 秒，限制输出大小并结束本次解释进程树。登录失效、额度不足、缺失客户端、参数不支持、错误格式和错误引用均保留原记录。格式与引用检查不能证明所有解释语义正确。已经提交给服务端的推理不保证能撤回。
 
-通用性补强：260 项 Python 检查（Python 3.12，含两种 CLI 子进程协议、默认选择、Unicode/空格路径、Windows npm 参数适配、首页/深入/回顾、异常回退、超时/超量、服务切换及同源保护）；31 项页面与语言检查通过；新增两位用户隔离、登录变化后直接重试、检查失败不计入预算、另一客户端可用与不可用、旧版参数、未知登录子命令、检查期间停止等场景。`.github/workflows/agent-portability.yml` 用同一源码在 Mac、Windows、Linux 运行；Mac/Windows 另构建独立运行程序并检查两种离线客户端的帮助、登录和生成协议。各平台结果需以实际执行记录为准，不能以 Mac 模拟测试代替 Windows。
+通用性补强：262 项 Python 检查（Python 3.12，含两种 CLI 子进程协议、默认选择、Unicode/空格路径、Windows npm 参数适配、首页/深入/回顾、异常回退、超时/超量、服务切换及同源保护）；31 项页面与语言检查通过；新增两位用户隔离、登录变化后直接重试、检查失败不计入预算、另一客户端可用与不可用、旧版参数、未知登录子命令、检查期间停止等场景。`.github/workflows/agent-portability.yml` 用同一源码在 Mac、Windows、Linux 运行；Mac/Windows 另构建独立运行程序并检查两种离线客户端的帮助、登录和生成协议。各平台结果需以实际执行记录为准，不能以 Mac 模拟测试代替 Windows。
 
-真实外部调用：Codex CLI 0.142.3 能读取用户的实际模型选择，但所选模型不受该 CLI 的当前登录支持；未确认成功生成。Claude Code 2.1.195 返回未登录；已确认登录提示，未确认真实生成。不能把协议模拟通过说成两种服务的真实生成都已通过。本机没有 Windows 虚拟机；Windows 原生协议与打包由独立 Windows 环境单独核验，其是否通过以运行记录为准。使用真实 Claude/Codex 账号完成线上生成仍未验证。
+真实外部调用：Codex CLI 0.142.3 能读取用户的实际模型选择，但所选模型不受该 CLI 的当前登录支持；未确认成功生成。Claude Code 2.1.195 返回未登录；已确认登录提示，未确认真实生成。不能把协议模拟通过说成两种服务的真实生成都已通过。本机没有 Windows 虚拟机；独立 Mac、Windows、Linux 的同源检查已通过；Windows 原生程序的离线助手收发也已通过。具体环境与范围见[跨平台验收](validation/agent-portability-0.4.1/README.md)。使用真实 Claude/Codex 账号完成线上生成仍未验证。
 
 参数依据：[Claude CLI](https://code.claude.com/docs/en/cli-reference)、[Claude 非交互调用](https://code.claude.com/docs/en/headless)，以及本机 Codex `exec --help` 和配置参考。调用的客户端最终使用自身服务设置；本功能不提供共享账号或开发者内网代理。
