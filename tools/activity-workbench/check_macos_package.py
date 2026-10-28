@@ -28,7 +28,7 @@ def check(archive, output):
     manifest=json.loads((package/'MANIFEST.json').read_text(encoding='utf-8'))
     for name,digest in manifest['files'].items():
         assert hashlib.sha256((package/name).read_bytes()).hexdigest()==digest,name
-    assert not any(p.name in ('lan-model.json','page-explanation-policy.json','work-context.json') or p.suffix in ('.sqlite','.jsonl','.log') for p in package.rglob('*'))
+    assert not any(p.name in ('lan-model.json','page-explanation-policy.json','work-context.json','explanation-provider.json') or p.suffix in ('.sqlite','.jsonl','.log') for p in package.rglob('*'))
     sources=output/'模拟聊天';data=output/'记录'
     for client in ('codex','claude','deepcode'):(sources/client).mkdir(parents=True)
     rows=[dict(type='session_meta',payload=dict(id='mac-synthetic-chat')),
@@ -95,7 +95,7 @@ def check(archive, output):
                 assert reuse.returncode==0, 'Opening the same packaged workbench failed'
                 saved.append(next(c['saved_records'] for c in get('clients')['clients'] if c['id']=='codex'))
                 with opener.open('http://127.0.0.1:%d/'%port,timeout=2) as response:
-                    page=response.read().decode('utf-8');assert '千问说明会自动显示在下方' in page and 'id="explain"' not in page and 'id="stopAuto"' not in page
+                    page=response.read().decode('utf-8');assert 'id="explanationProvider"' in page and 'id="providerEnable"' in page and 'id="explain"' not in page and 'id="stopAuto"' not in page
             finally:
                 process.kill();process.wait(timeout=5);stopped()
     assert saved[0]==saved[1]==len(rows)+len(child)

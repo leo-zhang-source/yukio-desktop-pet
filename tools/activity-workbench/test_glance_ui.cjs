@@ -66,7 +66,7 @@ test('a model answer stays readable while new work is marked for automatic updat
  const f=setup();f.context.data=currentWork();f.run('model={configured:true,automatic_on_open:true};render(data)');
  f.context.result={mode:'model',explanations:['content','explanation','reason'].map(part=>({part,text:'模型'+part,basis:'inference',evidence_ids:[]}))};
  f.run('showAnswer(result,[],1,"r1")');assert.equal(f.elements.get('content').textContent,'模型content');
- assert.match(f.elements.get('modelNote').textContent,/千问说明.*自动跟进/);
+ assert.match(f.elements.get('modelNote').textContent,/模型说明.*自动跟进/);
  f.context.data=currentWork('r2');f.run('render(data)');assert.equal(f.elements.get('content').textContent,'模型content');
  assert.match(f.elements.get('modelNote').textContent,/稍早.*自动更新/);
 });
@@ -200,4 +200,22 @@ test('history uses its dedicated subject title and preserves both names after a 
  f.pending[0].resolve({cards:[{id:'section1',title:'两个按钮',stamp:1,detail_token:'section-detail',parts:[]}],token:'page',snapshot:1,next_before:0,has_more:false,note:'三段一页'});await tick();
  f.pending[1].resolve({result:{mode:'model',explanations:[{part:'section1',title:'新增“深入解释”和“之前做了什么”入口',text:'用户要求新增两个入口，名称是“深入解释”和“之前做了什么”。',evidence_ids:[]}]},references:[]});await request;
  assert.equal(f.elements.get('pastText').children[0].children[0].textContent,'新增“深入解释”和“之前做了什么”入口');
+});
+test('provider changes persist before a new automatic explanation can start',async()=>{
+ const f=setup();f.run('model={provider:"auto",automatic_on_open:false};$("explanationProvider").value="claude"');
+ const change=f.run('setExplanationProvider(true)');assert.equal(f.pending[0].url,'/api/explanation-settings');
+ assert.deepEqual(JSON.parse(f.pending[0].options.body),{provider:'claude',automatic_on_open:true});
+ assert.equal(f.pending.length,1);f.pending[0].resolve({provider:'claude',automatic_on_open:true,providers:[]});await change;
+ assert.equal(f.run('model.provider'),'claude');assert.equal(f.run('grant'),null);
+});
+test('stop remains usable while an automatic explanation is in flight',async()=>{
+ const f=setup();f.run('model={provider:"codex",automatic_on_open:true};autoRun={};grant="old";$("explanationProvider").value="claude"');
+ const stop=f.run('setExplanationProvider(false)');assert.deepEqual(JSON.parse(f.pending[0].options.body),{provider:'codex',automatic_on_open:false});
+ f.pending[0].resolve({provider:'codex',automatic_on_open:false,providers:[]});await stop;
+ assert.equal(f.run('model.automatic_on_open'),false);assert.equal(f.run('grant'),null);assert.equal(f.run('autoRun'),null);
+});
+test('a recipient changed by another page cannot inherit this page sending grant',async()=>{
+ const f=setup();enabledPage(f);f.run('model.destination="agent://codex"');
+ const run=f.run('automatic()');f.pending[0].resolve({token:'preview',destination:'agent://claude'});await run;
+ assert.equal(f.pending.length,1);assert.equal(f.run('model.automatic_on_open'),false);
 });

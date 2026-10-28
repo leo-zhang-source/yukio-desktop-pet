@@ -476,6 +476,9 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
 
 
 def call_model(config,payload):
+    if config.get('provider')=='agent':
+        from agent_explanation import call_agent
+        return call_agent(config,payload)
     reading=payload.get('scope',{}).get('reading')
     system=output_system(payload)
     request=dict(model=config['model'],messages=[dict(role='system',content=system),dict(role='user',content=encode(payload))],
@@ -510,6 +513,17 @@ def call_model(config,payload):
 
 
 MESSAGES={
+    'agent_not_found':'没有找到可用的本机 Agent。请安装并登录 Codex 或 Claude Code，再重新开启解释。',
+    'agent_start_failed':'本机 Agent 未能启动。请在终端确认 Codex 或 Claude Code 能正常打开。',
+    'agent_login_required':'Agent 登录已失效或尚未登录，请先在对应客户端登录，再重试。',
+    'agent_rate_limited':'Agent 的用量或额度已到上限，请稍后重试。',
+    'agent_incompatible':'当前 Agent 版本不支持独立解释，请升级对应客户端后重试。',
+    'agent_timeout':'Agent 解释超时，本次解释进程已停止，原聊天仍可使用。',
+    'agent_failed':'Agent 暂时无法解释，请检查该客户端是否能正常回答。已有记录仍保留。',
+    'agent_config_unsupported':'无法安全读取 Agent 的模型设置。请检查客户端配置；从源码运行自定义服务时需 Python 3.11 或更新版本。',
+    'agent_model_unavailable':'Agent 选择的模型不支持当前登录。请先在对应命令行客户端选择可用模型，再重试。',
+    'agent_probe_timeout':'检查助手是否可用时超时，尚未发送聊天摘录。请检查客户端后重试。',
+
     'unnamed_subject':'这次说明没说清具体是哪组按钮，暂时保留已有内容。',
     'service_unavailable':'模型暂时没有响应，仍可查看下面的本机说明。',
     'model_unavailable':'配置的模型目前不可用，没有自动切换其他模型。',
@@ -524,19 +538,20 @@ MESSAGES={
     'busy':'已有一条解释正在生成，请稍后再试。',
     'preview_expired':'发送预览已过期，请重新预览。',
     'consent_required':'请先预览内容，再确认发送。',
-    'missing_current_result':'千问漏掉了最近一步的结果，先保留本机说明。',
+    'missing_current_result':'模型漏掉了最近一步的结果，先保留本机说明。',
     'contradictory_result':'这次说明与操作记录不一致，先保留本机说明。',
-    'missing_project_context':'千问没有联系前后步骤，先保留本机说明。',
+    'missing_project_context':'模型没有联系前后步骤，先保留本机说明。',
 }
 
 
 class ExplanationService:
     def __init__(self,config, *, sender=call_model,clock=time.monotonic):
         self.config=dict(config);self.sender=sender;self.clock=clock
-        self.lock=threading.Lock();self.entries=OrderedDict();self.calls=deque();self.running=False
+        self.lock=threading.Lock();self.entries=OrderedDict();self.calls=deque();self.running=False;self.retired=False
 
     def info(self):
         return dict(configured=True,model=self.config['model'],destination=self.config['base_url'],
+                    provider=self.config.get('agent','lan'),
                     max_calls_per_hour=self.config['max_calls_per_hour'],manual_only=True)
 
     def preview(self,selection,item,warnings):
@@ -581,22 +596,32 @@ class ExplanationService:
                     excluded=('将发送下方的短摘录：整体目标、前面进展、近期要求、公开说明、操作结果、可对应的工具返回短片段和拟修改片段（可能含少量代码）。项目说明与实际观察分别标注。已过滤常见凭据，但请仍检查私人内容；不发送完整聊天、整份文件、原始长输出、内部思考或私人编号。' if glance else '不发送聊天正文、代码、命令、文件路径、工具原名、聊天或助手编号、时间与内容指纹。'),
                     instructions=output_system(entry['payload']))
 
-    def generate(self,token,consent):
+    def generate(self,token,consent, *, can_send=None):
         if consent is not True:raise ExplanationError('consent_required')
         with self.lock:
             entry=self.entries.get(token);now=self.clock()
+            if self.retired:raise ExplanationError('preview_expired')
             if not entry or now-entry['created']>300:raise ExplanationError('preview_expired')
             if entry['state']=='done':return dict(entry['result'],cached=True)
             if self.running:raise ExplanationError('busy')
             while self.calls and now-self.calls[0]>=3600:self.calls.popleft()
             if len(self.calls)>=self.config['max_calls_per_hour'] or self.calls and now-self.calls[-1]<self.config['cooldown_seconds']:
                 raise ExplanationError('rate_limited')
-            self.calls.append(now);self.running=True;entry['state']='running'
+            self.running=True;entry['state']='running'
+        sent=False
         try:
-            explanations=self.sender(self.config,entry['payload'])
+            request_config=self.config
+            if self.config.get('provider')=='agent':
+                from agent_explanation import select_agent
+                request_config=select_agent(self.config,entry['selection'].get('client') if isinstance(entry['selection'],dict) else None)
+            with self.lock:
+                if can_send is not None:can_send()
+                self.calls.append(self.clock())
+            sent=True
+            explanations=self.sender(request_config,entry['payload'])
             # Also validate injected test transports; one validation contract.
             explanations=complete_response(encode(dict(explanations=explanations)),entry['payload'])
-            result=dict(mode='model',model=self.config['model'],explanations=explanations,cached=False,
+            result=dict(mode='model',model=request_config['model'],explanations=explanations,cached=False,
                         warning='模型解释，可能有误。引用和格式已检查，但不代表每句话已经被证明正确。')
         except ExplanationError as exc:
             result=dict(mode='fallback',reason=exc.code,message=MESSAGES.get(exc.code,'模型返回的内容未通过检查，已保留本机说明。'),
@@ -605,5 +630,5 @@ class ExplanationService:
             # Never expose transport errors, prompts or upstream response bodies.
             result=dict(mode='fallback',reason='internal_error',message='暂时无法生成解释，请继续查看本机记录。',explanations=[],cached=False)
         with self.lock:
-            self.running=False;entry['state']='done';entry['result']=result
+            self.running=False;entry['state']='done' if sent else 'ready';entry['result']=result
         return result

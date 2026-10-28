@@ -57,7 +57,7 @@ def build(base_app, workbench_app, binary, source, output, version=None, build_n
     shutil.copy2(workbench_app / 'Contents/Resources/THIRD-PARTY-NOTICES.txt', target / 'THIRD-PARTY-NOTICES.txt')
     # Inputs are installed application resources only, not Application Support.
     for p in target.rglob('*'):
-        if p.name in ('lan-model.json', 'work-context.json', 'page-explanation-policy.json') or p.suffix in ('.sqlite', '.sqlite3'):
+        if p.name in ('lan-model.json', 'work-context.json', 'page-explanation-policy.json', 'explanation-provider.json') or p.suffix in ('.sqlite', '.sqlite3'):
             raise ValueError('Private profile data must not enter the package')
     plist = app / 'Contents/Info.plist'
     info = plistlib.loads(plist.read_bytes())
