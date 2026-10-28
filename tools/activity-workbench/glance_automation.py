@@ -72,7 +72,10 @@ class GlanceAutomation:
             preview=self.explainer.preview_prepared(selection,payload,refs)
             with self.lock:
                 if self.grants.get(grant) is not entry:raise ExplanationError('consent_required')
-            result=self.explainer.generate(preview['token'],True)
+            def can_send():
+                with self.lock:
+                    if self.grants.get(grant) is not entry:raise ExplanationError('consent_required')
+            result=self.explainer.generate(preview['token'],True,can_send=can_send)
             with self.lock:entry['fingerprint']=fingerprint if result.get('mode')=='model' else None
             return dict(mode='updated',result=result,references=refs,snapshot=data['snapshot'],revision=data['revision'])
         finally:

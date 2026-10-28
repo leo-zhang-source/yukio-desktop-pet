@@ -23,7 +23,10 @@ class AgentTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory(prefix='雪绪 Agent & ')
         self.root = Path(self.temp.name)
         self.payload, _ = prepare(item(), [])
+        self.probe = patch.object(agent, 'probe_agent', return_value=dict(state='ready'))
+        self.probe.start()
     def tearDown(self):
+        self.probe.stop()
         self.temp.cleanup()
 
     def test_default_uses_own_agent_and_does_not_inherit_lan_consent(self):
