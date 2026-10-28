@@ -1,3 +1,5 @@
+> **October 27, 2026: Windows downloads are temporarily withdrawn.** GitHub no longer provides Windows installers, portable builds, update files or downloadable build artifacts. Source and historical verification records remain. The guide below is for source development and historical reference. [Distribution status](../docs/WINDOWS-DISTRIBUTION.md).
+
 > **0.4.6**: browser chat destinations, visible-chat completion reminders, approval cards, answer pasting and Qianxia. [Release notes](../docs/releases/0.4.6.md).
 
 # Yukio desktop pet (Windows edition: DeepSeek, Claude or GPT)
@@ -14,11 +16,9 @@ The standalone assistant page and its entries are suspended in release builds; e
 
 Settings include visibility, a 50–200% size slider, agent source, language, card switches and opt-in [launch at login](../docs/STARTUP.md). The tray menu remains available.
 
-## Download (no Python needed)
+## Download status
 
-Grab the Windows `.exe` from [Releases](https://github.com/leozhang8654/yukio-desktop-pet/releases/latest), put it anywhere, and double-click it. Python, Pillow and the artwork are all packed inside. It needs 64-bit Windows 10 or newer.
-
-The first time you open it, Windows may show the blue "Windows protected your PC" screen. The app has no code-signing certificate; click "More info", then "Run anyway", and it won't ask again.
+Windows downloads are temporarily unavailable. A resumption date has not been announced.
 
 ## Run from source
 
@@ -37,7 +37,7 @@ Yukio appears in the bottom-right corner of the screen, and a small avatar of he
 powershell -ExecutionPolicy Bypass -File scripts\build-exe.ps1
 ```
 
-The result is `dist\releases\YukioDesktop-win-Setup.exe` (artwork included). Without a Windows dev environment, you can also run the "Build Windows Yukio" workflow under GitHub Actions and download the exe it produces.
+The result is `dist\releases\YukioDesktop-win-Setup.exe` (artwork included). The GitHub Windows packaging and publishing workflow is paused while downloads are withdrawn.
 
 ## How to use
 
@@ -225,7 +225,7 @@ Resources/Yukio.ico        the exe's icon (cropped from the macOS edition's cove
 The source artwork is not stored twice: by default she uses `../YukioPlayer/Resources/Assets` from the repo. During packaging, `scripts/prepare-windows-assets.py` losslessly divides the large 2x body and eyelid atlases into small runtime pages and verifies every page pixel-for-pixel. The exe caches only the pages it is displaying instead of expanding nearly 1 GB of atlases. To use source artwork from somewhere else, set the `YUKIO_ASSETS` environment variable.
 
 
-The **Verify published Windows release** workflow downloads the public exe and its SHA-256 manifest, checks the matching release source, and runs that exact download at 100%, 150% and 200% size. Screenshot capture is required. Run it from Actions with the release tag; logs and screenshots are saved as an artifact.
+The **Verify published Windows release** workflow downloads the public exe and its SHA-256 manifest, checks the matching release source, and runs that exact download at 100%, 150% and 200% size. Screenshot capture is required. This historical verification workflow is paused while public downloads are withdrawn; earlier logs and screenshots are retained.
 
 ## Known limitations
 

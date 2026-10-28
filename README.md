@@ -11,7 +11,7 @@
 <p>
 <a href="https://github.com/leozhang8654/yukio-desktop-pet/releases/latest"><img src="https://img.shields.io/github/v/release/leozhang8654/yukio-desktop-pet?label=Latest%20release&color=426854" alt="Latest public release"></a>
 <img src="https://img.shields.io/badge/macOS-13%2B-222222?logo=apple&logoColor=white" alt="macOS 13 or newer">
-<img src="https://img.shields.io/badge/Windows-10%20%2F%2011-3578B8" alt="Windows 10 and 11">
+<img src="https://img.shields.io/badge/Windows-downloads%20paused-lightgrey" alt="Windows downloads temporarily withdrawn">
 <img src="https://img.shields.io/badge/Language-English%20%2F%20中文-426854" alt="English and Chinese interfaces">
 </p>
 
@@ -119,16 +119,14 @@ Adjust the character from **50% to 200%**, drag her to a comfortable spot, switc
 | --- | --- | --- |
 | **Apple silicon Mac · macOS 13+** | **[v5.3 DMG](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v5.3/Yukio-5.3-macOS-arm64.dmg)** · [ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v5.3/Yukio-5.3-macOS-arm64.zip) | Desktop companion + integrated activity workbench |
 | **Intel Mac** | [v0.4.6 DMG](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-macOS.dmg) · [ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-macOS.zip) | Earlier desktop companion release |
-| **Windows 10 / 11 · 64-bit** | [v0.4.6 Setup](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-Windows-Setup.exe) · [Portable ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/YukioDesktop-win-Portable.zip) | Earlier desktop companion release |
+| **Windows** | Temporarily withdrawn | Installers, portable builds and update files are unavailable; source retained |
 
-The integrated workbench is currently available on Apple silicon Mac. Intel and Windows downloads remain on v0.4.6. Mac updates check automatically and remind you. Choose **Install Update** to download, install and reopen; nothing is installed without your click. If macOS requests access to the app’s installation folder, confirm it in the system prompt. [Update guide](docs/MANUAL-UPDATES.md). [All releases and checksums](https://github.com/leozhang8654/yukio-desktop-pet/releases).
+The integrated workbench is currently available on Apple silicon Mac. Intel downloads remain on v0.4.6. Windows downloads are temporarily withdrawn from GitHub as of October 27, 2026. [Windows availability](docs/WINDOWS-DISTRIBUTION.md). Mac updates check automatically and remind you. Choose **Install Update** to download, install and reopen; nothing is installed without your click. If macOS requests access to the app’s installation folder, confirm it in the system prompt. [Update guide](docs/MANUAL-UPDATES.md). [All releases and checksums](https://github.com/leozhang8654/yukio-desktop-pet/releases).
 
 <details>
-<summary><b>First launch on macOS or Windows</b></summary>
+<summary><b>First launch on macOS</b></summary>
 
 On Mac, open the DMG, drag `Yukio.app` into **Applications**, then launch it. The Mac build is ad-hoc signed and is not Apple-notarized. If macOS blocks a download you trust, use **System Settings → Privacy & Security → Open Anyway** after the first launch attempt.
-
-On Windows, run Setup and open the installed shortcut. The Windows executable is unsigned; SmartScreen may display **More info → Run anyway**. Verify the download source and release checksum before proceeding.
 
 </details>
 

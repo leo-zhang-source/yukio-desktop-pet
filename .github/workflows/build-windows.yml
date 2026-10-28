@@ -18,6 +18,8 @@ env:
 
 jobs:
   build:
+    # Windows distribution is temporarily withdrawn; see docs/WINDOWS-DISTRIBUTION.md.
+    if: ${{ vars.YUKIO_WINDOWS_DISTRIBUTION == 'enabled' }}
     runs-on: windows-latest
     timeout-minutes: 20
     steps:
