@@ -33,5 +33,11 @@
   "installed_app_replaced": false,
   "github_published": false,
   "known_issues_resolved": false,
-  "originals_deleted": false
+  "originals_deleted_by_stage1": false,
+  "external_directory_disappearances": [
+    "chat-title-release",
+    "yukio-v022-release"
+  ],
+  "stage0_backups_available": true,
+  "cause_of_directory_disappearances_confirmed": false
 }
