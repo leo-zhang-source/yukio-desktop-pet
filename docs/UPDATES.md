@@ -1,10 +1,12 @@
 # In-app updates / 应用内更新
 
+> **2026-10-27：Windows 下载与更新文件暂时下架，相关 GitHub 发布/公开下载验证工作流暂停。** macOS 发布和更新保持可用。Windows 小节保留为历史实现参考；恢复发布前需明确重新启用。[发布状态](WINDOWS-DISTRIBUTION.md)。
+
 ## Mac 0.4.7 的本轮入口与范围
 
 右键雪绪打开内置工作台，在顶部右侧进入设置，再选“更多设置 → 检查更新”。Mac 0.4.7 面向 Apple 芯片，更新列表包含 `sparkle:hardwareRequirements=arm64`，同时保留先前 0.4.6 的通用项。新包和更新列表保持原公钥的签名校验，内部构建号从本机 27.3 增到 28。
 
-Windows 的新版本测试仍为之后可选；最新发布携带的 Windows 元数据与完整包继续是原样的 0.4.6，保持既有 GitHub 更新来源可用。不要把它称为 Windows 0.4.7。最终本轮核验见 [Mac 0.4.7](validation/mac-workbench-0.4.7/README.md)。
+历史 0.4.7 发布曾携带 Windows 0.4.6 元数据与完整包；这些 Windows 文件现已暂时下架。最终本轮核验见 [Mac 0.4.7](validation/mac-workbench-0.4.7/README.md)。
 
 Starting with 0.4.0, Yukio checks for stable releases automatically. The update
 window opens when a newer release is found, shows its version and release notes,
@@ -48,15 +50,16 @@ never commit or publish it. Back it up securely before moving release machines.
 2. Generate paging assets with `YukioWin/scripts/prepare-windows-assets.py`.
 3. Run `YukioPlayer/scripts/package-release.sh`. It builds both CPU architectures,
    emits ZIP and DMG and generates/verifies signed `appcast.xml` using the Keychain.
-4. Upload the ZIP, DMG, signed `appcast.xml`, Windows files and checksums to a draft
-   GitHub Release on the verified commit. Publish only when every asset is present.
+4. Upload the Mac ZIP, DMG, signed `appcast.xml` and Mac checksums to a draft
+   GitHub Release on the verified commit. Publish only when every Mac asset is present.
+   Do not copy older Windows assets into a new Mac release while Windows distribution is paused.
 5. Verify the public `releases/latest/download/appcast.xml` endpoint and archive
    signatures. Do not modify a signed feed or archive after signing it.
 
 The versioned ZIP is the update payload. The DMG is for first installation.
 Automatic installation is disabled: users confirm each installation.
 
-## Windows release procedure
+## Windows release procedure (paused / 暂停)
 
 Velopack Python and vpk are both pinned to 1.2.161. PyInstaller emits a directory,
 which vpk turns into Setup, full update package, portable ZIP and release metadata.

@@ -1,3 +1,5 @@
+> **2026-10-27：Windows 版本暂时下架。** GitHub 上暂停提供 Windows 安装包、便携包、更新文件和可下载构建；源码与历史验证记录保留。下文用于源码开发和历史参考。[发布状态](../docs/WINDOWS-DISTRIBUTION.md)。
+
 > **0.4.6**: browser chat destinations, visible-chat completion reminders, approval cards, answer pasting and Qianxia. [Release notes](../docs/releases/0.4.6.md).
 
 # 雪绪 · 桌面宠物（Windows 版，跟随 DeepSeek、Claude 或 GPT）
@@ -14,11 +16,9 @@
 
 设置提供显隐、50%–200% 大小滑条、跟随来源、语言、卡片开关及可选的[登录时自动启动](../docs/STARTUP.md)，保留托盘菜单。
 
-## 下载（不用装 Python）
+## 下载状态
 
-到 [Releases](https://github.com/leozhang8654/yukio-desktop-pet/releases/latest) 下载 `Yukio-0.4.6-Windows-Setup.exe`，放哪儿都行，双击就开。Python、Pillow、素材都打包在里面了，需要 Windows 10 或更新的 64 位系统。
-
-第一次打开 Windows 可能弹蓝色的「Windows 已保护你的电脑」——这个程序没买代码签名证书，点「更多信息」→「仍要运行」，以后不再问。
+Windows 下载暂时下架；恢复时间另行公布。
 
 ## 从源码跑
 
@@ -37,7 +37,7 @@ python run.py
 powershell -ExecutionPolicy Bypass -File scripts\build-exe.ps1
 ```
 
-打出来的是 `dist\releases\YukioDesktop-win-Setup.exe`（素材已经打包进去）。没有 Windows 开发环境时，也可以在 GitHub 的 Actions 里跑「Build Windows Yukio」，下载它产出的 exe。
+打出来的是 `dist\releases\YukioDesktop-win-Setup.exe`（素材已经打包进去）。GitHub 的 Windows 打包发布工作流在下架期间暂停。
 
 ## 操作
 
@@ -224,7 +224,7 @@ Resources/Yukio.ico        exe 的图标（从 macOS 版的封面图裁的）
 源码素材不另存一份：默认用仓库里 `../YukioPlayer/Resources/Assets`。打包时，`scripts/prepare-windows-assets.py` 会把 2× 身体与眼皮大图集无损切成小页，并逐页核对像素完全一致；exe 运行时只缓存当前小页，不会把接近 1 GB 的整套图集全部展开。想让源码版读取别处素材可以设环境变量 `YUKIO_ASSETS`。
 
 
-**Verify published Windows release** 工作流会下载正式发布的 EXE 与 SHA-256 清单，检查对应版本源码，再直接运行下载包，验证 100%、150%、200% 三档尺寸。截图必须成功，日志与截图保存为构建产物。在 Actions 中填入发布标签即可重跑。
+**Verify published Windows release** 工作流会下载正式发布的 EXE 与 SHA-256 清单，检查对应版本源码，再直接运行下载包，验证 100%、150%、200% 三档尺寸。截图必须成功，日志与截图保存为构建产物。该历史验证工作流在下架期间暂停。
 
 ## 已知限制
 

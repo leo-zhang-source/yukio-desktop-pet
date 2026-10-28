@@ -11,7 +11,7 @@
 <p>
 <a href="https://github.com/leozhang8654/yukio-desktop-pet/releases/latest"><img src="https://img.shields.io/github/v/release/leozhang8654/yukio-desktop-pet?label=Latest%20release&color=426854" alt="最新公开版本"></a>
 <img src="https://img.shields.io/badge/macOS-13%2B-222222?logo=apple&logoColor=white" alt="macOS 13 或更新版本">
-<img src="https://img.shields.io/badge/Windows-10%20%2F%2011-3578B8" alt="Windows 10 和 11">
+<img src="https://img.shields.io/badge/Windows-downloads%20paused-lightgrey" alt="Windows 下载暂时下架">
 <img src="https://img.shields.io/badge/Language-English%20%2F%20中文-426854" alt="支持英文与中文界面">
 </p>
 
@@ -119,16 +119,14 @@ Yukio 读取三类助手的本机活动记录。你可以指定一个来源，�
 | --- | --- | --- |
 | **Apple 芯片 Mac · macOS 13+** | **[v5.3 DMG](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v5.3/Yukio-5.3-macOS-arm64.dmg)** · [ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v5.3/Yukio-5.3-macOS-arm64.zip) | 桌面角色 + 内置活动工作台 |
 | **Intel Mac** | [v0.4.6 DMG](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-macOS.dmg) · [ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-macOS.zip) | 保留的早期桌面角色版本 |
-| **Windows 10 / 11 · 64 位** | [v0.4.6 安装版](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-Windows-Setup.exe) · [便携 ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/YukioDesktop-win-Portable.zip) | 保留的早期桌面角色版本 |
+| **Windows** | 暂时下架 | 暂停提供安装包、便携包及更新文件；源码保留 |
 
-内置工作台目前面向 Apple 芯片 Mac。Intel 与 Windows 下载仍为 v0.4.6。Mac 会自动检查并提醒；点击“安装更新”后，由软件下载、安装并重新打开。没有点击就不会安装。如果系统询问访问安装位置，请在系统提示里确认。[更新方法](docs/MANUAL-UPDATES.md)。[所有版本与校验值](https://github.com/leozhang8654/yukio-desktop-pet/releases)。
+内置工作台目前面向 Apple 芯片 Mac。Intel 下载仍为 v0.4.6。Windows 下载已于 2026 年 10 月 27 日暂时从 GitHub 下架。[Windows 发布状态](docs/WINDOWS-DISTRIBUTION.md)。Mac 会自动检查并提醒；点击“安装更新”后，由软件下载、安装并重新打开。没有点击就不会安装。如果系统询问访问安装位置，请在系统提示里确认。[更新方法](docs/MANUAL-UPDATES.md)。[所有版本与校验值](https://github.com/leozhang8654/yukio-desktop-pet/releases)。
 
 <details>
-<summary><b>macOS 与 Windows 首次打开</b></summary>
+<summary><b>macOS 首次打开</b></summary>
 
 Mac：打开 DMG，将 `Yukio.app` 拖到**应用程序**后启动。目前采用临时签名，尚未完成 Apple 公证。若系统拦截了你信任的下载，可在首次尝试打开后前往**系统设置 → 隐私与安全性 → 仍要打开**。
-
-Windows：运行安装程序，再使用安装后的快捷方式启动。目前程序未签名；SmartScreen 可能显示**更多信息 → 仍要运行**。继续前请确认下载来源与发布页上的校验值。
 
 </details>
 
