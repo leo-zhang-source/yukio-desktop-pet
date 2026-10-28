@@ -68,6 +68,7 @@ else{
             env = dict(os.environ, PATH=str(root/'no-python-or-node-on-path'),
                        NVM_SYMLINK=str(Path(node).parent), YUKIO_CODEX_PATH=str(paths['codex']),
                        YUKIO_CLAUDE_PATH=str(paths['claude']),YUKIO_TEST_TRACE=str(data/'invocations.txt'))
+            env['YUKIO_DIAGNOSTICS']='1'
             # Test fixtures have no account, private model configuration or API.
             env['CODEX_HOME'] = str(root/'empty-codex-home')
             log_path = output/(provider+'-runtime.log')
@@ -83,7 +84,9 @@ else{
                     with opener.open(request,timeout=20) as response:return json.load(response)
                 try:
                     for _ in range(120):
-                        if process.poll() is not None:raise AssertionError('Frozen runtime exited; inspect its local log')
+                        if process.poll() is not None:
+                            log.flush()
+                            raise AssertionError('Frozen runtime exited; offline fixture log:\n'+log_path.read_text(encoding='utf-8',errors='replace')[-8000:])
                         try:info=api('clients');break
                         except OSError:time.sleep(.1)
                     else:raise AssertionError('Frozen runtime did not start')

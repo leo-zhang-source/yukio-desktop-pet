@@ -152,7 +152,11 @@ class LauncherTests(unittest.TestCase):
         with socket.socket() as s:s.bind(('127.0.0.1',0));port=s.getsockname()[1]
         p=subprocess.Popen([sys.executable,str(ROOT/'launcher.py'),'--no-browser','--collect','--port',str(port),'--data-dir',str(data),'--source-root',str(sources)],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
         try:
-            for _ in range(100):
+            deadline=time.monotonic()+20
+            while time.monotonic()<deadline:
+                if p.poll() is not None:
+                    _,error=p.communicate(timeout=1)
+                    self.fail('Launcher exited before recorder readiness: '+error.decode('utf-8',errors='replace'))
                 if all((data/(c+'-workbench-status.json')).exists() for c in ('codex','claude','deepcode')):break
                 time.sleep(.05)
             else:self.fail('Recorders did not start')
