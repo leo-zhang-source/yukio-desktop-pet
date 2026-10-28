@@ -19,6 +19,17 @@ CLAUDE_HELP = ('--print --safe-mode --output-format --no-session-persistence '
 
 
 class GenericSelectionTests(unittest.TestCase):
+    def test_local_startup_needs_no_external_hostname_lookup(self):
+        from server import create_server
+        with tempfile.TemporaryDirectory() as folder, \
+             patch('socket.getfqdn',side_effect=AssertionError('No reverse DNS for loopback')):
+            server=create_server(0,{'codex':Path(folder)/'absent.sqlite'})
+            try:
+                self.assertEqual(server.server_name,'localhost')
+                self.assertGreater(server.server_port,0)
+            finally:
+                server.server_close()
+
     def test_automatic_selection_skips_signed_out_or_incompatible_installations(self):
         cfg = agent.configuration(None)
         for state in ['agent_login_required', 'agent_incompatible', 'agent_start_failed', 'agent_probe_timeout']:
