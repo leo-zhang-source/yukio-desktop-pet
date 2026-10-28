@@ -143,4 +143,4 @@ class ReadingView:
                 entry['state']='ready';entry.pop('result',None)
         # Close/switch during preparation cannot cause a later model request.
         self.automation.selection(grant)
-        return dict(result=self.explainer.generate(token,True),references=refs)
+        return dict(result=self.explainer.generate(token,True,can_send=lambda:self.automation.selection(grant)),references=refs)

@@ -59,7 +59,7 @@ function continuation(selection,cards){
 }
 async function api(route,data){
  let response;
- try{response=await fetch('/api/'+route,{method:data?'POST':'GET',headers:{'X-Yukio-Workbench':'1','X-Yukio-Language':uiLanguage,...(data?{'Content-Type':'application/json'}:{})},...(data?{body:JSON.stringify(data)}:{}),cache:'no-store',signal:AbortSignal.timeout(105000)});}
+ try{response=await fetch('/api/'+route,{method:data?'POST':'GET',headers:{'X-Yukio-Workbench':'1','X-Yukio-Language':uiLanguage,...(data?{'Content-Type':'application/json'}:{})},...(data?{body:JSON.stringify(data)}:{}),cache:'no-store',signal:AbortSignal.timeout(120000)});}
  catch(error){throw Error(error.name==='TimeoutError'?tr('这次等待时间较长，请稍后重试。已有记录仍可查看。'):tr('工作台连接已断开。请重新打开桌面上的“雪绪活动工作台”；这里保留的是断开前的内容。'));}
  let value;try{value=await response.json();}catch{throw Error(tr('暂时没读到可显示的消息，请刷新页面或重新打开工作台。'));}
  if(!response.ok)throw Object.assign(Error(value.error||tr('暂时没读到新消息，原来的记录仍然保留。')),{reason:value.reason});return value;
@@ -177,7 +177,7 @@ function renderProviderSettings(){
  select.value=model?.provider||'auto';
  $('providerEnable').textContent=model?.automatic_on_open?tr('应用并继续解释'):tr('开启解释');
  $('providerDisable').hidden=!model?.automatic_on_open;
- $('providerNote').textContent=(model?.automatic_on_open?tr('已开启：'):tr('开启后：'))+tr('只解释所选聊天的短摘录，使用对应 Agent 的账号额度。自动模式优先使用该聊天的 Agent，未安装时选择另一个已安装的 Agent；调用失败时保留本机说明。');
+ $('providerNote').textContent=(model?.automatic_on_open?tr('已开启：'):tr('开启后：'))+tr('只解释所选聊天的短摘录，使用对应 Agent 的账号额度。自动模式优先使用该聊天的 Agent，未安装、未登录或版本不支持时选择另一个可用的 Agent；调用失败时保留本机说明。');
 }
 async function setExplanationProvider(enabled){
  if(enabled&&(autoRun||readingBusy)){$('providerNote').textContent=tr('正在生成一段说明，请等它结束后再更改。');return;}

@@ -522,6 +522,7 @@ MESSAGES={
     'agent_failed':'Agent 暂时无法解释，请检查该客户端是否能正常回答。已有记录仍保留。',
     'agent_config_unsupported':'无法安全读取 Agent 的模型设置。请检查客户端配置；从源码运行自定义服务时需 Python 3.11 或更新版本。',
     'agent_model_unavailable':'Agent 选择的模型不支持当前登录。请先在对应命令行客户端选择可用模型，再重试。',
+    'agent_probe_timeout':'检查助手是否可用时超时，尚未发送聊天摘录。请检查客户端后重试。',
 
     'unnamed_subject':'这次说明没说清具体是哪组按钮，暂时保留已有内容。',
     'service_unavailable':'模型暂时没有响应，仍可查看下面的本机说明。',
@@ -595,7 +596,7 @@ class ExplanationService:
                     excluded=('将发送下方的短摘录：整体目标、前面进展、近期要求、公开说明、操作结果、可对应的工具返回短片段和拟修改片段（可能含少量代码）。项目说明与实际观察分别标注。已过滤常见凭据，但请仍检查私人内容；不发送完整聊天、整份文件、原始长输出、内部思考或私人编号。' if glance else '不发送聊天正文、代码、命令、文件路径、工具原名、聊天或助手编号、时间与内容指纹。'),
                     instructions=output_system(entry['payload']))
 
-    def generate(self,token,consent):
+    def generate(self,token,consent, *, can_send=None):
         if consent is not True:raise ExplanationError('consent_required')
         with self.lock:
             entry=self.entries.get(token);now=self.clock()
@@ -606,12 +607,17 @@ class ExplanationService:
             while self.calls and now-self.calls[0]>=3600:self.calls.popleft()
             if len(self.calls)>=self.config['max_calls_per_hour'] or self.calls and now-self.calls[-1]<self.config['cooldown_seconds']:
                 raise ExplanationError('rate_limited')
-            self.calls.append(now);self.running=True;entry['state']='running'
+            self.running=True;entry['state']='running'
+        sent=False
         try:
             request_config=self.config
             if self.config.get('provider')=='agent':
                 from agent_explanation import select_agent
                 request_config=select_agent(self.config,entry['selection'].get('client') if isinstance(entry['selection'],dict) else None)
+            with self.lock:
+                if can_send is not None:can_send()
+                self.calls.append(self.clock())
+            sent=True
             explanations=self.sender(request_config,entry['payload'])
             # Also validate injected test transports; one validation contract.
             explanations=complete_response(encode(dict(explanations=explanations)),entry['payload'])
@@ -624,5 +630,5 @@ class ExplanationService:
             # Never expose transport errors, prompts or upstream response bodies.
             result=dict(mode='fallback',reason='internal_error',message='暂时无法生成解释，请继续查看本机记录。',explanations=[],cached=False)
         with self.lock:
-            self.running=False;entry['state']='done';entry['result']=result
+            self.running=False;entry['state']='done' if sent else 'ready';entry['result']=result
         return result

@@ -89,8 +89,18 @@ def find_agent(provider, *, environ=None, home=None, windows=None):
             # so Unicode/spaces/metacharacters in paths never enter cmd.exe.
             package = '@openai/codex/bin/codex.js' if provider == 'codex' else '@anthropic-ai/claude-code/cli.js'
             script = path.parent / 'node_modules' / package
-            node = path.parent / 'node.exe'
-            node = str(node) if node.is_file() else shutil.which('node', path=env.get('PATH', ''))
+            nodes = [path.parent / 'node.exe']
+            found_node = shutil.which('node', path=env.get('PATH', ''))
+            if found_node:
+                nodes.append(Path(found_node))
+            # Start Menu apps can inherit an older PATH even after Node was
+            # installed. Check its normal Windows locations without a shell.
+            for folder in (env.get('NVM_SYMLINK'),
+                           str(Path(env.get('ProgramFiles', 'C:/Program Files')) / 'nodejs'),
+                           str(Path(env.get('LOCALAPPDATA', str(home / 'AppData/Local'))) / 'Programs/nodejs')):
+                if folder:
+                    nodes.append(Path(folder) / 'node.exe')
+            node = next((str(p) for p in nodes if p.is_file()), None)
             if script.is_file() and node:
                 return [node, str(script)]
             continue
@@ -98,15 +108,62 @@ def find_agent(provider, *, environ=None, home=None, windows=None):
     return None
 
 
+def probe_agent(provider, command):
+    """Read only CLI help/login status; never send a chat or generate a turn.
+
+    Probe every new request so signing in, upgrading or changing accounts takes
+    effect without shared machine-specific state or stale login caches.
+    """
+    required = ({'--ignore-user-config', '--ephemeral', '--skip-git-repo-check',
+                 '--sandbox', '--color', '--output-schema', '--output-last-message'} if provider == 'codex' else
+                {'--print', '--safe-mode', '--output-format', '--no-session-persistence',
+                 '--tools', '--disable-slash-commands', '--strict-mcp-config',
+                 '--mcp-config', '--system-prompt', '--json-schema'})
+    try:
+        with tempfile.TemporaryDirectory(prefix='yukio-agent-check-') as folder:
+            root = Path(folder)
+            args = ['exec', '--help'] if provider == 'codex' else ['--help']
+            code, out, err = run_bounded(command + args, '', root, 3)
+            flags = set(re.findall(r'--[a-z][a-z0-9-]*', out.decode('utf-8', errors='replace')))
+            if code or not required <= flags:
+                return dict(state='unavailable', reason='agent_incompatible')
+            if provider == 'claude' and not re.search(r'(?m)^\s+auth(?:\s|$)', out.decode('utf-8', errors='replace')):
+                # Never guess a subcommand: an old CLI may treat it as a prompt.
+                return dict(state='unknown')
+            args = ['login', 'status'] if provider == 'codex' else ['auth', 'status', '--json']
+            code, out, err = run_bounded(command + args, '', root, 3)
+            if provider == 'claude':
+                try:
+                    status = json.loads(out)
+                    if isinstance(status, dict) and status.get('loggedIn') is False:
+                        if status.get('authMethod') == 'third_party':
+                            return dict(state='unknown')
+                        return dict(state='unavailable', reason='agent_login_required')
+                except (ValueError, TypeError):
+                    pass
+            if code:
+                reason = failure(out, err)
+                if reason == 'agent_incompatible':
+                    return dict(state='unknown')  # Help is compatible, login inspection is older.
+                return dict(state='unavailable', reason=reason)
+            return dict(state='ready')
+    except ExplanationError as exc:
+        return dict(state='unavailable', reason='agent_probe_timeout' if exc.code == 'agent_timeout' else exc.code)
+
+
 def select_agent(config, client=None):
     choice = config.get('agent', 'auto')
     order = ([client, 'claude' if client == 'codex' else 'codex'] if client in ('codex', 'claude')
              else ['codex', 'claude']) if choice == 'auto' else [choice]
+    failures = []
     for provider in order:
         command = find_agent(provider)
         if command:
-            return dict(config, agent=provider, model=LABELS[provider], command=command)
-    raise ExplanationError('agent_not_found')
+            readiness = probe_agent(provider, command)
+            if readiness['state'] in ('ready', 'unknown'):
+                return dict(config, agent=provider, model=LABELS[provider], command=command)
+            failures.append(readiness['reason'])
+    raise ExplanationError(failures[0] if failures else 'agent_not_found')
 
 
 def stop_process(process):
