@@ -1,0 +1,52 @@
+[
+  {
+    "original": "089d8dc10725acc304b1de789a7f8b58767cbf7d",
+    "integrated": "5c747d942f099762efe3710640a9752cfa0de565",
+    "subject": "Show all settings in a responsive window-wide overview"
+  },
+  {
+    "original": "ea4b3a3f65f0185de800f56290fb1b822715f386",
+    "integrated": "10f46ead72e362744bf8da18a5bb13e32d4fcb0d",
+    "subject": "Add default explanations through user-owned Codex and Claude agents"
+  },
+  {
+    "original": "0938098cb444e5d7f5d556f1c6de07e6e30e4151",
+    "integrated": "a1a771c892817f80d6df2c1aa3a15317f3708cf8",
+    "subject": "Check each user's agent readiness before automatic explanation"
+  },
+  {
+    "original": "48e3c71697533d5d299cfb68df98ec242b3097b7",
+    "integrated": "04530002b5f557a196557246c22fef16c87ccdea",
+    "subject": "Release database handles and stop agents reliably on Windows"
+  },
+  {
+    "original": "4a22d0e40ac62df5bc6ed59b90eb1f5ca76b1200",
+    "integrated": "d486d2f9f1d9f7f4e80cf2c5821edf05a7f98794",
+    "subject": "Expose opt-in startup diagnostics and await recorder readiness on slower hosts"
+  },
+  {
+    "original": "1390b2fa8421f06d50f048441225b7f92ac52bcf",
+    "integrated": "836b448c100e990863e6631692f7bdb082f9c3c1",
+    "subject": "Start correctly with legacy Windows text encoding and loopback-only health checks"
+  },
+  {
+    "original": "7fdb886636911ebd7cda72c19597f7b8a537e2b0",
+    "integrated": "26e182f241b335af9b23e8c9465961b26c674de7",
+    "subject": "Preserve the existing Windows distribution gate during portability checks"
+  },
+  {
+    "original": "327735f4aeb123414e588e9c9e9f3df2a03f463b",
+    "integrated": "94a5401d9ad43d937f6d538fd657ea882a412f7a",
+    "subject": "Start the loopback workbench without reverse DNS lookup"
+  },
+  {
+    "original": "658d1ebee145251144bdfec012135a1ab5f2b9f1",
+    "integrated": "9500a89590177ddb1f1f02e979982676d8b13781",
+    "subject": "Stop owned agents when a host disallows process-group signaling"
+  },
+  {
+    "original": "be9aa07fd5afdd0b4f212102d7b331792da28ce5",
+    "integrated": "964d5d61a025b68e04e6a0df55409352fe716b78",
+    "subject": "Document verified multi-user and native platform coverage [skip ci]"
+  }
+]

@@ -1,0 +1,37 @@
+{
+  "stage": 1,
+  "recorded_at": "2026-10-27T21:29:31.848020-07:00",
+  "product_checkpoint": "964d5d61a025b68e04e6a0df55409352fe716b78",
+  "main_base": "ab0b017dfe83eaef1a181b107fb15427e13d0793",
+  "installed_source": "be9aa07fd5afdd0b4f212102d7b331792da28ce5",
+  "platform": "macOS arm64",
+  "checks": [
+    {
+      "name": "Swift existing tests",
+      "runtime": "Swift 6.1.2 / Sparkle 2.10.0",
+      "passed": 232,
+      "failed": 0
+    },
+    {
+      "name": "Workbench Python existing tests",
+      "runtime": "CPython 3.13.2",
+      "passed": 262,
+      "failed": 0
+    },
+    {
+      "name": "Web behavior existing tests",
+      "runtime": "Node 25.8.0 / simulated DOM",
+      "passed": 31,
+      "failed": 0
+    }
+  ],
+  "protected_files": 217,
+  "production_implementation_diff_vs_installed_source": 0,
+  "raw_logs": "Private stage1 evidence; paths intentionally outside public repository",
+  "independent_environment_acceptance": false,
+  "windows_native_tested_this_stage": false,
+  "installed_app_replaced": false,
+  "github_published": false,
+  "known_issues_resolved": false,
+  "originals_deleted": false
+}

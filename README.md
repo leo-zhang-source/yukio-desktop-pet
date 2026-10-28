@@ -2,6 +2,8 @@
 
 # Yukio
 
+> Developer entry for the remediation baseline: [DEVELOPMENT.md](DEVELOPMENT.md). This local branch preserves the installed feature set; it is not a new public release.
+
 ### A desktop companion for coding with AI.
 
 **See your agents at work. Understand the progress. Step in when it matters.**
