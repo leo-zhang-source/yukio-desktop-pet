@@ -21,7 +21,7 @@ VERSION = '0.4.1'
 BUILD = '30'
 
 
-def build_macos(destination):
+def build_macos(destination, version=VERSION, build_number=BUILD):
     if sys.platform != 'darwin' or platform.machine() != 'arm64':
         raise ValueError('Build this preview on an arm64 Mac')
     result = build(destination)
@@ -55,19 +55,19 @@ def build_macos(destination):
     with (contents / 'Info.plist').open('wb') as f:
         plistlib.dump(dict(CFBundleExecutable='YukioWorkbench',
             CFBundleIdentifier='local.yukio.activity-workbench.preview',
-            CFBundleName='Yukio Activity Workbench', CFBundleShortVersionString=VERSION,
-            CFBundleVersion=BUILD, LSMinimumSystemVersion='13.0',
+            CFBundleName='Yukio Activity Workbench', CFBundleShortVersionString=version,
+            CFBundleVersion=build_number, LSMinimumSystemVersion='13.0',
             NSHighResolutionCapable=True), f)
     subprocess.run(['swiftc', str(ROOT / 'WorkbenchApp.swift'), '-o',
                     str(contents / 'MacOS/YukioWorkbench'), '-framework', 'AppKit', '-target', 'arm64-apple-macosx13.0'], check=True)
     subprocess.run(['codesign', '--force', '--deep', '--sign', '-', str(app)], check=True)
     subprocess.run(['codesign', '--verify', '--deep', '--strict', str(app)], check=True)
-    archive = destination / ('Yukio-Activity-Workbench-Mac-arm64-'+VERSION+'.zip')
+    archive = destination / ('Yukio-Activity-Workbench-Mac-arm64-'+version+'.zip')
     # ditto preserves framework symlinks and executable bits. Drop Finder metadata.
     subprocess.run(['ditto', '-c', '-k', '--norsrc', '--keepParent', str(app), str(archive)], check=True)
     files = {p.relative_to(app).as_posix():hashlib.sha256(p.read_bytes()).hexdigest()
              for p in sorted(app.rglob('*')) if p.is_file()}
-    result.update(version=VERSION, mac_build=BUILD, architecture='arm64',
+    result.update(version=version, mac_build=build_number, architecture='arm64',
                   python_required=False, minimum_macos='13.0', macos_app=str(app), macos_zip=str(archive),
                   macos_zip_sha256=hashlib.sha256(archive.read_bytes()).hexdigest(),
                   macos_files=files, signature='ad_hoc_not_notarized',
@@ -79,5 +79,8 @@ def build_macos(destination):
 if __name__ == '__main__':
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--out',type=Path,required=True)
-    r=build_macos(p.parse_args().out.resolve())
+    p.add_argument('--version', default=VERSION)
+    p.add_argument('--build-number', default=BUILD)
+    a=p.parse_args()
+    r=build_macos(a.out.resolve(), a.version, a.build_number)
     print(json.dumps({k:v for k,v in r.items() if k!='macos_files'},ensure_ascii=False))
