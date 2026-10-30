@@ -24,7 +24,8 @@ import urllib.request
 ROOT = Path(__file__).resolve().parents[1]
 PRIVATE_NAMES = {'auth.json', 'credentials.json', 'lan-model.json', 'work-context.json',
                  'page-explanation-policy.json', 'explanation-provider.json', '.env'}
-MACHO = {b'\xcf\xfa\xed\xfe', b'\xfe\xed\xfa\xcf', b'\xca\xfe\xba\xbe', b'\xbe\xba\xfe\xca'}
+MACHO = {bytes.fromhex(value) for value in
+         ('feedface', 'cefaedfe', 'feedfacf', 'cffaedfe', 'cafebabe', 'bebafeca', 'cafebabf', 'bfbafeca')}
 
 
 def sha(path):
@@ -180,9 +181,11 @@ def build(args):
     component = out / 'work/workbench/雪绪活动工作台.app/Contents/Resources'
     for name in ('runtime', 'workbench'): shutil.copytree(component / name, runtime / name, symlinks=True)
     shutil.copy2(component / 'THIRD-PARTY-NOTICES.txt', runtime / 'THIRD-PARTY-NOTICES.txt')
-    shutil.copy2(snapshot / 'LICENSE', resources / 'LICENSE')
-    python_license = out / 'work/python/LICENSE'
-    if python_license.exists(): shutil.copy2(python_license, runtime / 'PYTHON-LICENSE.txt')
+    # This repository currently has no root license file; do not invent terms.
+    for name in ('LICENSE', 'LICENSE.md', 'LICENSE.txt'):
+        if (snapshot / name).is_file(): shutil.copy2(snapshot / name, resources / name)
+    python_license = out / 'work/python/lib/python3.12/LICENSE.txt'
+    shutil.copy2(python_license, runtime / 'PYTHON-LICENSE.txt')
     for language, name in [('en', 'Yukio'), ('zh-Hans', '雪绪')]:
         folder = resources / (language + '.lproj'); folder.mkdir()
         (folder / 'InfoPlist.strings').write_text('"CFBundleDisplayName" = "' + name + '";\n"CFBundleName" = "' + name + '";\n')
