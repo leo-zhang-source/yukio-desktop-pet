@@ -14,6 +14,7 @@ from glance_view import GlanceView
 from handoff_view import HandoffView
 from glance_automation import GlanceAutomation
 from reading_view import ReadingView
+from work_understanding import WorkUnderstanding
 from project_context import ProjectContext
 from runtime_identity import identity
 from collector_status import read_status
@@ -86,7 +87,8 @@ def create_server(port, databases, *, synthetic=False, model_config=None, explan
             routes = {'/api/health': set(), '/api/clients': set(), '/api/groups': {'client','archive','offset','snapshot'},
                       '/api/timeline': {'client','key','before','snapshot'}, '/api/blocks': {'client','key','sequence','offset'},
                       '/api/handoffs': {'client','key','snapshot'}, '/api/context': {'client','key','snapshot','offset','filter'}, '/api/relations': {'client','key','snapshot'},
-                      '/api/current':set(), '/api/glance':{'client','key'}, '/api/task-summary':{'client','key'}}
+                      '/api/current':set(), '/api/glance':{'client','key'}, '/api/task-summary':{'client','key'},
+                      '/api/work-understanding':{'client','key','scope'}}
             if url.path not in routes:
                 return self.reply(404, b'Not found', 'text/plain')
             if self.headers.get('Sec-Fetch-Site') == 'cross-site' or self.headers.get('Origin', 'http://'+host) != 'http://'+host:
@@ -109,6 +111,7 @@ def create_server(port, databases, *, synthetic=False, model_config=None, explan
                 if url.path=='/api/current':result=glance.cards()
                 elif url.path=='/api/glance':result=glance.detail(**p)
                 elif url.path=='/api/task-summary':result=glance.summary(**p)
+                elif url.path=='/api/work-understanding':result=WorkUnderstanding(glance).detail(**p)
                 elif url.path=='/api/handoffs':result=HandoffView(view,glance.reader).detail(**p)
                 else:result = identity(databases,active_config) if url.path=='/api/health' else getattr(context if url.path in ('/api/context','/api/relations') else view, url.path.rsplit('/',1)[1])(**p)
                 if url.path == '/api/clients':
@@ -133,7 +136,7 @@ def create_server(port, databases, *, synthetic=False, model_config=None, explan
             if (host not in allowed or self.headers.get('Sec-Fetch-Site')=='cross-site' or
                     self.headers.get('Origin','http://'+host)!='http://'+host or self.headers.get('X-Yukio-Workbench')!='1'):
                 return self.reply(403,b'Local access only','text/plain')
-            if self.path not in ('/api/explanation-settings','/api/explanation-preview','/api/explanation-generate','/api/context-preview','/api/glance-preview','/api/glance-authorize','/api/glance-refresh','/api/glance-stop','/api/glance-heartbeat','/api/reading-current','/api/reading-history','/api/reading-explain'):
+            if self.path not in ('/api/explanation-settings','/api/explanation-preview','/api/explanation-generate','/api/context-preview','/api/glance-preview','/api/glance-authorize','/api/glance-refresh','/api/glance-stop','/api/glance-heartbeat','/api/reading-current','/api/reading-history','/api/reading-explain','/api/reading-work'):
                 return self.reply(404,b'Not found','text/plain')
             if explainer is None:
                 return self.json_reply(503,dict(error='尚未配置模型，本机记录仍可查看。'))
@@ -168,12 +171,13 @@ def create_server(port, databases, *, synthetic=False, model_config=None, explan
                     result=explanation_info()
                 elif self.path.startswith('/api/reading-'):
 
-                    fields={'grant','token'} if self.path=='/api/reading-explain' else {'grant','snapshot','before'} if self.path=='/api/reading-history' else {'grant'}
+                    fields={'grant','token'} if self.path=='/api/reading-explain' else {'grant','snapshot','before'} if self.path=='/api/reading-history' else {'grant','scope'} if self.path=='/api/reading-work' else {'grant'}
                     if 'grant' not in data or set(data)-fields or not isinstance(data['grant'],str) or len(data['grant'])>100:raise ValueError('Invalid reading selection')
                     if self.path=='/api/reading-explain':
                         if set(data)!=fields or not isinstance(data['token'],str) or len(data['token'])>100:raise ValueError('Invalid reading token')
                         result=reading.explain(**data)
                     elif self.path=='/api/reading-history':result=reading.history_page(**data)
+                    elif self.path=='/api/reading-work':result=reading.work(**data)
                     else:result=reading.current(**data)
                 elif self.path=='/api/glance-preview':
                     if set(data)!={'client','key'} or not all(isinstance(v,str) for v in data.values()):raise ValueError('Invalid selection')

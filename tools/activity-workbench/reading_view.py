@@ -12,6 +12,7 @@ from glance_view import IGNORED,meaningful_request
 from explanation import ExplanationError,add_object_names
 from plain_language import plain_words
 from localization import current_language
+from work_understanding import WorkUnderstanding
 
 
 class ReadingView:
@@ -45,6 +46,13 @@ class ReadingView:
         payload=self.payload(prepared['facts'],parts,state=scope.get('current_turn_state','unknown'),naming=scope.get('naming_context_evidence_id'))
         return dict(token=self.freeze(grant,payload,refs),parts=parts,revision=data['revision'],
                     note='这是点击时的工作片段；首页仍会继续更新。')
+
+    def work(self,grant,scope='chat'):
+        # This endpoint is requested by the scope-specific explanation button.
+        # Merely opening a project locally does not extend automatic disclosure.
+        selection=self.automation.selection(grant)
+        data,payload,refs=WorkUnderstanding(self.glance).prepared(**selection,scope=scope)
+        return dict(data,token=self.freeze(grant,payload,refs))
 
     def history_page(self,grant,snapshot=0,before=0):
         if any(type(n) is not int or not 0<=n<2**63 for n in (snapshot,before)):raise ValueError('Invalid cursor')
