@@ -8,6 +8,7 @@ Serve OUT/feed on loopback, open OUT/installed/Yukio.app, and use Install Update
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import plistlib
 import shutil
@@ -66,6 +67,14 @@ def main():
     subprocess.run(['ditto', str(a.target_app), str(target)], check=True)
     identifier = 'local.yukio.upgrade-test.' + uuid.uuid4().hex[:12]
     sentinel = uuid.uuid4().hex
+    profile = a.out.resolve() / 'profile'
+    profile.mkdir()
+    # A unique preference domain alone does not isolate collectors or history.
+    # These settings belong only to disposable test copies, never the candidate.
+    environment = dict(HOME=str(profile), CFFIXED_USER_HOME=str(profile),
+        CODEX_HOME=str(profile / '.codex'), CLAUDE_CONFIG_DIR=str(profile / '.claude'),
+        DEEPCODE_HOME=str(profile / '.deepcode'), YUKIO_DOCK='1',
+        YUKIO_REMINDER_FILE=str(profile / 'reminders.json'))
     with tempfile.TemporaryDirectory(prefix='yukio-upgrade-test-key-') as temp:
         key = Path(temp)
         source = key/'generate.swift'
@@ -87,7 +96,7 @@ try key.publicKey.rawRepresentation.base64EncodedData().write(to: dir.appendingP
                         SURequireSignedFeed=True, SUVerifyUpdateBeforeExtraction=True,
                         SUEnableAutomaticChecks=True, SUAutomaticallyUpdate=False, SUAllowsAutomaticUpdates=False,
                         NSAppTransportSecurity={'NSAllowsLocalNetworking': True},
-                        LSEnvironment={'YUKIO_REMINDER_FILE': str(a.out.resolve()/'reminders.json')})
+                        LSEnvironment=environment)
             (bundle/'Contents/Info.plist').write_bytes(plistlib.dumps(info))
             subprocess.run(['codesign', '--force', '--sign', '-', str(bundle)], check=True)
             subprocess.run(['codesign', '--verify', '--deep', '--strict', str(bundle)], check=True)
@@ -118,7 +127,7 @@ try key.publicKey.rawRepresentation.base64EncodedData().write(to: dir.appendingP
             raw = bytearray(archive.read_bytes()); raw[len(raw)//2] ^= 1; archive.write_bytes(raw)
     # Only isolated test-domain preferences; never the production domain.
     for name, kind, value in [('language', '-string', a.language), ('UpdateFixtureSentinel', '-string', sentinel), ('scale', '-float', '1.4')]:
-        subprocess.run(['defaults', 'write', identifier, name, kind, value], check=True)
+        subprocess.run(['defaults', 'write', identifier, name, kind, value], env=os.environ | environment, check=True)
     result = dict(baseline_version=original['CFBundleShortVersionString'], baseline_build=original['CFBundleVersion'],
                   released_baseline_sha256=a.baseline_sha256, original_binary_sha256=old_binary,
                   baseline_executable_code_matches_release=executable_code_sha(host/'Contents/MacOS/YukioPlayer') == old_code,
@@ -126,6 +135,8 @@ try key.publicKey.rawRepresentation.base64EncodedData().write(to: dir.appendingP
                   identifier=identifier, preference_sentinel=sentinel, language=a.language,
                   installed_app=str(host.resolve()), target_files=files(target), baseline_files=files(host),
                   temporary_private_key_deleted=True, corrupt_download=a.corrupt_download)
+    result.update(environment=environment, profile=str(profile),
+                  data_directory=str(profile / 'Library/Application Support/YukioPlayer/activity-observation'))
     assert result['baseline_executable_code_matches_release'], 'Baseline executable code changed'
     (a.out/'case.json').write_text(json.dumps(result, indent=2)+'\n')
     print(json.dumps({k:v for k,v in result.items() if k not in ['target_files','baseline_files','preference_sentinel']}, indent=2))

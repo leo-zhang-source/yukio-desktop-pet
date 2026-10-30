@@ -8,6 +8,7 @@ only after target_files_match and target_process_running are both true.
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import plistlib
 import subprocess
@@ -23,7 +24,8 @@ def inspect(root):
     for key, value in [('language', case['language']),
                        ('UpdateFixtureSentinel', case['preference_sentinel']),
                        ('scale', '1.4')]:
-        observed = subprocess.check_output(['defaults', 'read', case['identifier'], key], text=True).strip()
+        observed = subprocess.check_output(['defaults', 'read', case['identifier'], key],
+                                           env=os.environ | case.get('environment', {}), text=True).strip()
         preferences[key] = observed == value
     executable = str(host / 'Contents/MacOS/YukioPlayer')
     processes = []
