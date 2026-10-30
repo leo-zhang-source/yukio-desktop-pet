@@ -1,0 +1,763 @@
+{
+  "schema_version": 1,
+  "session": "fixture-stage2-session",
+  "description": "人工构造；不含真实聊天。expect_events 仅比较完成、失败、取消投影，不强迫两端开始/思考展示一致。activity_end 只代表结束，不等于成功；expect_result 另查工作台提供的事实元数据。Swift 当前缺少对应元数据，属于明确的能力边界。",
+  "cases": [
+    {
+      "id": "sequential_success",
+      "purpose": "明确的成功结果结束自己的操作。",
+      "steps": [
+        {
+          "record": {
+            "type": "task_started",
+            "turn_id": "t1"
+          },
+          "expect_events": []
+        },
+        {
+          "record": {
+            "type": "function_call",
+            "name": "shell",
+            "call_id": "a",
+            "arguments": "{\"command\":[\"printf\",\"fixture\"]}"
+          },
+          "expect_events": []
+        },
+        {
+          "record": {
+            "type": "function_call_output",
+            "call_id": "a",
+            "output": "{\"metadata\":{\"exit_code\":0}}"
+          },
+          "expect_events": [
+            {
+              "kind": "activity_end",
+              "id": "a"
+            }
+          ],
+          "expect_result": {
+            "outcome": "succeeded",
+            "call_outcome": "succeeded",
+            "call_id": "a"
+          }
+        }
+      ]
+    },
+    {
+      "id": "interleaved_failure",
+      "purpose": "A 失败而 B 成功；B 先结束也不能继承 A 的失败。",
+      "steps": [
+        {
+          "record": {
+            "type": "task_started",
+            "turn_id": "t1"
+          },
+          "expect_events": []
+        },
+        {
+          "record": {
+            "type": "function_call",
+            "name": "shell",
+            "call_id": "a",
+            "arguments": "{\"command\":[\"printf\",\"fixture\"]}"
+          },
+          "expect_events": []
+        },
+        {
+          "record": {
+            "type": "function_call",
+            "name": "shell",
+            "call_id": "b",
+            "arguments": "{\"command\":[\"printf\",\"fixture\"]}"
+          },
+          "expect_events": []
+        },
+        {
+          "record": {
+            "type": "item_completed",
+            "item": {
+              "type": "CommandExecution",
+              "call_id": "a",
+              "status": "failed"
+            }
+          },
+          "expect_events": [],
+          "expect_result": {
+            "outcome": "failed",
+            "association": "explicit_call_id",
+            "call_id": "a"
+          }
+        },
+        {
+          "record": {
+            "type": "function_call_output",
+            "call_id": "b",
+            "output": "{\"metadata\":{\"exit_code\":0}}"
+          },
+          "expect_events": [
+            {
+              "kind": "activity_end",
+              "id": "b"
+            }
+          ],
+          "expect_result": {
+            "call_outcome": "succeeded",
+            "call_id": "b"
+          }
+        },
+        {
+          "record": {
+            "type": "function_call_output",
+            "call_id": "a",
+            "output": "fixture output"
+          },
+          "expect_events": [
+            {
+              "kind": "activity_failed",
+              "id": "a"
+            }
+          ],
+          "expect_result": {
+            "outcome": "unknown",
+            "call_outcome": "failed",
+            "call_id": "a"
+          }
+        }
+      ]
+    },
+    {
+      "id": "out_of_order_outputs",
+      "purpose": "回执和输出的到达顺序相反，按身份关联。",
+      "steps": [
+        {
+          "record": {
+            "type": "task_started",
+            "turn_id": "t1"
+          },
+          "expect_events": []
+        },
+        {
+          "record": {
+            "type": "function_call",
+            "name": "shell",
+            "call_id": "a",
+            "arguments": "{\"command\":[\"printf\",\"fixture\"]}"
+          },
+          "expect_events": []
+        },
+        {
+          "record": {
+            "type": "function_call",
+            "name": "shell",
+            "call_id": "b",
+            "arguments": "{\"command\":[\"printf\",\"fixture\"]}"
+          },
+          "expect_events": []
+        },
+        {
+          "record": {
+            "type": "item_completed",
+            "item": {
+              "type": "CommandExecution",
+              "call_id": "a",
+              "status": "failed"
+            }
+          },
+          "expect_events": [],
+          "expect_result": {
+            "outcome": "failed",
+            "association": "explicit_call_id",
+            "call_id": "a"
+          }
+        },
+        {
+          "record": {
+            "type": "item_completed",
+            "item": {
+              "type": "CommandExecution",
+              "call_id": "b",
+              "status": "succeeded",
+              "exit_code": 0
+            }
+          },
+          "expect_events": [],
+          "expect_result": {
+            "outcome": "succeeded",
+            "association": "explicit_call_id",
+            "call_id": "b"
+          }
+        },
+        {
+          "record": {
+            "type": "function_call_output",
+            "call_id": "b",
+            "output": "fixture output"
+          },
+          "expect_events": [
+            {
+              "kind": "activity_end",
+              "id": "b"
+            }
+          ],
+          "expect_result": {
+            "call_outcome": "succeeded",
+            "call_id": "b"
+          }
+        },
+        {
+          "record": {
+            "type": "function_call_output",
+            "call_id": "a",
+            "output": "fixture output"
+          },
+          "expect_events": [
+            {
+              "kind": "activity_failed",
+              "id": "a"
+            }
+          ],
+          "expect_result": {
+            "call_outcome": "failed",
+            "call_id": "a"
+          }
+        }
+      ]
+    },
+    {
+      "id": "new_start_preserves_failure",
+      "purpose": "开始 B 不应清掉 A 已有的失败证据。",
+      "steps": [
+        {
+          "record": {
+            "type": "task_started",
+            "turn_id": "t1"
+          },
+          "expect_events": []
+        },
+        {
+          "record": {
+            "type": "function_call",
+            "name": "shell",
+            "call_id": "a",
+            "arguments": "{\"command\":[\"printf\",\"fixture\"]}"
+          },
+          "expect_events": []
+        },
+        {
+          "record": {
+            "type": "item_completed",
+            "item": {
+              "type": "CommandExecution",
+              "call_id": "a",
+              "status": "failed"
+            }
+          },
+          "expect_events": [],
+          "expect_result": {
+            "outcome": "failed",
+            "association": "explicit_call_id",
+            "call_id": "a"
+          }
+        },
+        {
+          "record": {
+            "type": "function_call",
+            "name": "shell",
+            "call_id": "b",
+            "arguments": "{\"command\":[\"printf\",\"fixture\"]}"
+          },
+          "expect_events": []
+        },
+        {
+          "record": {
+            "type": "function_call_output",
+            "call_id": "a",
+            "output": "fixture output"
+          },
+          "expect_events": [
+            {
+              "kind": "activity_failed",
+              "id": "a"
+            }
+          ],
+          "expect_result": {
+            "call_outcome": "failed",
+            "call_id": "a"
+          }
+        }
+      ]
+    },
+    {
+      "id": "duplicate_receipt",
+      "purpose": "同一失败回执出现两次，仍只在输出处结束一次操作。",
+      "steps": [
+        {
+          "record": {
+            "type": "task_started",
+            "turn_id": "t1"
+          },
+          "expect_events": []
+        },
+        {
+          "record": {
+            "type": "function_call",
+            "name": "shell",
+            "call_id": "a",
+            "arguments": "{\"command\":[\"printf\",\"fixture\"]}"
+          },
+          "expect_events": []
+        },
+        {
+          "record": {
+            "type": "item_completed",
+            "item": {
+              "type": "CommandExecution",
+              "call_id": "a",
+              "status": "failed"
+            }
+          },
+          "expect_events": [],
+          "expect_result": {
+            "outcome": "failed",
+            "association": "explicit_call_id",
+            "call_id": "a"
+          }
+        },
+        {
+          "record": {
+            "type": "item_completed",
+            "item": {
+              "type": "CommandExecution",
+              "call_id": "a",
+              "status": "failed"
+            }
+          },
+          "expect_events": [],
+          "expect_result": {
+            "outcome": "failed",
+            "association": "explicit_call_id",
+            "call_id": "a"
+          }
+        },
+        {
+          "record": {
+            "type": "function_call_output",
+            "call_id": "a",
+            "output": "fixture output"
+          },
+          "expect_events": [
+            {
+              "kind": "activity_failed",
+              "id": "a"
+            }
+          ],
+          "expect_result": {
+            "call_outcome": "failed",
+            "conflicting_results": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "cancel_then_late_output",
+      "purpose": "用户取消不算失败；取消后的旧输出不再关闭当前操作。",
+      "steps": [
+        {
+          "record": {
+            "type": "task_started",
+            "turn_id": "t1"
+          },
+          "expect_events": []
+        },
+        {
+          "record": {
+            "type": "function_call",
+            "name": "shell",
+            "call_id": "a",
+            "arguments": "{\"command\":[\"printf\",\"fixture\"]}"
+          },
+          "expect_events": []
+        },
+        {
+          "record": {
+            "type": "turn_aborted",
+            "turn_id": "t1",
+            "reason": "interrupted"
+          },
+          "expect_events": [
+            {
+              "kind": "task_abort",
+              "id": null
+            }
+          ]
+        },
+        {
+          "record": {
+            "type": "function_call_output",
+            "call_id": "a",
+            "output": "{\"metadata\":{\"exit_code\":0}}",
+            "turn_id": "t1"
+          },
+          "expect_events": [],
+          "expect_result": {
+            "projection_eligible": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "cross_turn",
+      "purpose": "新轮次开启后，旧轮次失败输出不能污染新轮次。",
+      "steps": [
+        {
+          "record": {
+            "type": "task_started",
+            "turn_id": "t1"
+          },
+          "expect_events": []
+        },
+        {
+          "record": {
+            "type": "function_call",
+            "name": "shell",
+            "call_id": "a",
+            "arguments": "{\"command\":[\"printf\",\"fixture\"]}"
+          },
+          "expect_events": []
+        },
+        {
+          "record": {
+            "type": "item_completed",
+            "item": {
+              "type": "CommandExecution",
+              "call_id": "a",
+              "status": "failed"
+            }
+          },
+          "expect_events": [],
+          "expect_result": {
+            "outcome": "failed",
+            "association": "explicit_call_id",
+            "call_id": "a"
+          }
+        },
+        {
+          "record": {
+            "type": "task_started",
+            "turn_id": "t2"
+          },
+          "expect_events": []
+        },
+        {
+          "record": {
+            "type": "function_call",
+            "name": "shell",
+            "call_id": "b",
+            "arguments": "{\"command\":[\"printf\",\"fixture\"]}"
+          },
+          "expect_events": []
+        },
+        {
+          "record": {
+            "type": "function_call_output",
+            "call_id": "a",
+            "output": "fixture output",
+            "turn_id": "t1"
+          },
+          "expect_events": [],
+          "expect_result": {
+            "projection_eligible": false
+          }
+        },
+        {
+          "record": {
+            "type": "function_call_output",
+            "call_id": "b",
+            "output": "{\"metadata\":{\"exit_code\":0}}",
+            "turn_id": "t2"
+          },
+          "expect_events": [
+            {
+              "kind": "activity_end",
+              "id": "b"
+            }
+          ],
+          "expect_result": {
+            "call_outcome": "succeeded"
+          }
+        }
+      ]
+    },
+    {
+      "id": "unlinked_receipt",
+      "purpose": "没有调用身份的失败保留为未关联，不能靠先后顺序分配。",
+      "steps": [
+        {
+          "record": {
+            "type": "task_started",
+            "turn_id": "t1"
+          },
+          "expect_events": []
+        },
+        {
+          "record": {
+            "type": "function_call",
+            "name": "shell",
+            "call_id": "a",
+            "arguments": "{\"command\":[\"printf\",\"fixture\"]}"
+          },
+          "expect_events": []
+        },
+        {
+          "record": {
+            "type": "function_call",
+            "name": "shell",
+            "call_id": "b",
+            "arguments": "{\"command\":[\"printf\",\"fixture\"]}"
+          },
+          "expect_events": []
+        },
+        {
+          "record": {
+            "type": "item_completed",
+            "item": {
+              "type": "CommandExecution",
+              "status": "failed"
+            }
+          },
+          "expect_events": [],
+          "expect_result": {
+            "outcome": "failed",
+            "association": "unlinked",
+            "projection_eligible": false
+          }
+        },
+        {
+          "record": {
+            "type": "function_call_output",
+            "call_id": "b",
+            "output": "fixture output"
+          },
+          "expect_events": [
+            {
+              "kind": "activity_end",
+              "id": "b"
+            }
+          ],
+          "expect_result": {
+            "outcome": "unknown",
+            "call_outcome": "unknown"
+          }
+        },
+        {
+          "record": {
+            "type": "function_call_output",
+            "call_id": "a",
+            "output": "fixture output"
+          },
+          "expect_events": [
+            {
+              "kind": "activity_end",
+              "id": "a"
+            }
+          ],
+          "expect_result": {
+            "call_outcome": "unknown"
+          }
+        }
+      ]
+    },
+    {
+      "id": "async_ack_not_answer",
+      "purpose": "提问被接收仅表示展示成功；用户尚未回答时问题保持开启。",
+      "steps": [
+        {
+          "record": {
+            "type": "task_started",
+            "turn_id": "t1"
+          },
+          "expect_events": []
+        },
+        {
+          "record": {
+            "type": "function_call",
+            "name": "request_user_input_async",
+            "call_id": "q",
+            "arguments": "{\"questions\":[{\"title\":\"人工测试问题\",\"options\":[\"A\",\"B\"]}]}"
+          },
+          "expect_events": []
+        },
+        {
+          "record": {
+            "type": "function_call_output",
+            "call_id": "q",
+            "output": "{\"accepted\":true}"
+          },
+          "expect_events": [],
+          "expect_result": {
+            "outcome": "unknown",
+            "call_outcome": "unknown"
+          }
+        }
+      ]
+    },
+    {
+      "id": "structured_cancel",
+      "purpose": "明确的 cancelled 状态优先于非零退出码，不能显示成失败。",
+      "steps": [
+        {
+          "record": {
+            "type": "task_started",
+            "turn_id": "t1"
+          },
+          "expect_events": []
+        },
+        {
+          "record": {
+            "type": "function_call",
+            "name": "shell",
+            "call_id": "a",
+            "arguments": "{\"command\":[\"printf\",\"fixture\"]}"
+          },
+          "expect_events": []
+        },
+        {
+          "record": {
+            "type": "item_completed",
+            "item": {
+              "type": "CommandExecution",
+              "call_id": "a",
+              "status": "cancelled",
+              "exit_code": 130
+            }
+          },
+          "expect_events": [],
+          "expect_result": {
+            "outcome": "cancelled",
+            "association": "explicit_call_id",
+            "call_id": "a"
+          }
+        },
+        {
+          "record": {
+            "type": "function_call_output",
+            "call_id": "a",
+            "output": "fixture output"
+          },
+          "expect_events": [
+            {
+              "kind": "activity_end",
+              "id": "a"
+            }
+          ],
+          "expect_result": {
+            "call_outcome": "cancelled"
+          }
+        }
+      ]
+    },
+    {
+      "id": "wrong_session",
+      "purpose": "明确属于其他聊天的输出不能结束本聊天操作。",
+      "steps": [
+        {
+          "record": {
+            "type": "task_started",
+            "turn_id": "t1"
+          },
+          "expect_events": []
+        },
+        {
+          "record": {
+            "type": "function_call",
+            "name": "shell",
+            "call_id": "a",
+            "arguments": "{\"command\":[\"printf\",\"fixture\"]}"
+          },
+          "expect_events": []
+        },
+        {
+          "record": {
+            "type": "function_call_output",
+            "call_id": "a",
+            "output": "{\"metadata\":{\"exit_code\":0}}",
+            "thread_id": "fixture-other-session"
+          },
+          "expect_events": []
+        }
+      ]
+    },
+    {
+      "id": "plain_text_is_unknown",
+      "purpose": "普通正文包含 failed 或 success 不构成机器状态证据。",
+      "steps": [
+        {
+          "record": {
+            "type": "task_started",
+            "turn_id": "t1"
+          },
+          "expect_events": []
+        },
+        {
+          "record": {
+            "type": "function_call",
+            "name": "shell",
+            "call_id": "a",
+            "arguments": "{\"command\":[\"printf\",\"fixture\"]}"
+          },
+          "expect_events": []
+        },
+        {
+          "record": {
+            "type": "function_call_output",
+            "call_id": "a",
+            "output": "The example says failed, but this is only fixture text."
+          },
+          "expect_events": [
+            {
+              "kind": "activity_end",
+              "id": "a"
+            }
+          ],
+          "expect_result": {
+            "outcome": "unknown",
+            "call_outcome": "unknown"
+          }
+        }
+      ]
+    },
+    {
+      "id": "missing_call_id",
+      "purpose": "输出缺少操作身份时不能关闭任意一条操作。",
+      "steps": [
+        {
+          "record": {
+            "type": "task_started",
+            "turn_id": "t1"
+          },
+          "expect_events": []
+        },
+        {
+          "record": {
+            "type": "function_call",
+            "name": "shell",
+            "call_id": "a",
+            "arguments": "{\"command\":[\"printf\",\"fixture\"]}"
+          },
+          "expect_events": []
+        },
+        {
+          "record": {
+            "type": "function_call_output",
+            "output": "fixture output"
+          },
+          "expect_events": [],
+          "expect_result": {
+            "association": "unlinked",
+            "projection_eligible": false
+          }
+        }
+      ]
+    }
+  ]
+}

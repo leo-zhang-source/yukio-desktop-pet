@@ -1,0 +1,65 @@
+name: Remediation checks (Mac and workbench)
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches: ['codex/remediation-checks', 'codex/remediation-checks/**']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: remediation-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  baseline:
+    name: Mac and workbench baseline
+    runs-on: macos-15
+    timeout-minutes: 30
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Repeat baseline and prove failure detection
+        run: python scripts/run-remediation-checks.py --repeat 2 --out "$RUNNER_TEMP/yukio-remediation"
+      - name: Explain the actual scope
+        if: always()
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          evidence = Path(os.environ['RUNNER_TEMP']) / 'yukio-remediation/summary.json'
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as report:
+              report.write('## Mac / workbench checks\n\n')
+              report.write('Known defects remain defects. This job does not validate installation, release packages, or Windows.\n\n')
+              if evidence.exists():
+                  result = json.loads(evidence.read_text())
+                  report.write('Baseline gate: ' + str(result['gate_passed']) + '\n\n')
+                  for run in result['runs']:
+                      report.write('Run ' + str(run['run']) + ': ' + json.dumps(run['shared_counts']) + '\n\n')
+              else:
+                  report.write('No completed check summary was produced.\n')
+          PY
+      - name: Upload only synthetic check evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mac-workbench-check-evidence
+          retention-days: 14
+          path: |
+            ${{ runner.temp }}/yukio-remediation/summary.json
+            ${{ runner.temp }}/yukio-remediation/run-*/*.log
+            ${{ runner.temp }}/yukio-remediation/run-*/shared.json
+            ${{ runner.temp }}/yukio-remediation/run-*/mac-observations.json
+            ${{ runner.temp }}/yukio-remediation/run-*/negative-controls/*.json
+            ${{ runner.temp }}/yukio-remediation/run-*/negative-controls/*.log
