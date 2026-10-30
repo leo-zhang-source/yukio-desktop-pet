@@ -13,9 +13,9 @@ import Foundation
 ///     工具**开始**时就写下，所以动作跟得上；
 ///   * `event_msg` —— 界面事件（`item_completed`／`task_complete`／`turn_aborted`），
 ///     工具**结束**之后才写，用来补成败和「一轮结束」。
-/// 一次工具调用两边各写一条，靠 `call_id` 配对；`item_completed` 只用来补成败，不再发一次开始。
+/// 两套记录可能属于不同层级；只有明确的调用引用或已知相同 ID 才能关联。
 ///
-/// 一个实例跟一个文件（也就是一条聊天）：会话 ID 与「上一次报的失败」都记在实例里。
+/// 一个实例跟一个文件，结果按会话、轮次和调用身份隔离，不按到达顺序猜测。
 public final class CodexRolloutParser {
     public static let source = "codex"
 
@@ -23,8 +23,9 @@ public final class CodexRolloutParser {
     public private(set) var session: String
     public private(set) var parentSession: String?
     public private(set) var originator: String?
-    /// item_completed 报了失败、还没等到对应的输出：下一条输出算失败。
-    private var pendingFailure = false
+    private let results = CodexResultTracker()
+    /// Metadata for the latest record only; contains no arguments or answer bodies.
+    public private(set) var lastToolResults: [CodexToolResult] = []
     private var asyncQuestions: Set<String> = []
 
     public init(session: String = "") {
@@ -32,11 +33,13 @@ public final class CodexRolloutParser {
     }
 
     public func events(fromLine data: Data, now: Double = 0) -> [PetEvent] {
+        lastToolResults = []
         guard let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else { return [] }
         return events(from: obj, now: now)
     }
 
     public func events(from obj: [String: Any], now: Double = 0) -> [PetEvent] {
+        lastToolResults = []
         // 新版把记录包在 payload 里，旧版直接写 ResponseItem；两种都认。
         let payload = (obj["payload"] as? [String: Any]) ?? obj
         let kind = (payload["type"] as? String) ?? (obj["type"] as? String) ?? ""
@@ -47,7 +50,10 @@ public final class CodexRolloutParser {
         if kind == "session_meta" {
             originator = payload["originator"] as? String
             // A helper shares session_id with its parent; id identifies this worker.
-            if let id = (payload["id"] ?? payload["session_id"]) as? String, !id.isEmpty { session = id }
+            if let id = (payload["id"] ?? payload["session_id"]) as? String, !id.isEmpty {
+                if id != session { results.reset(); asyncQuestions.removeAll() }
+                session = id
+            }
             let source = payload["source"] as? [String: Any]
             let subagent = source?["subagent"] as? [String: Any]
             let spawn = subagent?["thread_spawn"] as? [String: Any]
@@ -57,33 +63,41 @@ public final class CodexRolloutParser {
         if session.isEmpty, let id = (payload["thread_id"] ?? payload["session_id"]) as? String { session = id }
         // 会话 ID 还没拿到（文件名不合规、也还没读到 session_meta）：这条认不到人，跳过。
         guard !session.isEmpty else { return [] }
+        if let thread = CodexResultTracker.identifier(payload["thread_id"]), thread != session { return [] }
 
         switch kind {
         // MARK: 一轮的开头与结尾（event_msg）
-        case "task_started":
-            return [ev(ts, .taskStart)]
+        case "task_started", "turn_context":
+            if let turn = CodexResultTracker.identifier(payload["turn_id"]), turn != results.turnID {
+                asyncQuestions.removeAll()
+            }
+            results.beginTurn(payload["turn_id"], newWhenMissing: kind == "task_started")
+            return kind == "task_started" ? [ev(ts, .taskStart)] : []
 
         case "task_complete":
+            guard results.matchesTurn(payload["turn_id"]) else { return [] }
             asyncQuestions.removeAll()
-            pendingFailure = false
+            results.closeTurn()
             // 有回答才算答完：没有 last_agent_message 的一轮（被压缩、被接管）只算结束。
             let answered = (payload["last_agent_message"] as? String)?.isEmpty == false
             return answered && parentSession == nil ? [ev(ts, .finalAnswer), ev(ts, .taskEnd)] : [ev(ts, .taskEnd)]
 
         case "turn_aborted":
+            guard results.matchesTurn(payload["turn_id"]) else { return [] }
             asyncQuestions.removeAll()
-            pendingFailure = false
+            results.closeTurn()
             // 用户按停、或被新一轮顶掉：都不算失败，不让她沮丧。
             let reason = (payload["reason"] as? String)?.lowercased() ?? ""
             return [ev(ts, reason.contains("error") ? .taskFailed : .taskAbort)]
 
         case "error", "stream_error":
+            guard results.matchesTurn(payload["turn_id"]) else { return [] }
             asyncQuestions.removeAll()
-            pendingFailure = false
+            results.closeTurn()
             return [ev(ts, .taskFailed)]
 
         case "item_completed", "item_started", "item_updated":
-            return item(payload["item"] as? [String: Any], ts: ts, completed: kind == "item_completed")
+            return item(payload["item"] as? [String: Any], payload: payload, ts: ts, completed: kind == "item_completed")
 
         // MARK: 模型这一轮的输入输出（response_item）
         case "message":
@@ -133,7 +147,7 @@ public final class CodexRolloutParser {
     // 这些条目是「做完之后」的回执，工具的开始已经由 response_item 发过了，
     // 所以这里只补两样：报错（让她沮丧）、以及 response_item 里根本没有的网页搜索。
 
-    private func item(_ item: [String: Any]?, ts: Double, completed: Bool) -> [PetEvent] {
+    private func item(_ item: [String: Any]?, payload: [String: Any], ts: Double, completed: Bool) -> [PetEvent] {
         guard let item, let type = item["type"] as? String else { return [] }
         switch type {
         case "UserMessage":
@@ -151,12 +165,10 @@ public final class CodexRolloutParser {
         case "Reasoning":
             return completed ? [ev(ts, .thinking)] : []
 
-        case "CommandExecution":
-            if Self.failed(status: item["status"], exitCode: item["exit_code"]) { pendingFailure = true }
-            return []
-
-        case "McpToolCall", "CollabAgentToolCall", "DynamicToolCall":
-            if Self.failed(status: item["status"], success: item["success"]) { pendingFailure = true }
+        case "CommandExecution", "McpToolCall", "CollabAgentToolCall", "DynamicToolCall":
+            guard completed else { return [] }
+            lastToolResults = [results.record(session: session, payload: payload, item: item,
+                                               sourceKind: "item_completed", timestamp: ts)]
             return []
 
         case "WebSearch":
@@ -177,14 +189,6 @@ public final class CodexRolloutParser {
         }
     }
 
-    /// `status: "failed"`／非零退出码／`success: false` 算失败；被用户按停的不算（那是 turn_aborted）。
-    static func failed(status: Any? = nil, exitCode: Any? = nil, success: Any? = nil) -> Bool {
-        if let s = (status as? String)?.lowercased(), s == "failed" || s == "error" { return true }
-        if let ok = success as? Bool, ok == false { return true }
-        if let code = (exitCode as? NSNumber)?.intValue, code != 0 { return true }
-        return false
-    }
-
     // MARK: 工具调用
 
     private func toolStart(_ payload: [String: Any], ts: Double) -> [PetEvent] {
@@ -193,7 +197,7 @@ public final class CodexRolloutParser {
         // function_call 的参数是一段 JSON 文本；custom_tool_call 的 input 是一段脚本或补丁正文。
         let arguments = Self.dictionary(payload["arguments"]) ?? [:]
         let script = payload["input"] as? String
-        let call = (payload["call_id"] as? String) ?? (payload["id"] as? String)
+        let call = CodexResultTracker.identifier(payload["call_id"]) ?? CodexResultTracker.identifier(payload["id"])
         let (classification, detail) = CodexToolClassifier.classify(tool: name, namespace: namespace,
                                                                     arguments: arguments, script: script)
         let activity: PetState?
@@ -201,7 +205,8 @@ public final class CodexRolloutParser {
         case .activity(let s): activity = s
         case .continuePrevious: activity = nil
         }
-        pendingFailure = false
+        guard payload["turn_id"] == nil || results.isCurrent(payload["turn_id"]) else { return [] }
+        results.start(call)
         if name.lowercased() == "request_user_input_async", let call { asyncQuestions.insert(call) }
         var out = [ev(ts, .activityStart, id: call, activity: activity, tool: name, detail: detail,
                       question: CodexToolClassifier.question(tool: name, arguments: arguments))]
@@ -212,18 +217,19 @@ public final class CodexRolloutParser {
     }
 
     private func toolEnd(_ payload: [String: Any], ts: Double) -> [PetEvent] {
-        let call = (payload["call_id"] as? String) ?? (payload["id"] as? String)
+        let result = results.record(session: session, payload: payload,
+                                    sourceKind: (payload["type"] as? String) ?? "tool_output", timestamp: ts)
+        lastToolResults = [result]
+        guard result.projectionEligible, let call = result.callID else { return [] }
         // An async acknowledgement only confirms that the question was displayed.
         // Keep it open until an answer/new user message or the turn ends.
-        if let call, asyncQuestions.contains(call),
+        if asyncQuestions.contains(call),
            let output = Self.dictionary(payload["output"]), output["accepted"] as? Bool == true {
-            pendingFailure = false
             return []
         }
-        if let call { asyncQuestions.remove(call) }
-        let failed = pendingFailure || Self.outputFailed(payload["output"])
-        pendingFailure = false
-        return [ev(ts, failed ? .activityFailed : .activityEnd, id: call)]
+        asyncQuestions.remove(call)
+        // End is a lifecycle receipt, not proof of success. Unknown stays unknown.
+        return [ev(ts, result.callOutcome == .failed ? .activityFailed : .activityEnd, id: call)]
     }
 
     private func closeAsyncQuestions(ts: Double) -> [PetEvent] {
@@ -259,18 +265,6 @@ public final class CodexRolloutParser {
                   let index = id[2] as? Int, index == 0 else { return nil }
             return call
         })
-    }
-
-    /// 老版 Codex 把结果写成一段 JSON 文本：`{"output": "...", "metadata": {"exit_code": 1}}`。
-    /// 新版写成 `[{"type": "input_text", "text": ...}]`，成败只在 item_completed 里，这里看不出来。
-    static func outputFailed(_ output: Any?) -> Bool {
-        guard let text = output as? String, text.hasPrefix("{"),
-              let data = text.data(using: .utf8),
-              let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else { return false }
-        if let metadata = obj["metadata"] as? [String: Any],
-           let code = (metadata["exit_code"] as? NSNumber)?.intValue, code != 0 { return true }
-        if let ok = obj["success"] as? Bool { return !ok }
-        return false
     }
 
     /// 网页搜索在记录里只有「搜完了」这一条，没有开始。发一对开始／结束，让她照样看一下网页。

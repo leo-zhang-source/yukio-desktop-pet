@@ -1,0 +1,197 @@
+{
+  "schema_version": 1,
+  "source_commit": "64f6ba03bd5477dd627f5f5a3b2ca6dc7a5aac0c",
+  "description": "逐项登记的修前差异；不能扩大为整个测试忽略。观察值变化或已知失败消失，都要求人工复核并更新登记。",
+  "failures": [
+    {
+      "implementation": "macos",
+      "case": "interleaved_failure",
+      "step": 4,
+      "field": "events",
+      "issue": "RESULT-ASSOCIATION",
+      "expected": [
+        {
+          "kind": "activity_end",
+          "id": "b"
+        }
+      ],
+      "observed": [
+        {
+          "kind": "activity_failed",
+          "id": "b"
+        }
+      ]
+    },
+    {
+      "implementation": "macos",
+      "case": "interleaved_failure",
+      "step": 5,
+      "field": "events",
+      "issue": "RESULT-ASSOCIATION",
+      "expected": [
+        {
+          "kind": "activity_failed",
+          "id": "a"
+        }
+      ],
+      "observed": [
+        {
+          "kind": "activity_end",
+          "id": "a"
+        }
+      ]
+    },
+    {
+      "implementation": "macos",
+      "case": "out_of_order_outputs",
+      "step": 5,
+      "field": "events",
+      "issue": "RESULT-ASSOCIATION",
+      "expected": [
+        {
+          "kind": "activity_end",
+          "id": "b"
+        }
+      ],
+      "observed": [
+        {
+          "kind": "activity_failed",
+          "id": "b"
+        }
+      ]
+    },
+    {
+      "implementation": "macos",
+      "case": "out_of_order_outputs",
+      "step": 6,
+      "field": "events",
+      "issue": "RESULT-ASSOCIATION",
+      "expected": [
+        {
+          "kind": "activity_failed",
+          "id": "a"
+        }
+      ],
+      "observed": [
+        {
+          "kind": "activity_end",
+          "id": "a"
+        }
+      ]
+    },
+    {
+      "implementation": "macos",
+      "case": "new_start_preserves_failure",
+      "step": 4,
+      "field": "events",
+      "issue": "RESULT-ASSOCIATION",
+      "expected": [
+        {
+          "kind": "activity_failed",
+          "id": "a"
+        }
+      ],
+      "observed": [
+        {
+          "kind": "activity_end",
+          "id": "a"
+        }
+      ]
+    },
+    {
+      "implementation": "macos",
+      "case": "cancel_then_late_output",
+      "step": 3,
+      "field": "events",
+      "issue": "TURN-LIFECYCLE",
+      "expected": [],
+      "observed": [
+        {
+          "kind": "activity_end",
+          "id": "a"
+        }
+      ]
+    },
+    {
+      "implementation": "macos",
+      "case": "cross_turn",
+      "step": 5,
+      "field": "events",
+      "issue": "TURN-LIFECYCLE",
+      "expected": [],
+      "observed": [
+        {
+          "kind": "activity_end",
+          "id": "a"
+        }
+      ]
+    },
+    {
+      "implementation": "macos",
+      "case": "unlinked_receipt",
+      "step": 4,
+      "field": "events",
+      "issue": "RESULT-ASSOCIATION",
+      "expected": [
+        {
+          "kind": "activity_end",
+          "id": "b"
+        }
+      ],
+      "observed": [
+        {
+          "kind": "activity_failed",
+          "id": "b"
+        }
+      ]
+    },
+    {
+      "implementation": "macos",
+      "case": "structured_cancel",
+      "step": 3,
+      "field": "events",
+      "issue": "CANCELLATION",
+      "expected": [
+        {
+          "kind": "activity_end",
+          "id": "a"
+        }
+      ],
+      "observed": [
+        {
+          "kind": "activity_failed",
+          "id": "a"
+        }
+      ]
+    },
+    {
+      "implementation": "macos",
+      "case": "wrong_session",
+      "step": 2,
+      "field": "events",
+      "issue": "SESSION-IDENTITY",
+      "expected": [],
+      "observed": [
+        {
+          "kind": "activity_end",
+          "id": "a"
+        }
+      ]
+    },
+    {
+      "implementation": "macos",
+      "case": "missing_call_id",
+      "step": 2,
+      "field": "events",
+      "issue": "RESULT-IDENTITY",
+      "expected": [],
+      "observed": [
+        {
+          "kind": "activity_end",
+          "id": null
+        }
+      ]
+    }
+  ],
+  "resolution_note": "阶段 3.1 按原有预期复查，11 处旧差异全部消失；保留修前登记，不再用于忽略失败。"
+}

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "session": "fixture-stage2-session",
-  "description": "人工构造；不含真实聊天。expect_events 仅比较完成、失败、取消投影，不强迫两端开始/思考展示一致。activity_end 只代表结束，不等于成功；expect_result 另查工作台提供的事实元数据。Swift 当前缺少对应元数据，属于明确的能力边界。",
+  "description": "人工构造，不含真实聊天。expect_events 比较完成、失败、取消投影；activity_end 只表示结束，不等于成功。expect_result 同时检查 Mac 与工作台的事实元数据。",
   "cases": [
     {
       "id": "sequential_success",

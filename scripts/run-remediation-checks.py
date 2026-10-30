@@ -102,11 +102,22 @@ def negative_controls(out, env, python):
     failure_report = json.loads((controls / 'failure.json').read_text())
     # A disappeared known defect must also be reviewed, not silently exempted forever.
     observations = json.loads((out / 'mac-observations.json').read_text())
-    known = json.loads((ROOT / 'tests/remediation/known-issues.json').read_text())['failures'][0]
+    exceptions = json.loads((ROOT / 'tests/remediation/known-issues.json').read_text())
+    if not exceptions['failures']:
+        # Exercise the stale-exception alarm even after every real defect is fixed.
+        # This exception exists only inside the disposable control directory.
+        case = fixture['cases'][0]
+        index = len(case['steps']) - 1
+        expected = observations[case['id']][index]['events']
+        exceptions['failures'] = [dict(implementation='macos', case=case['id'], step=index,
+            field='events', issue='SYNTHETIC-STALE-EXCEPTION', expected=expected, observed=[])]
+    known = exceptions['failures'][0]
+    write(controls / 'temporary-known-issues.json', exceptions)
     observations[known['case']][known['step']]['events'] = known['expected']
     write(controls / 'fixed-observation.json', observations)
     command = [python, str(ROOT / 'tests/remediation/check_shared.py'),
-               '--mac-observations', str(controls / 'fixed-observation.json'), '--out', str(controls / 'unexpected-pass.json')]
+               '--mac-observations', str(controls / 'fixed-observation.json'),
+               '--known-issues', str(controls / 'temporary-known-issues.json'), '--out', str(controls / 'unexpected-pass.json')]
     xpass = run(command, ROOT, env, controls / 'unexpected-pass.log', 30)
     xpass_report = json.loads((controls / 'unexpected-pass.json').read_text())
     result = dict(wrong_assertion_exit=failure['exit_code'],

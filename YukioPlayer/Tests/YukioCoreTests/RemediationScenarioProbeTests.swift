@@ -22,7 +22,8 @@ import Testing
             observed[name] = try steps.enumerated().map { index, step -> [String: Any] in
                 let record = try #require(step["record"] as? [String: Any])
                 let events = parser.events(from: record, now: Double(index + 1))
-                return ["events": events.filter { kept.contains($0.kind.rawValue) }.map { event -> [String: Any] in
+                let facts = try parser.lastToolResults.map { try JSONSerialization.jsonObject(with: JSONEncoder().encode($0)) }
+                return ["result": facts.count == 1 ? facts[0] : NSNull(), "events": events.filter { kept.contains($0.kind.rawValue) }.map { event -> [String: Any] in
                     ["kind": event.kind.rawValue, "id": event.eventID as Any? ?? NSNull()]
                 }]
             }

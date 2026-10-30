@@ -55,7 +55,7 @@ def check(fixture, mac, known):
             case_rows = []
             for index, (step, actual) in enumerate(zip(case['steps'], actual_steps)):
                 checks = [('events', step['expect_events'], actual['events'])]
-                if implementation == 'workbench' and 'expect_result' in step:
+                if 'expect_result' in step:
                     for field, expected in step['expect_result'].items():
                         checks.append(('result.' + field, expected, (actual.get('result') or {}).get(field)))
                 for field, expected, observed in checks:
@@ -86,8 +86,7 @@ def check(fixture, mac, known):
                 gate_passed=not (counts['UNEXPECTED_FAIL'] or counts['UNEXPECTED_PASS']),
                 product_acceptance_passed=False,
                 independent_installation_tested=False, windows='deferred_by_user',
-                limitations=['Mac facts metadata is not exposed by the current parser; only its completion projection is compared.',
-                             'activity_end is completion, not a proof of success.',
+                limitations=['activity_end is completion, not a proof of success.',
                              'Synthetic records do not establish compatibility with every real client version.'])
 
 

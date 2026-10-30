@@ -104,9 +104,9 @@ import Testing
         #expect(start.map(\.kind) == [.activityStart])
         #expect(start.first?.eventID == "call_1")
 
-        // 界面那一份先写「这条命令失败了」，紧接着才是输出。
+        // The receipt explicitly identifies the call; adjacency alone is insufficient.
         let item = parse(parser, line("2026-09-23T01:55:04.000Z", "event_msg",
-            #"{"type":"item_completed","item":{"type":"CommandExecution","status":"failed","exit_code":1}}"#))
+            #"{"type":"item_completed","item":{"type":"CommandExecution","call_id":"call_1","status":"failed","exit_code":1}}"#))
         #expect(item.isEmpty)
         let end = parse(parser, line("2026-09-23T01:55:04.100Z", "response_item",
             #"{"type":"custom_tool_call_output","call_id":"call_1","output":[{"type":"input_text","text":"no matches"}]}"#))
