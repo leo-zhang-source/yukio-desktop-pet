@@ -155,7 +155,7 @@ def main():
                 suites['python'] = run([sys.executable, '-m', 'unittest', 'discover', '-s', 'tools/activity-workbench', '-p', 'test_*.py', '-v'],
                                        ROOT, env, directory / 'python.log', 600)
                 suites['python'].update(counts('python', directory / 'python.log'))
-                suites['node'] = run([node, '--test', 'tools/activity-workbench/test_glance_ui.cjs', 'tools/activity-workbench/test_language_ui.cjs'],
+                suites['node'] = run([node, '--test', '--test-reporter=tap', 'tools/activity-workbench/test_glance_ui.cjs', 'tools/activity-workbench/test_language_ui.cjs'],
                                      ROOT, env, directory / 'node.log', 120)
                 suites['node'].update(counts('node', directory / 'node.log'))
             shared = run([sys.executable, str(ROOT / 'tests/remediation/check_shared.py'),
