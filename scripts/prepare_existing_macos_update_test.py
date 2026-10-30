@@ -48,6 +48,7 @@ def main():
     p.add_argument('--notes', type=Path, required=True)
     p.add_argument('--notes-zh', type=Path, required=True)
     p.add_argument('--corrupt-download', action='store_true')
+    p.add_argument('--identifier', help='Reuse an existing test identity only when replacing its stopped fixture')
     a = p.parse_args()
     if a.out.exists() or a.out.suffix != '.noindex':
         raise SystemExit('Choose a new .noindex output directory')
@@ -65,18 +66,25 @@ def main():
     old_code = executable_code_sha(host/'Contents/MacOS/YukioPlayer')
     target = a.out/'target/Yukio.app'
     subprocess.run(['ditto', str(a.target_app), str(target)], check=True)
-    identifier = 'local.yukio.upgrade-test.' + uuid.uuid4().hex[:12]
+    identifier = a.identifier or 'local.yukio.upgrade-test.' + uuid.uuid4().hex[:12]
+    if not identifier.startswith('local.yukio.upgrade-test.') or any(c not in 'abcdefghijklmnopqrstuvwxyz0123456789.-' for c in identifier):
+        raise SystemExit('Only an isolated test identity is allowed')
     sentinel = uuid.uuid4().hex
     profile = a.out.resolve() / 'profile'
     profile.mkdir()
+    (profile / '.yukio-upgrade-test-profile').write_text(sentinel)
+    (profile / '.yukio-upgrade-test-profile').chmod(0o600)
     # A unique preference domain alone does not isolate collectors or history.
     # These settings belong only to disposable test copies, never the candidate.
     environment = dict(HOME=str(profile), CFFIXED_USER_HOME=str(profile),
         CODEX_HOME=str(profile / '.codex'), CLAUDE_CONFIG_DIR=str(profile / '.claude'),
-        DEEPCODE_HOME=str(profile / '.deepcode'), YUKIO_DOCK='1',
-        YUKIO_REMINDER_FILE=str(profile / 'reminders.json'))
+        DEEPCODE_CONFIG_DIR=str(profile / '.deepcode'), YUKIO_DOCK='1',
+        YUKIO_REMINDER_FILE=str(profile / 'reminders.json'), YUKIO_UPGRADE_TEST_TOKEN=sentinel)
     with tempfile.TemporaryDirectory(prefix='yukio-upgrade-test-key-') as temp:
         key = Path(temp)
+        launcher = key / 'YukioTestLauncher'
+        subprocess.run(['clang', '-target', 'arm64-apple-macos13.0', '-O2', '-Wall', '-Werror',
+                        str(Path(__file__).with_name('macos_test_launcher.c')), '-o', str(launcher)], check=True)
         source = key/'generate.swift'
         source.write_text('''import Foundation
 import CryptoKit
@@ -91,6 +99,7 @@ try key.publicKey.rawRepresentation.base64EncodedData().write(to: dir.appendingP
         for bundle in [host, target]:
             info = plistlib.loads((bundle/'Contents/Info.plist').read_bytes())
             info.update(CFBundleIdentifier=identifier, CFBundleName='Yukio Update Test',
+                        CFBundleExecutable='YukioTestLauncher',
                         SUPublicEDKey=public, SUDefaultsDomain=identifier,
                         SUFeedURL=f'http://127.0.0.1:{a.port}/appcast.xml',
                         SURequireSignedFeed=True, SUVerifyUpdateBeforeExtraction=True,
@@ -98,6 +107,8 @@ try key.publicKey.rawRepresentation.base64EncodedData().write(to: dir.appendingP
                         NSAppTransportSecurity={'NSAllowsLocalNetworking': True},
                         LSEnvironment=environment)
             (bundle/'Contents/Info.plist').write_bytes(plistlib.dumps(info))
+            shutil.copy2(launcher, bundle/'Contents/MacOS/YukioTestLauncher')
+            subprocess.run(['codesign', '--force', '--sign', '-', str(bundle/'Contents/MacOS/YukioPlayer')], check=True)
             subprocess.run(['codesign', '--force', '--sign', '-', str(bundle)], check=True)
             subprocess.run(['codesign', '--verify', '--deep', '--strict', str(bundle)], check=True)
         target_info = plistlib.loads((target/'Contents/Info.plist').read_bytes())
@@ -136,7 +147,9 @@ try key.publicKey.rawRepresentation.base64EncodedData().write(to: dir.appendingP
                   installed_app=str(host.resolve()), target_files=files(target), baseline_files=files(host),
                   temporary_private_key_deleted=True, corrupt_download=a.corrupt_download)
     result.update(environment=environment, profile=str(profile),
-                  data_directory=str(profile / 'Library/Application Support/YukioPlayer/activity-observation'))
+                  data_directory=str(profile / 'Library/Application Support/YukioPlayer/activity-observation'),
+                  home_isolation='verified-profile launcher restores HOME before exec; verify live process and health identity after launch',
+                  test_launcher_sha256=sha(host/'Contents/MacOS/YukioTestLauncher'))
     assert result['baseline_executable_code_matches_release'], 'Baseline executable code changed'
     (a.out/'case.json').write_text(json.dumps(result, indent=2)+'\n')
     print(json.dumps({k:v for k,v in result.items() if k not in ['target_files','baseline_files','preference_sentinel']}, indent=2))
