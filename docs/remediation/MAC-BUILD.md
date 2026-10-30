@@ -2,6 +2,8 @@
 
 这是阶段 4 的正式候选构建入口。输出完整 App、供更新测试的 ZIP、拖入 Applications 的 DMG、来源清单及文件校验值。它不安装、不发布，也不自动宣称独立用户验收通过。当前只构建 Apple Silicon Mac；Windows 暂缓，Intel Mac 尚未在本入口验收。
 
+本轮两次构建、实际包检查、恢复结果与尚未通过的验收见 [阶段 4 交付记录](STAGE4-DELIVERY.md)。
+
 ## 开发者准备
 
 需要 Apple Silicon Mac、Xcode Command Line Tools、Python 3.12 或更新版本作为启动工具、互联网连接，以及至少 3 GiB 可用空间。普通使用者运行构建好的 App，无需另装 Python、Swift 或这些打包工具。大体积输出应选择足够容量的磁盘，不能把某位作者的 NAS 当成其他用户的运行条件。
