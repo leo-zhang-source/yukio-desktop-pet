@@ -99,7 +99,13 @@ final class QuestionCardView: NSView, NSTextFieldDelegate {
             return
         }
         field.isHidden = card.isApproval
-        field.isEnabled = !card.isSending
+        if field.isEnabled == card.isSending {
+            // AppKit can discard the active field editor when disabling a field.
+            // Preserve its uncommitted draft so a failed send remains editable.
+            let draft = field.currentEditor()?.string
+            field.isEnabled = !card.isSending
+            if let draft { field.stringValue = draft }
+        }
         field.frame = card.textFieldFrame(in: bounds).insetBy(dx: 5, dy: 4)
     }
 
