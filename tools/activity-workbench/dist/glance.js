@@ -74,9 +74,10 @@ function partProof(part,kind,refs){
  for(const ref of refs)box.append(make('blockquote',(ref.title?ref.title+'：':'')+(ref.quote||ref.text||'')));
  if(!refs.length)box.append(make('p',tr('这部分暂时没有足够依据，先保留未知。')));
 }
+function localStoryText(data,part){return uiLanguage==='en'&&/[\u4e00-\u9fff]/.test(data[part])?({content:'An English explanation of the latest activity is not available yet. Supporting notes show what was actually read.',explanation:'The source notes are in another language. Their connection with earlier work has not yet been explained in English.',reason:'The purpose has not yet been explained in English using this chat’s request and earlier progress.'})[part]:data[part];}
 function showStory(data){for(const part of ['content','explanation','reason']){
  const untranslated=uiLanguage==='en'&&/[\u4e00-\u9fff]/.test(data[part]);
- $(part).textContent=untranslated?({content:'An English explanation of the latest activity is not available yet. Supporting notes show what was actually read.',explanation:'The source notes are in another language. Their connection with earlier work has not yet been explained in English.',reason:'The purpose has not yet been explained in English using this chat’s request and earlier progress.'})[part]:data[part];const ref=data.evidence[part==='explanation'?'fragment':part];
+ $(part).textContent=localStoryText(data,part);const ref=data.evidence[part==='explanation'?'fragment':part];
  partProof(part,untranslated?'unknown':data[part+'_basis'],data.part_evidence?.[part]||(ref?[{quote:ref.text}]:[]));
  if(part==='content'&&[tr('这一轮已结束'),tr('这一轮已取消')].includes(data.status)&&!untranslated)$(part).textContent=tr('这一轮的最后记录：')+$(part).textContent;
 }}
@@ -98,6 +99,8 @@ function render(data){current=data;$('chatName').textContent=data.title;$('chatL
  $('attention').hidden=data.tone!=='attention';$('attention').textContent=data.needs_you;
  $('latestStep').hidden=!data.last_step;if(data.last_step){$('stepAction').textContent=data.last_step.action;$('stepResult').textContent=data.last_step.result;}
  $('historyLink').href='/history?'+new URLSearchParams({client:data.client,key:data.key,lang:uiLanguage});
+ $('historyRecords').href=$('historyLink').href;
+ $('historyScope').textContent=tr('这次聊天的历史：')+data.title+tr(' · 切换左侧聊天可回顾项目中的其他工作。');
  $('scope').textContent=(data.source_unavailable?tr('这段原文暂时读不到，等待来源恢复。'):data.partial?tr('这次只看到一部分，缺失内容没有补猜。'):tr('依据最近可读取的一段聊天。'))+' '+(uiLanguage==='en'?'Last activity: '+age(data.last_activity_ms)+'.':age(data.last_activity_ms)+tr('有活动。'));
  $('recent').replaceChildren();for(const item of data.recent)$('recent').append(make('p',(item.kind==='assistant'?tr('助手说：'):tr('观察到：'))+item.text));
  const applicable=modelAnswer&&modelAnswer.revision===data.revision;
@@ -244,9 +247,9 @@ let readingEpoch=0,readingBusy=false,deepLoaded=false,pastPage=null;
 function resetReading(){resetUnderstanding();readingEpoch++;readingBusy=false;deepLoaded=false;pastPage=null;for(const id of ['deepPanel','pastPanel'])$(id).hidden=true;for(const id of ['deepRead','pastRead'])$(id).setAttribute('aria-expanded','false');$('deepText').replaceChildren();$('pastText').replaceChildren();}
 function readingReady(){if(!grant)throw Error(tr('首页说明还在准备，请稍后再点。'));if(readingBusy||autoRun||workInFlight)throw Error(tr('有一段说明正在生成，请稍后再点。'));}
 function readingActive(own,panel){return own===readingEpoch&&!pageClosed&&!$(panel).hidden;}
-async function readingModel(token,own,panel,status){
+async function readingModel(token,own,panel,status,visible=()=>true){
  for(let attempt=0;attempt<2;attempt++){
-  if(!readingActive(own,panel))return null;
+  if(!readingActive(own,panel)||!visible())return null;
   try{return await api('reading-explain',{grant,token});}
   catch(error){if(attempt===0&&['rate_limited','busy'].includes(error.reason)){
    status.textContent=tr('模型刚处理过一段说明，稍等片刻就继续…');
@@ -254,15 +257,23 @@ async function readingModel(token,own,panel,status){
   }else throw error;}
  }
 }
-function readingParts(box,parts,data){
+function readingParts(box,parts,data,local=false){
  box.replaceChildren();for(const part of parts){const item=data.result.explanations.find(i=>i.part===part.part);if(!item)continue;
  const section=make('section');section.append(make('h3',part.title),make('p',item.text));
- const refs=make('details');refs.append(make('summary',tr('模型说明 · 查看依据')));
- for(const id of item.evidence_ids){const ref=data.references.find(r=>r.evidence_id===id);if(ref)refs.append(make('blockquote',ref.title+'：'+ref.quote));}
+ const refs=make('details');refs.append(make('summary',local?tr('本机记录 · 查看依据'):tr('模型说明 · 查看依据')));
+ refs.open=local&&(part===parts[0]||part.part==='work');
+ for(const id of item.evidence_ids){const ref=data.references.find(r=>r.evidence_id===id);if(ref)refs.append(make('blockquote',(ref.chat?'「'+ref.chat+'」 · ':'')+ref.title+'：'+ref.quote));}
+ if(!item.evidence_ids.length)refs.append(make('p',tr('没有足够的可读依据。')));
  section.append(refs);box.append(section);}
 }
 async function loadDeep(){
  const own=readingEpoch;let started=false;$('deepRetry').hidden=true;
+ if(!deepLoaded&&current){
+  const titles={content:tr('具体做了什么'),explanation:tr('和前面有什么联系'),reason:tr('对整个任务有什么用')};
+  const parts=Object.keys(titles).map(part=>({part,title:titles[part]}));
+  readingParts($('deepText'),parts,{result:{explanations:parts.map(p=>({part:p.part,text:localStoryText(current,p.part),evidence_ids:[p.part]}))},references:parts.filter(p=>current.evidence?.[p.part]).map(p=>({evidence_id:p.part,title:titles[p.part],quote:current.evidence[p.part].text}))},true);
+ }
+ if(!grant||!model?.automatic_on_open){deepLoaded=true;$('deepNote').textContent=tr('本机记录详情 · 基于展开时的记录；开启上方解释后可进一步讲解。');return;}
  try{readingReady();readingBusy=true;started=true;$('deepNote').textContent=tr('模型正在把这一步展开讲清楚…');
  const frozen=await api('reading-current',{grant});if(!readingActive(own,'deepPanel'))return;
  const answer=await readingModel(frozen.token,own,'deepPanel',$('deepNote'));if(!answer||!readingActive(own,'deepPanel'))return;
@@ -273,19 +284,20 @@ async function loadDeep(){
 }
 async function loadPast(snapshot=0,before=0){
  const own=readingEpoch;let started=false;$('pastRetry').hidden=true;$('pastOlder').hidden=true;
- try{readingReady();readingBusy=true;started=true;$('pastNote').textContent=tr('正在分段回顾这段聊天…');
- const page=await api('reading-history',{grant,snapshot,before});if(!readingActive(own,'pastPanel'))return;
+ const localOnly=!grant||!model?.automatic_on_open;
+ try{if(localOnly){if(readingBusy)throw Error(tr('有一段说明正在生成，请稍后再点。'));}else readingReady();readingBusy=true;started=true;$('pastNote').textContent=tr('正在分段回顾这段聊天…');
+ const page=localOnly?await api('reading-history?'+new URLSearchParams({...selected,snapshot,before})):await api('reading-history',{grant,snapshot,before});if(!readingActive(own,'pastPanel'))return;
  pastPage=page;page.before=before;$('pastText').replaceChildren();$('pastNewer').hidden=!before;
  for(const card of page.cards){
-  const section=make('section');section.className='past-card';const heading=make('h3',card.title.length>26?card.title.slice(0,26)+'…':card.title);card.heading=heading;section.append(heading);
+  const section=make('section');section.className='past-card';const heading=make('h3',card.title);card.heading=heading;section.append(heading);
   const time=make('p',(card.position?card.position+' · ':'')+age(card.stamp)+tr('的要求'));time.className='reading-caption';section.append(time);
-  const short=make('p',tr('模型正在总结这一段…'));section.append(short);card.short=short;card.container=section;
+  const short=make('p',card.local_summary||card.local?.find(p=>p.part==='request')?.text||tr('模型正在总结这一段…'));section.append(short);card.short=short;card.container=section;
   const button=make('button',tr('深入看这一段')),detail=make('div');detail.className='past-detail';detail.hidden=true;
   button.setAttribute('aria-expanded','false');button.onclick=()=>loadPastDetail(card,button,detail);
   section.append(button,detail);$('pastText').append(section);
   if(card.missing_reply){const limit=make('p',card.note);limit.className='reading-caption';section.append(limit);}
  }
- if(!page.token){$('pastNote').textContent=tr('这部分还没有可读取的公开内容。')+page.note;return;}
+ if(!page.token){$('pastNote').textContent=(page.cards.length?tr('本机记录详情 · 开启上方解释后，可请模型进一步讲解。'):tr('这部分还没有可读取的公开内容。'))+' '+page.note;return;}
  $('pastNote').textContent=tr('模型正在为这三段写简短总结…');
  const answer=await readingModel(page.token,own,'pastPanel',$('pastNote'));if(!answer||!readingActive(own,'pastPanel'))return;
  if(answer.result.mode!=='model')throw Error(answer.result.message||tr('模型暂时没能总结，点击下方重新读取。'));
@@ -302,9 +314,11 @@ async function loadPast(snapshot=0,before=0){
 async function loadPastDetail(card,button,box){
  if(!box.hidden){box.hidden=true;button.setAttribute('aria-expanded','false');return;}
  box.hidden=false;button.setAttribute('aria-expanded','true');if(card.loaded)return;
- const own=readingEpoch;let started=false;const status=make('p',tr('模型正在展开这一段…'));box.replaceChildren(status);
+ const own=readingEpoch;let started=false;const status=make('p',tr('模型正在展开这一段…'));
+ readingParts(box,card.parts,{result:{explanations:card.local||[]},references:card.references||[]},true);box.append(status);
+ if(!grant||!model?.automatic_on_open||!card.detail_token){status.textContent=tr('本机记录详情 · 开启上方解释后，可请模型进一步讲解。');return;}
  try{readingReady();readingBusy=true;started=true;
- const answer=await readingModel(card.detail_token,own,'pastPanel',status);if(!answer||!readingActive(own,'pastPanel')||box.hidden)return;
+ const answer=await readingModel(card.detail_token,own,'pastPanel',status,()=>!box.hidden);if(!answer||!readingActive(own,'pastPanel')||box.hidden)return;
  if(answer.result.mode!=='model')throw Error(answer.result.message||tr('这次没有生成详细说明。'));
  readingParts(box,card.parts,answer);card.loaded=true;
  }catch(error){if(readingActive(own,'pastPanel')){status.textContent=error.message;box.append(make('p',tr('收起后再展开可以重试；放久了请重新读取这一页。')));}}
@@ -314,9 +328,9 @@ $('deepRead').onclick=()=>{const panel=$('deepPanel');panel.hidden=!panel.hidden
 $('pastRead').onclick=()=>{const panel=$('pastPanel');panel.hidden=!panel.hidden;$('pastRead').setAttribute('aria-expanded',String(!panel.hidden));if(!panel.hidden&&!pastPage)void loadPast();};
 $('deepRetry').onclick=()=>loadDeep();$('pastRetry').onclick=()=>loadPast(pastPage?.snapshot||0,pastPage?.before||0);$('pastNewer').onclick=()=>loadPast();$('pastOlder').onclick=()=>{if(pastPage)void loadPast(pastPage.snapshot,pastPage.next_before);};
 
-let workScope='chat',workData=null,workAnswer=null,workEpoch=0,workLoad=null,workAt=0,workInFlight=false,workRequestEpoch=-1,workMessage='';
+let workScope='chat',workData=null,workAnswer=null,workEpoch=0,workLoad=null,workAt=0,workInFlight=false,workRequestEpoch=-1,workMessage='',workDetails={};
 function resetUnderstanding(scope='chat'){
- workEpoch++;workScope=scope;workData=null;workAnswer=null;workLoad=null;workAt=0;workMessage='';
+ workEpoch++;workScope=scope;workData=null;workAnswer=null;workLoad=null;workAt=0;workMessage='';workDetails={};
  $('understandingParts').replaceChildren();delete $('understandingParts').dataset.contentKey;
  $('understandingChats').replaceChildren();$('understandingCoverage').textContent='';
  $('understandingTitle').textContent='';$('understandingNote').textContent=tr('正在整理工作目标与方法…');
@@ -347,7 +361,7 @@ function renderUnderstanding(){
  const references=workAnswer?.references||workData.references;
  const values=workAnswer?Object.fromEntries(workAnswer.result.explanations.map(x=>[x.part,x])):workData.local;
  const labels={goal:tr('要达成什么目标'),strategy:tr('用什么方法与策略'),effectiveness:tr('方法是否有效')};
- updateExpanded($('understandingParts'),{values,references,language:uiLanguage},()=>{
+ updateExpanded($('understandingParts'),{values,references,details:workData.details,revision:workData.revision,expanded:workDetails,language:uiLanguage,modelReady:!!grant&&!!model?.automatic_on_open,busy:readingBusy||workInFlight||Boolean(autoRun)},()=>{
   for(const [index,part] of ['goal','strategy','effectiveness'].entries()){
    const item=values[part];if(!item)continue;
    const section=make('section');section.className='understanding-part';const heading=make('h3');
@@ -357,7 +371,7 @@ function renderUnderstanding(){
    details.append(make('summary',(workAnswer?tr('模型解读'):basis[item.basis]||tr('尚不清楚'))+tr(' · 查看依据')));
    for(const id of item.evidence_ids||[]){const ref=references.find(r=>r.evidence_id===id);if(ref)details.append(make('blockquote',(ref.chat?'「'+ref.chat+'」 · ':'')+ref.title+'：'+ref.quote));}
    if(!item.evidence_ids?.length)details.append(make('p',tr('没有足够的可读依据。')));
-   section.append(details);$('understandingParts').append(section);
+   section.append(details);appendWorkDetail(section,part,labels[part]);$('understandingParts').append(section);
   }
  });
  const source=workAnswer?.source||workData;
@@ -367,6 +381,39 @@ function renderUnderstanding(){
  $('understandingCoverage').textContent=(uiLanguage==='en'?`Includes ${source.included_chats} of ${source.known_chats} chats currently listed (up to ${source.max_chats} per reading). `:`采用当前列出的 ${source.known_chats} 段聊天中的 ${source.included_chats} 段，每次最多 ${source.max_chats} 段。`)+source.note+
   (source.scope==='project'?tr(' 项目目录未被读取；尚未覆盖整个项目的所有聊天。')+tr(' 按当前客户端确认的项目归属汇总，跨客户端项目不会自动合并。'):'')+
   (source.catalog_limited||source.unavailable?tr(' 有些聊天暂时不可读取或未进入最近列表。'):'');
+}
+function appendWorkDetail(section,part,title){
+ const entry=workDetails[part],source=entry?.source||workData,rows=source.details?.[part]||[{part,title,...source.local[part]}];
+ const detail=make('details');detail.className='work-detail';detail.id='workDetail-'+part;detail.dataset.detailKey='work-detail-'+part;
+ const summary=make('summary',tr('详细解释')+' · '+title);detail.append(summary);
+ const body=make('div');body.className='work-detail-body';
+ const note=make('p',entry?.message||(entry?.answer?tr('模型详细解释 · 基于点击时的记录。'):model?.automatic_on_open?tr('本机记录详情 · 下方可按当前范围请模型深入解释。'):tr('本机记录详情 · 开启上方解释后，可请模型进一步讲解。')));note.className='reading-caption';note.setAttribute('role','status');
+ if(source.revision!==workData.revision)note.textContent+=' '+tr('记录已有变化，下方保留的是点击时的内容。');
+ const text=make('div');text.className='detail-prose';
+ readingParts(text,entry?.answer?source.parts:rows,entry?.answer||{result:{explanations:rows},references:source.references},!entry?.answer);
+ const button=make('button',entry?.pending?tr('正在展开说明…'):tr('请模型进一步解释'));
+ button.disabled=!grant||!model?.automatic_on_open||readingBusy||workInFlight||Boolean(autoRun)||pageClosed;
+ button.onclick=()=>explainWorkDetail(part);body.append(note,text,button);detail.append(body);section.append(detail);
+}
+async function explainWorkDetail(part){
+ if(!workData||!grant||!model?.automatic_on_open||readingBusy||workInFlight||autoRun||pageClosed)return;
+ const own=workEpoch,readOwn=readingEpoch,selection={...selected},scope=workScope,token=grant,projectId=current?.project?.id;
+ const prior=workDetails[part];
+ const entry={source:prior?.answer?prior.source:workData,answer:prior?.answer,pending:true,message:tr('正在展开说明…')};workDetails[part]=entry;readingBusy=true;renderUnderstanding();
+ const active=()=>own===workEpoch&&readOwn===readingEpoch&&!pageClosed&&grant===token&&workDetails[part]===entry&&$('workDetail-'+part).open&&JSON.stringify(selection)===JSON.stringify(selected)&&scope===workScope&&(scope!=='project'||current?.project?.id===projectId);
+ try{
+  const frozen=await api('reading-work',{grant:token,scope,part});if(!active())return;
+  if(!entry.answer)entry.source=frozen;let answer;
+  for(let attempt=0;attempt<2;attempt++){
+   if(!active())return;
+   try{answer=await api('reading-explain',{grant:token,token:frozen.token});break;}
+   catch(error){if(attempt===0&&['rate_limited','busy'].includes(error.reason)){entry.message=tr('模型刚处理过一段说明，稍等片刻就继续…');renderUnderstanding();await new Promise(resolve=>setTimeout(resolve,11000));}else throw error;}
+  }
+  if(!active())return;
+  if(answer.result.mode!=='model')throw Error(answer.result.message||tr('这次详细说明没能生成，请稍后重试。'));
+  entry.source=frozen;entry.answer=answer;entry.message='';
+ }catch(error){if(active())entry.message=error.message;}
+ finally{entry.pending=false;if(entry.message===tr('正在展开说明…'))entry.message='';if(readOwn===readingEpoch)readingBusy=false;if(workData)renderUnderstanding();else understandingControls();}
 }
 async function loadUnderstanding(force=false){
  if(pageClosed||!selected||!current)return;

@@ -19,6 +19,22 @@ def with_titles(payload,items):
 
 
 class ReadingTests(unittest.TestCase):
+    def test_local_history_needs_no_model_grant_and_keeps_paging_and_scoped_detail(self):
+        self.add_turns(5)
+        entries=set(self.service.entries)
+        page=self.reading.history_local('codex',self.fx.key)
+        self.assertEqual(len(page['cards']),3);self.assertTrue(page['has_more'])
+        self.assertIsNone(page['token']);self.assertFalse(self.sent)
+        self.assertEqual(set(self.service.entries),entries)
+        for card in page['cards']:
+            self.assertIsNone(card['detail_token'])
+            self.assertEqual([p['part'] for p in card['local']],['request','work','outcome'])
+            refs={r['evidence_id'] for r in card['references']}
+            self.assertTrue(all(set(p['evidence_ids'])<=refs for p in card['local']))
+        older=self.reading.history_local('codex',self.fx.key,page['snapshot'],page['next_before'])
+        self.assertEqual(older['snapshot'],page['snapshot'])
+        self.assertFalse({c['start'] for c in page['cards']}&{c['start'] for c in older['cards']})
+
     def setUp(self):
         self.fx=test_glance.GlanceTests();self.fx.setUp();self.now=[0.];self.sent=[]
         def sender(cfg,payload):

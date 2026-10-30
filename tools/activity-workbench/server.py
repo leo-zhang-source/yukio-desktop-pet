@@ -88,7 +88,8 @@ def create_server(port, databases, *, synthetic=False, model_config=None, explan
                       '/api/timeline': {'client','key','before','snapshot'}, '/api/blocks': {'client','key','sequence','offset'},
                       '/api/handoffs': {'client','key','snapshot'}, '/api/context': {'client','key','snapshot','offset','filter'}, '/api/relations': {'client','key','snapshot'},
                       '/api/current':set(), '/api/glance':{'client','key'}, '/api/task-summary':{'client','key'},
-                      '/api/work-understanding':{'client','key','scope'}}
+                      '/api/work-understanding':{'client','key','scope'},
+                      '/api/reading-history':{'client','key','snapshot','before'}}
             if url.path not in routes:
                 return self.reply(404, b'Not found', 'text/plain')
             if self.headers.get('Sec-Fetch-Site') == 'cross-site' or self.headers.get('Origin', 'http://'+host) != 'http://'+host:
@@ -112,6 +113,7 @@ def create_server(port, databases, *, synthetic=False, model_config=None, explan
                 elif url.path=='/api/glance':result=glance.detail(**p)
                 elif url.path=='/api/task-summary':result=glance.summary(**p)
                 elif url.path=='/api/work-understanding':result=WorkUnderstanding(glance).detail(**p)
+                elif url.path=='/api/reading-history':result=reading.history_local(**p)
                 elif url.path=='/api/handoffs':result=HandoffView(view,glance.reader).detail(**p)
                 else:result = identity(databases,active_config) if url.path=='/api/health' else getattr(context if url.path in ('/api/context','/api/relations') else view, url.path.rsplit('/',1)[1])(**p)
                 if url.path == '/api/clients':
@@ -171,7 +173,7 @@ def create_server(port, databases, *, synthetic=False, model_config=None, explan
                     result=explanation_info()
                 elif self.path.startswith('/api/reading-'):
 
-                    fields={'grant','token'} if self.path=='/api/reading-explain' else {'grant','snapshot','before'} if self.path=='/api/reading-history' else {'grant','scope'} if self.path=='/api/reading-work' else {'grant'}
+                    fields={'grant','token'} if self.path=='/api/reading-explain' else {'grant','snapshot','before'} if self.path=='/api/reading-history' else {'grant','scope','part'} if self.path=='/api/reading-work' else {'grant'}
                     if 'grant' not in data or set(data)-fields or not isinstance(data['grant'],str) or len(data['grant'])>100:raise ValueError('Invalid reading selection')
                     if self.path=='/api/reading-explain':
                         if set(data)!=fields or not isinstance(data['token'],str) or len(data['token'])>100:raise ValueError('Invalid reading token')

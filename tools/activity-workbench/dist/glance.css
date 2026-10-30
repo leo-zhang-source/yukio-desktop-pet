@@ -101,4 +101,20 @@ footer{font-size:10px;color:#788795;padding:19px 2px 0;display:flex;gap:28px;jus
 .understanding-footer button:disabled{opacity:.5;cursor:default}
 .understanding-sources{padding:15px 28px}.understanding-sources p{font-size:11px;color:#7b8a80;line-height:1.8;margin:10px 0 0}
 .understanding-sources a{color:var(--green);font-size:12px}.understanding-sources ul{padding-left:18px;line-height:1.9}
+.understanding-part .work-detail{margin-top:16px;border:1px solid #dbe6df;border-radius:8px;background:#fafcfb}
+.understanding-part .work-detail>summary{padding:12px 14px;font-size:12px;font-weight:550;color:#285d43}
+.work-detail-body{border-top:1px solid #e1e9e4;padding:10px 17px 17px}
+.work-detail-body .reading-caption{font-size:11px;line-height:1.8;color:#7b887f}
+.detail-prose h3{font-size:13px;margin:19px 0 8px;display:block}
+.detail-prose p{font-size:13px;line-height:1.95;color:#536a5c;overflow-wrap:anywhere}
+.work-detail-body>button{font-size:12px;margin-top:16px}
+.work-detail-body>button:disabled{opacity:.5;cursor:default}
+.history-reading{background:var(--paper);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);overflow:hidden}
+.history-reading .understanding-header{padding-top:23px}.history-reading .understanding-header h2{font-size:20px}
+.history-reading .understanding-header>button{font-size:12px;flex-shrink:0}
+.history-reading .reading-panel{margin:18px 28px;border-radius:8px;box-shadow:none}
+.history-reading .past-card h3{overflow-wrap:anywhere}
+.history-footer{display:flex;align-items:center;flex-wrap:wrap;gap:12px;padding:16px 28px;background:#fafbfc;border-top:1px solid var(--line);font-size:11px;color:#819087}
+.history-footer a{color:#386a50}
+@media(max-width:700px){.history-reading .reading-panel{margin:16px 20px}.history-footer{padding:15px 20px}.work-detail-body{padding:8px 13px 14px}}
 @media(max-width:700px){.understanding-header{padding:22px 20px 0;align-items:flex-start;flex-direction:column;gap:13px}.understanding-header h2{font-size:20px}.understanding-parts{padding:0 20px}.understanding-title,.understanding-note{padding:0 20px}.understanding-part>p{font-size:14px}.understanding-footer{padding:16px 20px;flex-wrap:wrap;gap:12px}.understanding-sources{padding:15px 20px}.activity-context{padding:18px 20px 5px}.activity-scope{padding:12px 20px}.activity-details>summary{padding:14px 20px}.current-activity .reading-panel{margin:12px 20px}.supporting-story section{grid-template-columns:65px minmax(0,1fr)}}

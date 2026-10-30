@@ -12,7 +12,7 @@ class Element{
  focus(){this.focused=true;}
 }
 function setup(){
- const elements=new Map(),pending=[],listeners={},timers=[];const document={activeElement:null,hidden:false,createElement:tag=>new Element(tag),getElementById:id=>{if(!elements.has(id))elements.set(id,new Element('div'));return elements.get(id);}};
+ const elements=new Map(),pending=[],listeners={},timers=[];const document={activeElement:null,hidden:false,createElement:tag=>new Element(tag),getElementById:id=>{const live=[...elements.values()].flatMap(e=>[e,...e.querySelectorAll('*')]).find(e=>e.id===id);if(live)return live;if(!elements.has(id))elements.set(id,new Element('div'));return elements.get(id);}};
  const context=vm.createContext({document,location:{search:''},URLSearchParams,AbortSignal,atob,setInterval(){},setTimeout(fn){timers.push(fn);},window:{addEventListener(name,fn){listeners[name]=fn;}},fetch:async (url,options)=>{
   if(url==='/api/clients')return new Promise(()=>{}); // Leave page startup out of the focused polling test.
   return new Promise(resolve=>pending.push({url,options,resolve:(value,status=200)=>resolve({ok:status<400,json:async()=>value})}));
@@ -82,6 +82,65 @@ test('existing content has one category and work understanding has its own scope
  assert.match(html,/id="understandingHeading">这项工作如何推进/);
  assert.match(html,/id="scopeProject"[^>]*disabled/);
  assert.doesNotMatch(html,/part-number|part-title">内容|part-title">解释|part-title">原因/);
+ assert.ok(html.indexOf('id="deepRead"')<html.indexOf('id="activityDetails"'));
+ assert.ok(html.indexOf('id="historyHeading"')>html.indexOf('id="workUnderstanding"'));
+});
+function detailedUnderstanding(scope='chat',revision='details-r1'){
+ const data=understanding(scope,revision);
+ data.details=Object.fromEntries(['goal','strategy','effectiveness'].map(part=>[part,[{part:part+'_origin',title:'来源与范围',text:'记录支持的说明 '+part,evidence_ids:['E1'],basis:'unknown'}]]));
+ return data;
+}
+test('each work part expands locally without a model account',()=>{
+ const f=setup();f.context.work=detailedUnderstanding();f.run('workData=work;renderUnderstanding()');
+ for(const part of ['goal','strategy','effectiveness']){
+  const detail=f.document.getElementById('workDetail-'+part);detail.open=true;
+  assert.match(detail.children[0].textContent,/详细解释/);
+  assert.match(detail.children[1].children[1].children[0].children[1].textContent,/记录支持/);
+ }
+ assert.equal(f.pending.length,0);
+});
+test('a focused reading freezes the clicked part and keeps its earlier version labeled',async()=>{
+ const f=setup();enabledPage(f);f.context.work=detailedUnderstanding();f.run('grant="page-only";workData=work;renderUnderstanding();$("workDetail-goal").open=true');
+ const request=f.run('explainWorkDetail("goal")');assert.deepEqual(JSON.parse(f.pending[0].options.body),{grant:'page-only',scope:'chat',part:'goal'});
+ f.pending[0].resolve({...detailedUnderstanding(),focus:'goal',token:'only-goal',parts:[{part:'goal_origin',title:'目标来源'}]});await tick();
+ assert.equal(JSON.parse(f.pending[1].options.body).token,'only-goal');
+ f.pending[1].resolve({result:{mode:'model',explanations:[{part:'goal_origin',text:'目标是让工作进展更容易理解，效果尚待验证。',evidence_ids:['E1']}]},references:understanding().references});await request;
+ assert.equal(f.run('workDetails.goal.answer.result.mode'),'model');assert.equal(f.run('readingBusy'),false);
+ f.context.later=detailedUnderstanding('chat','details-r2');f.run('workData=later;renderUnderstanding()');
+ assert.match(f.document.getElementById('workDetail-goal').children[1].children[0].textContent,/记录已有变化/);
+ assert.equal(f.document.getElementById('workDetail-goal').open,true);
+});
+test('closing a detail before preparation completes prevents a model send',async()=>{
+ const f=setup();enabledPage(f);f.context.work=detailedUnderstanding();f.run('grant="page-only";workData=work;renderUnderstanding();$("workDetail-strategy").open=true');
+ const request=f.run('explainWorkDetail("strategy")');f.document.getElementById('workDetail-strategy').open=false;
+ f.pending[0].resolve({...detailedUnderstanding(),token:'late',parts:[]});await request;
+ assert.equal(f.pending.length,1);assert.equal(f.run('readingBusy'),false);
+});
+test('switching work scopes rejects a late detailed result and retains local reading',async()=>{
+ const f=setup();enabledPage(f);f.context.work=detailedUnderstanding('project');
+ f.run('grant="page-only";current.project={id:"project-a"};workScope="project";workData=work;renderUnderstanding();$("workDetail-effectiveness").open=true');
+ const request=f.run('explainWorkDetail("effectiveness")');
+ f.pending[0].resolve({...detailedUnderstanding('project'),token:'earlier-project',parts:[]});await tick();
+ const change=f.run('chooseWorkScope("chat")');f.pending[2].resolve(detailedUnderstanding());await change;
+ f.pending[1].resolve({result:{mode:'model',explanations:[]},references:[]});await request;
+ assert.equal(f.run('workScope'),'chat');assert.equal(f.run('workDetails.effectiveness'),undefined);assert.equal(f.run('readingBusy'),false);
+});
+test('current details and paged history remain readable with explanations off',async()=>{
+ const f=setup();f.context.work=currentWork();f.run('current=work;selected={client:"codex",key:"chat-a"};$("deepPanel").hidden=false');
+ await f.run('loadDeep()');assert.equal(f.pending.length,0);assert.equal(f.elements.get('deepText').children.length,3);
+ f.run('$("pastPanel").hidden=false');const request=f.run('loadPast(42,21)');
+ assert.match(f.pending[0].url,/reading-history\?.*snapshot=42&before=21/);assert.equal(f.pending[0].options.method,'GET');
+ const card={id:'section1',title:'较早要求',stamp:1,parts:[{part:'request',title:'当时的要求'}],local:[{part:'request',text:'较早的公开记录',evidence_ids:[]}],references:[]};
+ f.pending[0].resolve({cards:[card],token:null,snapshot:42,next_before:10,has_more:true,note:'每次三段'});await request;
+ assert.equal(f.elements.get('pastOlder').hidden,false);
+ f.run('$("offlineDetail").hidden=true');await f.run('loadPastDetail(pastPage.cards[0],$("offlineButton"),$("offlineDetail"))');
+ assert.equal(f.elements.get('offlineDetail').children[0].children[1].textContent,'较早的公开记录');assert.equal(f.pending.length,1);
+});
+test('English current details keep untranslated excerpts in supporting notes',async()=>{
+ const f=setup();f.context.work=currentWork();f.run('uiLanguage="en";current=work;$("deepPanel").hidden=false');
+ await f.run('loadDeep()');
+ for(const section of f.elements.get('deepText').children)assert.doesNotMatch(section.children[1].textContent,/[\u3400-\u9fff]/);
+ assert.match(f.elements.get('deepText').children[0].children[2].children[1].textContent,/助手报告/);
 });
 test('scope change only reads locally and rejects an older scope response',async()=>{
  const f=setup();f.context.data=currentWork();f.run('selected={client:"codex",key:"chat-a"};current={...data,project:{id:"project-a"}}');
@@ -266,6 +325,14 @@ test('closing while a reading call waits for the shared cooldown cancels its nex
  f.pending[0].resolve({error:'稍后再试',reason:'rate_limited'},409);await tick();assert.equal(f.timers.length,1);
  f.listeners.pagehide();f.timers[0]();await request;
  assert.equal(f.pending.filter(p=>p.url==='/api/reading-explain').length,1);
+});
+test('folding a history segment during cooldown cancels its retry while the history page stays open',async()=>{
+ const f=setup();enabledPage(f);f.run('grant="page-only";$("pastPanel").hidden=false;$("segmentBox").hidden=true');
+ f.context.segment={detail_token:'one-segment',parts:[],local:[],references:[]};
+ const request=f.run('loadPastDetail(segment,$("segmentButton"),$("segmentBox"))');
+ f.pending[0].resolve({error:'稍后再试',reason:'rate_limited'},409);await tick();
+ await f.run('loadPastDetail(segment,$("segmentButton"),$("segmentBox"))');f.timers[0]();await request;
+ assert.equal(f.pending.length,1);assert.equal(f.run('readingBusy'),false);
 });
 test('history uses its dedicated subject title and preserves both names after a comma',async()=>{
  const f=setup();enabledPage(f);f.run('grant="page-only";$("pastPanel").hidden=false');const request=f.run('loadPast()');

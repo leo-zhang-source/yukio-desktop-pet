@@ -16,7 +16,27 @@ BOUNDARY = ('这是有限公开记录的解读。要求和计划不等于执行�
             '操作成功不代表方法有效或目标达成。当前版本、实际使用效果和验收仍需对应证据。')
 
 
-def writing_instructions(language):
+DETAIL_TOPICS = {
+    'goal': [('origin', '目标从哪里来'), ('changes', '要求如何补充或变化'), ('acceptance', '怎样判断目标达成')],
+    'strategy': [('approach', '准备采用什么做法'), ('connection', '这些做法怎样服务目标'), ('conditions', '前提、取舍与未明之处')],
+    'effectiveness': [('results', '已有结果支持到哪一步'), ('limits', '哪些结论还不能成立'), ('verification', '还需要怎样验证')],
+}
+
+
+def writing_instructions(language, focus=None):
+    if focus:
+        topics = DETAIL_TOPICS[focus]
+        names = ', '.join(focus + '_' + key for key, _ in topics)
+        if language == 'en':
+            return (writing_instructions(language).replace('exactly goal, strategy, effectiveness', 'exactly ' + names) +
+                    ' This is a focused detailed reading of ' + focus + ', not another overview. Follow the titles '
+                    'in reading_parts. Explain the evidence, its relationship to the goal, and its limits. '
+                    'Preserve the order of requests and corrections. Do not invent acceptance criteria, motives '
+                    'or validation results. Proposed checks must be clearly labeled as suggestions.')
+        return (writing_instructions(language).replace('含 goal、strategy、effectiveness 各一项', '含 ' + names + ' 各一项') +
+                '本次只深入解释 ' + focus + '；按 reading_parts 的小标题逐项展开，不能重复三遍概览。'
+                '解释对应依据与目标的关系和局限。保留要求与修正的先后；不编造验收标准、决策理由和验证结果。'
+                '尚未执行的验证写成建议，不能写成用户已经要求或已经完成。')
     if language == 'en':
         return (
             'Explain the selected chat or project as a coherent story in plain English. '
@@ -219,7 +239,61 @@ class WorkUnderstanding:
                     limited=limited, revision=revision, parts=parts, local=local, references=refs,
                     note='基于所列聊天的开场与近期公开摘录，不是完整历史；未包含的内容不会补猜。',
                     effectiveness_status='尚待验证')
+        data['details'] = self.local_details(parts, local, dict(goal=goals, strategy=methods, effectiveness=outcomes), limit_id)
         return data, payload, refs
+
+    @staticmethod
+    def local_details(parts, local, sources, boundary):
+        """Available without a model: explain limits and expose all scoped sources.
+
+        These are reading aids, not inferred project-specific success criteria.
+        """
+        hints = {
+            'goal': [
+                ('以下保留所读到的用户要求与提供的项目背景，可核对工作对象和期望结果。',
+                 'The available requests and supplied project context identify the work and intended outcomes.'),
+                ('较早要求与后续补充分别保留。新的补充可能缩小、扩展或替换原要求；是否替代要以用户原话为准。',
+                 'Earlier requests and later clarifications remain separate. A clarification may narrow, extend or replace the earlier request; check the original wording.'),
+                ('需要用明确的完成条件判断目标是否达成。下列要求中若未说明验收方式，这部分仍待确认，不能用助手说“完成了”代替。',
+                 'Completion needs explicit criteria. Where the requests do not specify acceptance, it remains unconfirmed; an assistant saying “done” is insufficient.')],
+            'strategy': [
+                ('以下是助手公开提出的做法。它们说明打算怎样推进；实际执行到哪一步仍要查看操作结果。',
+                 'These are publicly proposed approaches. They describe intended work; actual execution needs corresponding results.'),
+                ('把公开做法与用户要求放在一起，核对每一步要解决哪个问题。记录没有解释的选择理由，暂时不能当成已知策略。',
+                 'Compare the proposed steps with the requests to see which problem each step addresses. Reasons absent from the record remain unknown.'),
+                ('适用条件、依赖和取舍需要有公开说明支持。没有读到的内容保留未知；某一步执行成功，也不能证明整套方法适用。',
+                 'Prerequisites, dependencies and tradeoffs need supporting statements. Missing details remain unknown; one successful step does not validate the whole approach.')],
+            'effectiveness': [
+                ('以下将助手汇报与可对应的操作结果分别标出。助手汇报尚未独立核验；操作结果仅能支持它所检查的范围。',
+                 'Assistant reports and corresponding operation results are labeled separately. Reports are unverified, and checks support only the scope they actually tested.'),
+                ('结果要与原目标、当时版本和使用环境对应。历史成功、轮次结束或缺少报错，都不能直接证明当前方法有效。',
+                 'Results must match the goal, version and environment. Earlier success, an ended turn or an absence of errors does not establish present effectiveness.'),
+                ('建议核对：目标中的关键结果是否有直接证据，失败与未完成事项是否仍存在，以及最新改动是否重新验收。这是待核验方向，不是已执行的结论。',
+                 'Suggested checks: seek direct evidence for the intended outcomes, revisit failures and unfinished work, and validate the latest changes. These are suggestions, not completed checks.')],
+        }
+        result = {}
+        for part in parts:
+            focus = part['part']; rows = []
+            for index, (key, title) in enumerate(DETAIL_TOPICS[focus]):
+                ids = sources[focus] if index == 0 else part['allowed'] if index == 1 else [boundary]
+                rows.append(dict(part=focus+'_'+key, title=title,
+                                 **point(local[focus]['text'] if index == 0 and not ids else hints[focus][index][current_language() == 'en'], ids)))
+            # Show every available category source, including older requirements
+            # and other project chats omitted from the compact overview.
+            result[focus] = rows
+        return result
+
+    @staticmethod
+    def focused(data, payload, focus):
+        if not isinstance(focus, str) or focus not in DETAIL_TOPICS:
+            raise ValueError('Invalid work detail')
+        parent = next(p for p in payload['scope']['reading_parts'] if p['part'] == focus)
+        parts = [dict(part=focus+'_'+key, title=title, allowed=parent['allowed'], required=parent['required'])
+                 for key, title in DETAIL_TOPICS[focus]]
+        allowed = set(parent['allowed'])
+        payload = dict(scope=dict(payload['scope'], work_part=focus, reading_parts=parts),
+                       facts=[f for f in payload['facts'] if f['evidence_id'] in allowed])
+        return dict(data, focus=focus, parts=parts), payload
 
     def detail(self, client, key, scope='chat'):
         return self.prepared(client, key, scope)[0]

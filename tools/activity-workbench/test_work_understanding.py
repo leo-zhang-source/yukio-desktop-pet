@@ -177,10 +177,59 @@ class WorkUnderstandingTests(unittest.TestCase):
                 connection.request('GET','/api/work-understanding?'+urlencode(dict(client='codex',key=self.fx.key,scope='chat')),headers=headers)
                 response=connection.getresponse();data=json.loads(response.read())
                 self.assertEqual(response.status,200);self.assertEqual(data['scope'],'chat')
+                connection.request('GET','/api/reading-history?'+urlencode(dict(client='codex',key=self.fx.key)),headers=headers)
+                response=connection.getresponse();history=json.loads(response.read())
+                self.assertEqual(response.status,200);self.assertIsNone(history['token'])
+                self.assertTrue(history['cards'][0]['local'])
+                connection.request('GET','/api/reading-history?'+urlencode(dict(client='codex',key=self.fx.key)))
+                response=connection.getresponse();response.read();self.assertEqual(response.status,403)
                 connection.request('POST','/api/reading-work',body=json.dumps(dict(grant='unapproved',scope='project')),headers=dict(headers,**{'Content-Type':'application/json'}))
                 response=connection.getresponse();response.read();self.assertEqual(response.status,409)
             self.assertFalse(self.sent)
         finally:server.shutdown();server.server_close();thread.join(3)
+
+    def test_each_work_detail_freezes_only_its_focus_and_enforces_evidence(self):
+        self.add_project(3)
+        for focus in ('goal','strategy','effectiveness'):
+            with self.subTest(focus=focus):
+                data=self.reading.work(self.grant,'project',focus)
+                payload=self.service.entries[data['token']]['payload']
+                self.assertEqual(payload['scope']['work_part'],focus)
+                self.assertEqual(len(payload['scope']['reading_parts']),3)
+                self.assertTrue(all(p['part'].startswith(focus+'_') for p in data['parts']))
+                allowed=set(data['parts'][0]['allowed'])
+                self.assertEqual({f['evidence_id'] for f in payload['facts']},allowed)
+                self.assertEqual({r['evidence_id'] for r in self.service.entries[data['token']]['references']},allowed)
+                self.assertIn(data['parts'][0]['part'],output_system(payload))
+                values=[dict(part=p['part'],text='这些公开汇报仍需对应目标核验，实际效果未知。',basis='unknown',evidence_ids=p['required']) for p in data['parts']]
+                self.assertEqual(len(validate_output(encode(dict(explanations=values)),payload)),3)
+                values[0]['evidence_ids']=[]
+                with self.assertRaises(ExplanationError):validate_output(encode(dict(explanations=values)),payload)
+        self.assertFalse(self.sent)
+        with self.assertRaises(ValueError):self.reading.work(self.grant,'chat','other')
+        with self.assertRaises(ValueError):self.reading.work(self.grant,'chat',[])
+
+    def test_detail_effectiveness_rejects_false_success_and_revocation_blocks_send(self):
+        data=self.reading.work(self.grant,'chat','effectiveness')
+        payload=self.service.entries[data['token']]['payload']
+        values=[dict(part=p['part'],text='方法有效率99%，仍需检查。',basis='inference',evidence_ids=p['required']) for p in data['parts']]
+        with self.assertRaises(ExplanationError):validate_output(encode(dict(explanations=values)),payload)
+        self.auto.revoke(self.grant)
+        with self.assertRaises(ExplanationError):self.reading.explain(self.grant,data['token'])
+        self.assertFalse(self.sent)
+
+    def test_local_details_keep_older_project_sources_and_english_reading_aids(self):
+        self.add_project(3)
+        data=self.prepare('project')[0]
+        for focus,rows in data['details'].items():
+            self.assertEqual(len(rows),3)
+            refs=[r for r in data['references'] if r['evidence_id'] in rows[0]['evidence_ids']]
+            self.assertEqual(len({r['chat'] for r in refs if r['chat']}),3)
+        with language_context('en'):
+            data=localize(self.prepare('project')[0])
+            for rows in data['details'].values():
+                for row in rows:
+                    self.assertNotRegex(row['title']+row['text'],r'[\u3400-\u9fff]')
 
 
 if __name__=='__main__':unittest.main()

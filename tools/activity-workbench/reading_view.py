@@ -47,16 +47,26 @@ class ReadingView:
         return dict(token=self.freeze(grant,payload,refs),parts=parts,revision=data['revision'],
                     note='这是点击时的工作片段；首页仍会继续更新。')
 
-    def work(self,grant,scope='chat'):
+    def work(self,grant,scope='chat',part=None):
         # This endpoint is requested by the scope-specific explanation button.
         # Merely opening a project locally does not extend automatic disclosure.
         selection=self.automation.selection(grant)
         data,payload,refs=WorkUnderstanding(self.glance).prepared(**selection,scope=scope)
+        if part is not None:
+            data,payload=WorkUnderstanding.focused(data,payload,part)
+            ids={f['evidence_id'] for f in payload['facts']}
+            refs=[r for r in refs if r['evidence_id'] in ids]
         return dict(data,token=self.freeze(grant,payload,refs))
 
     def history_page(self,grant,snapshot=0,before=0):
+        return self._history_page(self.automation.selection(grant),snapshot,before,grant)
+
+    def history_local(self,client,key,snapshot=0,before=0):
+        return self._history_page(dict(client=client,key=key),snapshot,before)
+
+    def _history_page(self,selection,snapshot=0,before=0,grant=None):
         if any(type(n) is not int or not 0<=n<2**63 for n in (snapshot,before)):raise ValueError('Invalid cursor')
-        selection=self.automation.selection(grant);client=selection['client'];parts=key_parts(selection['key'])
+        client=selection['client'];parts=key_parts(selection['key'])
         # Missing session identity cannot be used to merge separate files.
         if not parts[2] or parts[2].startswith('source-'):
             scope,args=self.history.scope(parts)
@@ -124,9 +134,20 @@ class ReadingView:
             detail_parts=[dict(part='request',title='这段要解决什么',allowed=ids,required=[request]+antecedent),
                           dict(part='work',title='助手具体做了什么',allowed=ids,required=reports[-1:] or [request]),
                           dict(part='outcome',title='结果与后续',allowed=ids,required=reports[-1:] or [request])]
-            detail=self.freeze(grant,self.payload(shared_facts+own_facts,detail_parts,historical=True,naming=naming),shared_refs+own_refs)
+            detail=self.freeze(grant,self.payload(shared_facts+own_facts,detail_parts,historical=True,naming=naming),shared_refs+own_refs) if grant else None
             title=plain_words(group['request']['text'])[:48] if group['request'] else '较早的工作片段（要求未读到）'
-            cards.append(dict(id=sid,title=title or '这一段工作',stamp=request_item.get('timestamp_ms'),detail_token=detail,parts=detail_parts,
+            local=[dict(part='request',text=plain_words(request_item['text']),basis='user_request' if group['request'] else 'unknown',evidence_ids=[request]+antecedent),
+                   dict(part='work',text='以下是助手当时的公开说明，只能证明它这样汇报，不能据此认定已执行。',basis='unknown',evidence_ids=reports),
+                   dict(part='outcome',text='仅凭这些公开汇报还不能确认独立验收情况。请对照当时要求与实际结果，不能把历史汇报当成当前版本已验证。',basis='unknown',evidence_ids=reports[-1:])]
+            if current_language()=='en':
+                local[0]['text']='The request at the time is preserved in the original supporting notes.' if group['request'] else 'The request for this fragment was not available.'
+                local[1]['text']='These are public assistant statements from that time. They establish what was reported, not what was actually executed.'
+                local[2]['text']='These excerpts do not provide independent acceptance evidence. Compare the request with actual results; an old report does not validate the current version.'
+            local_summary=('助手当时汇报：'+plain_words(assistants[-1]['text'])[:180] if reports else '这一段暂时只有要求，未读到助手汇报。')
+            if current_language()=='en':
+                local_summary='Public assistant statements are available in this segment; their results are not independently verified.' if reports else 'Only the request was available; no assistant report was found.'
+            cards.append(dict(id=sid,start=group['start'],title=title or '这一段工作',stamp=request_item.get('timestamp_ms'),detail_token=detail,parts=detail_parts,
+                              local=local,local_summary=local_summary,references=shared_refs+own_refs,
                               position=(['最近一段','更早一段','再早一段'][index] if not before else '较早记录 '+str(index+1)),missing_reply=not reports,
                               note='有公开汇报；结果仍以实际验收为准。' if reports else '这一段暂时只有要求，未读到助手汇报。'))
             summaries.append(dict(part=sid,title='这段的简短回顾',allowed=ids,required=required))
@@ -134,7 +155,7 @@ class ReadingView:
         next_before=picked[-1]['start'] if picked else (rows[min(len(rows),100)-1][0] if rows else before)
         with self.history.connect(client) as db:
             more=bool(next_before and db.execute('SELECT 1'+FROM+f' WHERE {scope} AND {CLIENT}=? AND e.sequence<=? AND e.sequence<? AND {speech} LIMIT 1',args+[client,snapshot,next_before]).fetchone())
-        token=self.freeze(grant,self.payload(facts,summaries,kind='summary',historical=True,naming=naming),refs) if cards else None
+        token=self.freeze(grant,self.payload(facts,summaries,kind='summary',historical=True,naming=naming),refs) if cards and grant else None
         return dict(cards=cards,token=token,snapshot=snapshot,next_before=next_before,has_more=more,
                     note='按每次要求分段，先看最近三段，再往前翻。这里只采用每段少量公开摘录，不是完整历史。'+('部分原文暂时读不到，没有补猜。' if missing else ''))
 
