@@ -78,6 +78,7 @@ function showStory(data){for(const part of ['content','explanation','reason']){
  const untranslated=uiLanguage==='en'&&/[\u4e00-\u9fff]/.test(data[part]);
  $(part).textContent=untranslated?({content:'An English explanation of the latest activity is not available yet. Supporting notes show what was actually read.',explanation:'The source notes are in another language. Their connection with earlier work has not yet been explained in English.',reason:'The purpose has not yet been explained in English using this chat’s request and earlier progress.'})[part]:data[part];const ref=data.evidence[part==='explanation'?'fragment':part];
  partProof(part,untranslated?'unknown':data[part+'_basis'],data.part_evidence?.[part]||(ref?[{quote:ref.text}]:[]));
+ if(part==='content'&&[tr('这一轮已结束'),tr('这一轮已取消')].includes(data.status)&&!untranslated)$(part).textContent=tr('这一轮的最后记录：')+$(part).textContent;
 }}
 function showAnswer(result,refs,snapshot,revision){
  if(result.mode!=='model'){attemptMessage=result.message||tr('模型暂时没能解释，先保留已有说明。');render(current);return;}
@@ -200,7 +201,7 @@ async function refresh(force=false){if(busy){refreshAgain=refreshAgain||force;re
  if(prior&&[...$('chat').options].some(o=>o.value===prior))$('chat').value=prior;
  else if(selected){const next=continuation(selected,data.cards);if(next){await choose(JSON.stringify(next),true);return;}const option=make('option',names[selected.client]+' · '+(current?.title||tr('当前聊天')));option.value=prior;$('chat').prepend(option);$('chat').value=prior;}
  else selected=JSON.parse($('chat').value);}
- if(!selected)return;const data=await api('glance?'+new URLSearchParams(selected));if(own!==epoch)return;note('');render(data);$('connection').textContent=synthetic?tr('模拟活动 · 用于检查'):tr('已连接本机记录');$('refreshNote').textContent=synthetic?tr('模拟活动 · 用于检查'):tr('自动跟进新消息');void automatic();
+ if(!selected)return;const data=await api('glance?'+new URLSearchParams(selected));if(own!==epoch)return;note('');render(data);void loadUnderstanding(force);$('connection').textContent=synthetic?tr('模拟活动 · 用于检查'):tr('已连接本机记录');$('refreshNote').textContent=synthetic?tr('模拟活动 · 用于检查'):tr('自动跟进新消息');void automatic();
  }catch(error){if(own===epoch){note(error.message);$('connection').textContent=tr('暂未连上');if(current){$('status').textContent=tr('显示断开前内容');$('status').className='status quiet';}}}finally{busy=false;if(refreshAgain){refreshAgain=false;refresh(true);}}}
 function revokeOnClose(token){if(token)fetch('/api/glance-stop',{method:'POST',headers:{'Content-Type':'application/json','X-Yukio-Workbench':'1','X-Yukio-Language':uiLanguage},body:JSON.stringify({grant:token}),keepalive:true}).catch(()=>{});}
 function closePage(){resetReading();pageClosed=true;epoch++;const old=grant;grant=null;autoRun=null;modelPending=false;revokeOnClose(old);}
@@ -220,7 +221,7 @@ async function automatic(){
   }else{
    const token=grant;await api('glance-heartbeat',{grant:token});if(!active()||grant!==token)return;
   }
-  if(readingBusy||Date.now()<nextRetry)return;
+  if(readingBusy||workInFlight||Date.now()<nextRetry)return;
   const token=grant,data=await api('glance-refresh',{grant:token,...(first?{force:true}:{})});
   if(!active()||grant!==token)return;
   if(data.mode==='updated'){
@@ -232,7 +233,7 @@ async function automatic(){
    if(['preview_expired','consent_required'].includes(error.reason)){grant=null;nextRetry=Date.now()+15000;attemptMessage=tr('正在接续这段聊天的自动说明…');}
    else{nextRetry=Date.now()+(error.reason==='rate_limited'?180000:30000);attemptMessage=tr('说明暂时未更新，会自动重试。已有内容仍保留。');}
   }
- }finally{if(autoRun===run){autoRun=null;modelPending=false;if(!pageClosed&&current)render(current);}}
+ }finally{if(autoRun===run){autoRun=null;modelPending=false;if(!pageClosed&&current)render(current);}understandingControls();}
 }
 $('chat').onchange=()=>choose($('chat').value);$('reload').onclick=()=>refresh(true);
 $('chatSearch').oninput=()=>{chatSearch=$('chatSearch').value;renderChatNavigation();};
@@ -240,8 +241,8 @@ $('chatBrowse').onclick=()=>toggleChatBrowser(true);$('chatNavClose').onclick=()
 window.addEventListener('keydown',event=>{if(event.key==='Escape')toggleChatBrowser(false);});
 
 let readingEpoch=0,readingBusy=false,deepLoaded=false,pastPage=null;
-function resetReading(){readingEpoch++;readingBusy=false;deepLoaded=false;pastPage=null;for(const id of ['deepPanel','pastPanel'])$(id).hidden=true;for(const id of ['deepRead','pastRead'])$(id).setAttribute('aria-expanded','false');$('deepText').replaceChildren();$('pastText').replaceChildren();}
-function readingReady(){if(!grant)throw Error(tr('首页说明还在准备，请稍后再点。'));if(readingBusy||autoRun)throw Error(tr('有一段说明正在生成，请稍后再点。'));}
+function resetReading(){resetUnderstanding();readingEpoch++;readingBusy=false;deepLoaded=false;pastPage=null;for(const id of ['deepPanel','pastPanel'])$(id).hidden=true;for(const id of ['deepRead','pastRead'])$(id).setAttribute('aria-expanded','false');$('deepText').replaceChildren();$('pastText').replaceChildren();}
+function readingReady(){if(!grant)throw Error(tr('首页说明还在准备，请稍后再点。'));if(readingBusy||autoRun||workInFlight)throw Error(tr('有一段说明正在生成，请稍后再点。'));}
 function readingActive(own,panel){return own===readingEpoch&&!pageClosed&&!$(panel).hidden;}
 async function readingModel(token,own,panel,status){
  for(let attempt=0;attempt<2;attempt++){
@@ -312,6 +313,97 @@ async function loadPastDetail(card,button,box){
 $('deepRead').onclick=()=>{const panel=$('deepPanel');panel.hidden=!panel.hidden;$('deepRead').setAttribute('aria-expanded',String(!panel.hidden));if(!panel.hidden&&!deepLoaded)void loadDeep();};
 $('pastRead').onclick=()=>{const panel=$('pastPanel');panel.hidden=!panel.hidden;$('pastRead').setAttribute('aria-expanded',String(!panel.hidden));if(!panel.hidden&&!pastPage)void loadPast();};
 $('deepRetry').onclick=()=>loadDeep();$('pastRetry').onclick=()=>loadPast(pastPage?.snapshot||0,pastPage?.before||0);$('pastNewer').onclick=()=>loadPast();$('pastOlder').onclick=()=>{if(pastPage)void loadPast(pastPage.snapshot,pastPage.next_before);};
+
+let workScope='chat',workData=null,workAnswer=null,workEpoch=0,workLoad=null,workAt=0,workInFlight=false,workRequestEpoch=-1,workMessage='';
+function resetUnderstanding(scope='chat'){
+ workEpoch++;workScope=scope;workData=null;workAnswer=null;workLoad=null;workAt=0;workMessage='';
+ $('understandingParts').replaceChildren();delete $('understandingParts').dataset.contentKey;
+ $('understandingChats').replaceChildren();$('understandingCoverage').textContent='';
+ $('understandingTitle').textContent='';$('understandingNote').textContent=tr('正在整理工作目标与方法…');
+ $('understandingSources').open=false;understandingControls();
+}
+function understandingControls(){
+ $('scopeChat').setAttribute('aria-pressed',String(workScope==='chat'));
+ $('scopeProject').setAttribute('aria-pressed',String(workScope==='project'));
+ $('scopeProject').disabled=!current?.project;
+ const button=$('understandingExplain');
+ button.disabled=!workData||!grant||!model?.automatic_on_open||workInFlight||readingBusy||Boolean(autoRun)||pageClosed;
+ button.textContent=workInFlight?tr('正在解读…'):workScope==='project'?tr('解读整个项目'):tr('解读这次聊天');
+ $('understandingSendNote').textContent=!model?.automatic_on_open?tr('当前为本机记录摘要。开启上方解释后，可生成目标、方法和有效性的连贯解读。'):
+  workScope==='project'?tr('点击后，将下方列出的同项目聊天短摘录交给所选解释服务；只生成这一次，使用你的账号额度。'):
+  tr('点击后，根据这次聊天的较早要求、最新补充、公开做法和已知结果生成解读。');
+}
+function renderUnderstanding(){
+ understandingControls();if(!workData)return;
+ $('understandingTitle').textContent=(workScope==='project'?tr('项目：'):tr('聊天：'))+workData.title;
+ const stale=workAnswer&&workAnswer.revision!==workData.revision;
+ $('understandingNote').textContent=workMessage||(workInFlight?(workRequestEpoch===workEpoch?tr('正在联系所选解释服务，已有内容仍可查看。'):tr('上一段说明仍在生成，这里先显示本机摘要。')):workAnswer?
+  (stale?tr('较早的解读 · 记录已有变化，点击下方按钮重新解读。'):tr('基于当前可读摘录的模型解读 · 结论仍需核对依据。')):
+  tr('本机记录摘要 · 先列出已知要求、公开做法和结果，缺少的部分保留未知。'));
+ if(workScope==='project'){
+  const source=workAnswer?.source||workData;
+  $('understandingNote').textContent+=' '+(uiLanguage==='en'?`Project scope: ${source.included_chats} of ${source.known_chats} currently listed chats; only opening and recent excerpts, not the full project history.`:`项目范围：当前列出的 ${source.known_chats} 段聊天中采用 ${source.included_chats} 段，仅含开场与近期摘录，并非完整项目历史。`);
+ }
+ const references=workAnswer?.references||workData.references;
+ const values=workAnswer?Object.fromEntries(workAnswer.result.explanations.map(x=>[x.part,x])):workData.local;
+ const labels={goal:tr('要达成什么目标'),strategy:tr('用什么方法与策略'),effectiveness:tr('方法是否有效')};
+ updateExpanded($('understandingParts'),{values,references,language:uiLanguage},()=>{
+  for(const [index,part] of ['goal','strategy','effectiveness'].entries()){
+   const item=values[part];if(!item)continue;
+   const section=make('section');section.className='understanding-part';const heading=make('h3');
+   const number=make('span',String(index+1).padStart(2,'0'));number.className='section-number';number.setAttribute('aria-hidden','true');heading.append(number,make('span',labels[part]));
+   section.append(heading,make('p',item.text));
+   const details=make('details');details.dataset.detailKey='work-'+part;
+   details.append(make('summary',(workAnswer?tr('模型解读'):basis[item.basis]||tr('尚不清楚'))+tr(' · 查看依据')));
+   for(const id of item.evidence_ids||[]){const ref=references.find(r=>r.evidence_id===id);if(ref)details.append(make('blockquote',(ref.chat?'「'+ref.chat+'」 · ':'')+ref.title+'：'+ref.quote));}
+   if(!item.evidence_ids?.length)details.append(make('p',tr('没有足够的可读依据。')));
+   section.append(details);$('understandingParts').append(section);
+  }
+ });
+ const source=workAnswer?.source||workData;
+ $('understandingChats').replaceChildren();const list=make('ul');
+ for(const chat of source.chats){const row=make('li'),link=make('a',chat.title);link.href='/?'+new URLSearchParams({client:chat.client,key:chat.key,lang:uiLanguage});row.append(link,make('span',' · '+age(chat.last_activity_ms)));if(chat.source_unavailable)row.append(make('span',tr(' · 原文暂时读不到')));list.append(row);}
+ $('understandingChats').append(list);
+ $('understandingCoverage').textContent=(uiLanguage==='en'?`Includes ${source.included_chats} of ${source.known_chats} chats currently listed (up to ${source.max_chats} per reading). `:`采用当前列出的 ${source.known_chats} 段聊天中的 ${source.included_chats} 段，每次最多 ${source.max_chats} 段。`)+source.note+
+  (source.scope==='project'?tr(' 项目目录未被读取；尚未覆盖整个项目的所有聊天。')+tr(' 按当前客户端确认的项目归属汇总，跨客户端项目不会自动合并。'):'')+
+  (source.catalog_limited||source.unavailable?tr(' 有些聊天暂时不可读取或未进入最近列表。'):'');
+}
+async function loadUnderstanding(force=false){
+ if(pageClosed||!selected||!current)return;
+ if(workScope==='project'&&(!current.project||workData?.project?.id&&workData.project.id!==current.project.id))resetUnderstanding(current.project?'project':'chat');
+ if(workLoad||workInFlight&&workRequestEpoch===workEpoch||(!force&&workData&&Date.now()-workAt<30000))return;
+ const own=workEpoch,selection={...selected},scope=workScope,run={};workLoad=run;
+ const active=()=>own===workEpoch&&!pageClosed&&JSON.stringify(selection)===JSON.stringify(selected)&&scope===workScope;
+ try{const data=await api('work-understanding?'+new URLSearchParams({...selection,scope}));if(!active())return;workData=data;workAt=Date.now();workMessage='';renderUnderstanding();}
+ catch(error){if(active()){workMessage=tr('工作解读暂时读不到，当前活动仍可查看。');$('understandingNote').textContent=workMessage;}}
+ finally{if(workLoad===run)workLoad=null;understandingControls();}
+}
+async function chooseWorkScope(scope){
+ if(scope===workScope||scope==='project'&&!current?.project)return;
+ resetUnderstanding(scope);await loadUnderstanding(true);
+}
+async function explainUnderstanding(){
+ if(!workData||!grant||!model?.automatic_on_open||workInFlight)return;
+ if(readingBusy||autoRun){workMessage=tr('有一段说明正在生成，请稍后再点。');renderUnderstanding();return;}
+ // Invalidate a local poll started before this frozen reading. A stale request
+ // must never replace another scope's text, sources, or pending generation.
+ const own=++workEpoch,selection={...selected},scope=workScope,token=grant,projectId=current?.project?.id;workLoad=null;workInFlight=true;workRequestEpoch=own;workMessage='';renderUnderstanding();
+ const active=()=>own===workEpoch&&!pageClosed&&grant===token&&JSON.stringify(selection)===JSON.stringify(selected)&&scope===workScope&&(scope!=='project'||current?.project?.id===projectId);
+ try{
+  const frozen=await api('reading-work',{grant:token,scope});if(!active())return;
+  workData=frozen;workAt=Date.now();renderUnderstanding();let answer;
+  for(let attempt=0;attempt<2;attempt++){
+   if(!active())return;
+   try{answer=await api('reading-explain',{grant:token,token:frozen.token});break;}
+   catch(error){if(attempt===0&&['rate_limited','busy'].includes(error.reason)){workMessage=tr('模型刚处理过一段说明，稍等片刻就继续…');renderUnderstanding();await new Promise(resolve=>setTimeout(resolve,11000));}else throw error;}
+  }
+  if(!active())return;
+  if(answer.result.mode!=='model')throw Error(answer.result.message||tr('这次解读未能生成，本机记录仍保留。'));
+  workAnswer={result:answer.result,references:answer.references,revision:frozen.revision,source:frozen};workMessage='';
+ }catch(error){if(active())workMessage=error.message;}
+ finally{workInFlight=false;if(workData)renderUnderstanding();else understandingControls();}
+}
+$('scopeChat').onclick=()=>chooseWorkScope('chat');$('scopeProject').onclick=()=>chooseWorkScope('project');$('understandingExplain').onclick=explainUnderstanding;
 for(const part of ['content','explanation','reason'])$(part+'Basis').onclick=()=>{const box=$(part+'Proof');box.hidden=!box.hidden;$(part+'Basis').setAttribute('aria-expanded',String(!box.hidden));};
 window.addEventListener('pagehide',closePage);
 window.addEventListener('pageshow',()=>{pageClosed=false;nextRetry=0;void automatic();});

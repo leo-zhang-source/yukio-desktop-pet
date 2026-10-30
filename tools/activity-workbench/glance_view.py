@@ -12,7 +12,7 @@ from handoff_view import HandoffView
 from task_summary import recap
 from plain_language import plain_words,readable_fragment
 from explanation import add_object_names
-from chat_catalog import activity_state, readable_title, catalog_card
+from chat_catalog import activity_state, readable_title, catalog_card, codex_project
 from localization import current_language
 
 IGNORED={'reasoning_record_observed','inherited_context_record','context_record_observed','identity_conflict','foreign_session_record','identity_scope_unresolved'}
@@ -152,6 +152,16 @@ class GlanceView:
         users=[x for x in items if x['kind']=='user'];assistants=[x for x in items if x['kind']=='assistant']
         user=next((x for x in users if meaningful_request(x['text'])),users[0] if users else None)
         origins=[x for x in reversed(users) if meaningful_request(x['text'])][:2]
+        work_requests=[]
+        for item in origins[:1]+([user] if user else []):
+            if not any(old['text']==item['text'] for old in work_requests):work_requests.append(item)
+        method_notes=[x for x in assistants if re.search(
+            r'^(?:我(?:们)?(?:会|先|将|计划|准备)|接下来|方案|策略|先|I(?: will|\x27ll)|We(?: will|\x27ll)|The (?:plan|approach))',x['text'],re.I)
+            and not re.search(r'例如|比如|示例|模拟材料',x['text'])]
+        # Preserve an earlier explicit approach as well as its latest revision.
+        method_notes=method_notes[:1]+([method_notes[-1]] if len(method_notes)>1 else [])
+        work_notes=dict(requests=work_requests,methods=method_notes,
+                        reports=[x for x in assistants if x.get('phase')=='final'][:1])
         background=[]
         for item in users:
             if meaningful_request(item['text']) and item['text'] not in background:background.append(item['text'])
@@ -228,8 +238,9 @@ class GlanceView:
             seen.add(identity);meaningful.append(item)
             if len(meaningful)==3:break
         detail=dict(client=client,key=key,session_id=parts[2],title=title,title_source='客户端聊天名称' if source['title'] else '根据你的要求显示',
-            status=status,tone=tone,last_activity_ms=latest_stamp,age_seconds=round(age) if age is not None else None,project=source.get('project'),
-            goal=goal,project_goals=origins,previous_progress=checkpoints,earlier_activity=earlier_activity,
+            status=status,tone=tone,last_activity_ms=latest_stamp,age_seconds=round(age) if age is not None else None,
+            project=codex_project(self.reader,parts) if client=='codex' and not source['unavailable'] else source.get('project'),
+            goal=goal,project_goals=origins,previous_progress=checkpoints,earlier_activity=earlier_activity,work_notes=work_notes,
             goal_short=clean((user or {}).get('text','尚未读到具体要求。'),96),
             last_step=last_step,
             content=progress_headline((activity or {}).get('text','')) or '暂时没有可读的具体活动，请稍后查看。',

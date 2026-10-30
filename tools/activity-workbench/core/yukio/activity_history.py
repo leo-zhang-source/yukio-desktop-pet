@@ -17,6 +17,7 @@ from .activity_links import codex_identity, links_page, CodexHistoryScope
 from .activity_gaps import HistoryCoverage
 from .activity_handoffs import capture as capture_handoff
 from .events import parse_timestamp
+from .file_identity import persistent_file_identity
 from .parsers_codex import CodexRolloutParser
 
 APPLICATION_ID = 1498762063
@@ -277,10 +278,26 @@ class ActivityHistory:
                 if not stat.S_ISREG(info.st_mode):
                     raise ValueError('History sources must be regular files')
                 identity = '%s:%s' % (info.st_dev, info.st_ino)
+                persistent_identity = persistent_file_identity(stream.fileno(), info)
                 offset, line, generation = (old['offset'], old['line'], old['generation']) if old else (0, 0, 1)
                 reason = None
                 if old:
-                    if old['file_identity'] != identity:
+                    # macOS device numbers can change after a reboot. Compare
+                    # persistent identities when both are available; still
+                    # refresh the legacy identity used by transient readers.
+                    previous_identity = old.get('persistent_file_identity')
+                    same_file = (previous_identity == persistent_identity
+                                 if previous_identity and persistent_identity
+                                 else old['file_identity'] == identity)
+                    if not previous_identity and persistent_identity:
+                        # Upgrade an old Mac checkpoint even if the machine has
+                        # already rebooted. An unchanged inode is only a
+                        # candidate: the complete saved prefix is verified
+                        # below before any parser checkpoint is reused.
+                        legacy = old['file_identity'].split(':')
+                        same_file = (len(legacy) == 2 and legacy[0].isdigit()
+                                     and legacy[1] == str(info.st_ino))
+                    if not same_file:
                         reason = 'file_replaced'
                     elif info.st_size < offset:
                         reason = 'file_truncated'
@@ -348,6 +365,8 @@ class ActivityHistory:
                     raise ValueError('Source replaced while reading; no batch was saved')
                 state = dict(source_format=source_format, generation=generation, file_identity=identity, offset=offset, line=line,
                              prefix_sha256=digest.hexdigest(), checkpoint=compact(parser.history_checkpoint()), coverage=coverage.checkpoint())
+                if persistent_identity:
+                    state['persistent_file_identity'] = persistent_identity
                 if source_format == 'codex':
                     state['codex_identity_version'] = 2
                     state['codex_handoff_version'] = 1

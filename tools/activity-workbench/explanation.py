@@ -20,7 +20,7 @@ from plain_language import plain_words
 from localization import current_language
 from localization import english_text
 
-VERSION = 14
+VERSION = 15
 NAMING_SYSTEM = (
     '摘录中测试、演示、举例或待修正旧说明里的对象，只能按其原本身份描述，不当作当前项目事实。'
     '每张卡片或一组说明必须独立读得懂：先说明对象的具体名称，再讲动作、前后联系或用途。'
@@ -240,6 +240,9 @@ def reading_limit(payload):
 
 def output_system(payload):
     scope=payload.get('scope',{})
+    if scope.get('reading')=='work':
+        from work_understanding import writing_instructions
+        return writing_instructions(scope.get('language','zh'))
     system=READING_SYSTEM if scope.get('reading') else GLANCE_SYSTEM if scope.get('glance') else SYSTEM
     if scope.get('language')=='en':
         english_only = ('Write all generated prose and headings entirely in English. Translate descriptive Chinese names into English or transliterate proper names; do not quote Chinese in generated explanations. Original quotations stay in separate supporting notes. ')
@@ -384,6 +387,11 @@ def validate_output(content,payload):
             if item['basis'] not in ('inference','unknown') or not isinstance(ids,list) or not 1<=len(ids)<=8 or any(not isinstance(e,str) or e not in parts[part]['allowed'] for e in ids):raise ExplanationError('invalid_references')
             if not all(e in ids for e in parts[part]['required']):raise ExplanationError('invalid_references')
             if re.search(r'卡住|偏题|死循环|保证.{0,10}(?:正确|可靠)|确保.{0,10}(?:可信|正确)',text):raise ExplanationError('unsupported_diagnosis')
+            if payload['scope']['reading']=='work' and part=='effectiveness':
+                if re.search(r'(?:有效率|成功率|完成度).{0,12}\d+\s*[%％]|\b\d+\s*%\s*(?:effective|success|complete)|(?:证明|证实|验证).{0,4}(?:完全有效|全部有效)|proven (?:fully |completely )?effective',text,re.I):
+                    raise ExplanationError('unsupported_diagnosis')
+                if not re.search(r'尚|仍|未|未知|不代表|不能|不足|局限|有限|需|建议|只|\b(?:unknown|unclear|limited|not|cannot|needs?|remain|unverified|untested|suggest|only)\b',text,re.I):
+                    raise ExplanationError('unsupported_diagnosis')
             if payload['scope'].get('historical') or payload['scope'].get('current_turn_state') in ('ended','cancelled'):
                 if current_claim(text):raise ExplanationError('closed_turn_claim')
             item['text']=plain_words(text,payload['scope'].get('language','zh'))

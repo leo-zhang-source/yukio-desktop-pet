@@ -71,6 +71,78 @@ test('a model answer stays readable while new work is marked for automatic updat
  assert.match(f.elements.get('modelNote').textContent,/稍早.*自动更新/);
 });
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
+function understanding(scope='chat',revision='work-r1'){
+ return {scope,revision,title:scope==='project'?'页面项目':'简化首页',project:{id:'project-a',name:'页面项目'},
+  chats:[{client:'codex',key:'chat-a',title:'简化首页',last_activity_ms:1}],included_chats:1,known_chats:1,max_chats:6,note:'有限公开摘录',references:[{evidence_id:'E1',title:'要求',quote:'让页面易懂',chat:'简化首页'}],
+  local:Object.fromEntries(['goal','strategy','effectiveness'].map(part=>[part,{text:scope+' '+part,basis:'unknown',evidence_ids:['E1']}]))};
+}
+test('existing content has one category and work understanding has its own scope',()=>{
+ const html=fs.readFileSync(path.join(__dirname,'dist/index.html'),'utf8');
+ assert.match(html,/id="happeningHeading">正在发生/);assert.match(html,/id="activityDetails"/);
+ assert.match(html,/id="understandingHeading">这项工作如何推进/);
+ assert.match(html,/id="scopeProject"[^>]*disabled/);
+ assert.doesNotMatch(html,/part-number|part-title">内容|part-title">解释|part-title">原因/);
+});
+test('scope change only reads locally and rejects an older scope response',async()=>{
+ const f=setup();f.context.data=currentWork();f.run('selected={client:"codex",key:"chat-a"};current={...data,project:{id:"project-a"}}');
+ const first=f.run('loadUnderstanding(true)');assert.match(f.pending[0].url,/scope=chat/);
+ const second=f.run('chooseWorkScope("project")');assert.match(f.pending[1].url,/scope=project/);
+ f.pending[1].resolve(understanding('project'));await second;
+ f.pending[0].resolve(understanding('chat'));await first;
+ assert.equal(f.run('workData.scope'),'project');assert.equal(f.run('workAnswer'),null);
+ assert.ok(f.pending.every(p=>p.options.method==='GET'));
+});
+test('work generation freezes selected project and an older model reply cannot cross scopes',async()=>{
+ const f=setup();enabledPage(f);f.context.work=understanding('project');
+ f.run('current.project={id:"project-a"};grant="page-only";workScope="project";workData=work;renderUnderstanding()');
+ const request=f.run('explainUnderstanding()');assert.equal(f.pending[0].url,'/api/reading-work');
+ assert.equal(JSON.parse(f.pending[0].options.body).scope,'project');
+ f.pending[0].resolve({...understanding('project'),token:'frozen-project'});await tick();
+ assert.equal(f.pending[1].url,'/api/reading-explain');
+ f.run('resetUnderstanding("chat")');
+ f.pending[1].resolve({result:{mode:'model',explanations:[]},references:[]});await request;
+ assert.equal(f.run('workAnswer'),null);assert.equal(f.run('workInFlight'),false);
+});
+test('closing during project preparation prevents a model request',async()=>{
+ const f=setup();enabledPage(f);f.context.work=understanding('project');
+ f.run('current.project={id:"project-a"};grant="page-only";workScope="project";workData=work');
+ const request=f.run('explainUnderstanding()');f.listeners.pagehide();
+ f.pending[0].resolve({...understanding('project'),token:'frozen-project'});await request;
+ assert.ok(!f.pending.some(p=>p.url==='/api/reading-explain'));assert.equal(f.run('workAnswer'),null);
+});
+test('switching scopes keeps local reading available during a slow model request',async()=>{
+ const f=setup();enabledPage(f);f.context.work=understanding();
+ f.run('current.project={id:"project-a"};grant="page-only";workData=work');
+ const generation=f.run('explainUnderstanding()');f.pending[0].resolve({...understanding(),token:'chat-frozen'});await tick();
+ const local=f.run('chooseWorkScope("project")');assert.match(f.pending[2].url,/work-understanding.*scope=project/);
+ f.pending[2].resolve(understanding('project'));await local;
+ assert.equal(f.run('workData.scope'),'project');assert.match(f.elements.get('understandingNote').textContent,/上一段说明仍在生成/);
+ f.pending[1].resolve({result:{mode:'model',explanations:[]},references:[]});await generation;
+ assert.equal(f.run('workAnswer'),null);assert.doesNotMatch(f.elements.get('understandingNote').textContent,/仍在生成/);
+});
+test('failed work generation retains local evidence and later changes label an old answer',async()=>{
+ const f=setup();enabledPage(f);f.context.work=understanding();
+ f.run('grant="page-only";workData=work');const request=f.run('explainUnderstanding()');
+ f.pending[0].resolve({...understanding(),token:'frozen-chat'});await tick();
+ f.pending[1].resolve({result:{mode:'fallback',message:'模型暂不可用'},references:[]});await request;
+ assert.equal(f.run('workAnswer'),null);assert.equal(f.run('workData.local.goal.text'),'chat goal');
+ assert.equal(f.elements.get('understandingNote').textContent,'模型暂不可用');
+ f.context.answer={result:{mode:'model',explanations:[{part:'goal',text:'Earlier goal',basis:'inference',evidence_ids:['E1']}]},references:understanding().references,revision:'older',source:understanding()};
+ f.run('workAnswer=answer;workMessage="";renderUnderstanding()');
+ assert.match(f.elements.get('understandingNote').textContent,/较早.*变化/);
+});
+test('reassigned project clears old narrative even when its display name is unchanged',async()=>{
+ const f=setup();enabledPage(f);f.context.work=understanding('project');
+ f.run('current.project={id:"new-project",name:"页面项目"};workData=work;workScope="project";workAnswer={revision:"private-old"}');
+ const request=f.run('loadUnderstanding(true)');assert.equal(f.run('workAnswer'),null);
+ f.pending[0].resolve({...understanding('project'),project:{id:'new-project',name:'页面项目'}});await request;
+ assert.equal(f.run('workData.project.id'),'new-project');
+});
+test('a long project reading renews the lease without triggering another explanation',async()=>{
+ const f=setup();enabledPage(f);f.run('grant="page-only";workInFlight=true');
+ const poll=f.run('automatic()');assert.equal(f.pending[0].url,'/api/glance-heartbeat');
+ f.pending[0].resolve({alive:true});await poll;assert.equal(f.pending.length,1);
+});
 test('projects precede recent chats and states remain markers instead of categories',()=>{
  const f=setup();f.context.cards=[{client:'codex',key:'a',title:'雪绪首页',project:{id:'p',name:'Yukio'},activity_state:'working'},
  {client:'claude',key:'b',title:'检查图片',project:{id:'q',name:'封面设计'},activity_state:'inactive'},

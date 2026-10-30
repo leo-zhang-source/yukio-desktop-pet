@@ -6,7 +6,7 @@ from pathlib import Path
 from page_explanation_policy import enabled as page_policy_enabled
 
 ROOT=Path(__file__).resolve().parent
-FILES=('agent_explanation.py','chat_catalog.py','reading_view.py','page_explanation_policy.py','plain_language.py','task_summary.py','project_context.py','handoff_view.py','server.py','source_context.py','glance_view.py','glance_automation.py','dist/history.html','dist/glance.js','dist/i18n.js','dist/en.json','dist/glance.css','history_view.py','context_view.py','explanation.py','runtime_identity.py','localization.py','collector_status.py','dist/index.html','dist/app.js','dist/context.js','dist/explanation.js','dist/style.css')
+FILES=('agent_explanation.py','chat_catalog.py','work_understanding.py','reading_view.py','page_explanation_policy.py','plain_language.py','task_summary.py','project_context.py','handoff_view.py','server.py','source_context.py','glance_view.py','glance_automation.py','dist/history.html','dist/glance.js','dist/i18n.js','dist/en.json','dist/glance.css','history_view.py','context_view.py','explanation.py','runtime_identity.py','localization.py','collector_status.py','dist/index.html','dist/app.js','dist/context.js','dist/explanation.js','dist/style.css')
 def identity(databases,model_config=None):
     digest=hashlib.sha256()
     for name in FILES:
