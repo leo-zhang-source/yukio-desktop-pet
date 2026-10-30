@@ -157,7 +157,9 @@ def main():
             directory = out / ('run-' + str(number)); directory.mkdir()
             env = isolated_environment(directory, sys.executable, node)
             suites = {}
-            command = [swift, 'test', '--parallel']
+            # AppKit tests share one main event loop. Running them concurrently
+            # can delay timeout callbacks behind unrelated rendering checks.
+            command = [swift, 'test', '--no-parallel']
             if args.probe_only:
                 command += ['--filter', 'RemediationScenarioProbeTests|CodexAnswerTransportTests']
             suites['swift'] = run(command, ROOT / 'YukioPlayer', env, directory / 'swift.log', 900)

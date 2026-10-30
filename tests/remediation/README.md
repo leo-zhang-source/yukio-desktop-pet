@@ -12,6 +12,8 @@ python3 scripts/run-remediation-checks.py --repeat 2 --out /tmp/yukio-checks-uni
 
 程序依次运行 Swift、工作台 Python、网页 Node 和共同输入检查，再验证两个故意错误能被识别。每一步有超时；缺报告、数量为零、意外失败、源码途中改变均会使检查失败。首次构建可从项目锁定的公开依赖地址取得 Sparkle。
 
+原生检查串行执行，避免多个 AppKit 测试同时占用主线程，影响启动超时的实际计时；超时断言未放宽。
+
 - `fixtures/codex-results.json`：13 个场景。比较结束、失败、取消的共同投影；不强制开始、思考等展示相同。
 - `check_shared.py`：运行工作台生产解析器，读取 Swift 对同一输入的观察值；两端都检查结束投影与事实元数据。当前 13 组样例的 230 项断言全部符合预期。
 - `known-issues.json`：逐步骤记录应有值和修前值。只有两者均匹配登记，才列为 `KNOWN_FAIL`；新变化、意外修好和悬空登记都要求复核。

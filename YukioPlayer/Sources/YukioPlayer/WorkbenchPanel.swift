@@ -7,83 +7,6 @@ protocol WorkbenchStarting: AnyObject {
     func stop()
 }
 
-/// The bundled launcher checks the build and data scope before reusing a service.
-/// A service owned by another window is never stopped by this controller.
-final class WorkbenchRuntime: WorkbenchStarting {
-    enum Failure: Error { case missing, unavailable }
-    private var process: Process?
-    private var output: Pipe?
-    private var readyURL: URL?
-    private var generation = UUID()
-    private var callbacks: [(Result<URL, Error>) -> Void] = []
-    private let resources: URL?
-    init(resources: URL? = Bundle.main.resourceURL) { self.resources = resources }
-
-    func start(_ completion: @escaping (Result<URL, Error>) -> Void) {
-        if let readyURL, process?.isRunning == true { completion(.success(readyURL)); return }
-        if process?.isRunning == true { callbacks.append(completion); return }
-        guard let resources else { completion(.failure(Failure.missing)); return }
-        let executable = resources.appendingPathComponent("activity-workbench/runtime/YukioRuntime/YukioRuntime")
-        guard FileManager.default.isExecutableFile(atPath: executable.path) else {
-            completion(.failure(Failure.missing)); return
-        }
-        callbacks = [completion]
-        let finish: (Result<URL, Error>) -> Void = { [weak self] result in
-            guard let self else { return }
-            let waiting = self.callbacks; self.callbacks.removeAll()
-            waiting.forEach { $0(result) }
-        }
-        let token = UUID(); generation = token
-        let worker = Process(), pipe = Pipe()
-        worker.executableURL = executable
-        worker.arguments = ["--collect", "--no-browser"]
-        worker.standardOutput = pipe; worker.standardError = pipe
-        var pending = "", delivered = false
-        let accept: (String) -> Void = { [weak self] text in
-            guard let self, self.generation == token else { return }
-            pending = String((pending + text).suffix(8192))
-            if !delivered, pending.contains("http://127.0.0.1:8767/") {
-                delivered = true
-                let url = URL(string: "http://127.0.0.1:8767/")!
-                self.readyURL = url
-                finish(.success(url))
-            }
-        }
-        pipe.fileHandleForReading.readabilityHandler = { handle in
-            let bytes = handle.availableData
-            if bytes.isEmpty {
-                handle.readabilityHandler = nil
-                DispatchQueue.main.async { [weak self] in
-                    guard let self, self.generation == token, !delivered else { return }
-                    delivered = true; finish(.failure(Failure.unavailable))
-                }
-                return
-            }
-            let text = String(decoding: bytes, as: UTF8.self)
-            DispatchQueue.main.async { accept(text) }
-        }
-        worker.terminationHandler = { [weak self] _ in
-            DispatchQueue.main.async {
-                guard let self, self.generation == token else { return }
-                // When every recorder was already running the launcher exits cleanly.
-                // The pipe's EOF handler reports failures after all readiness output
-                // has been consumed, even when a reused launcher exits immediately.
-                self.readyURL = nil
-            }
-        }
-        do { try worker.run(); process = worker; output = pipe }
-        catch { pipe.fileHandleForReading.readabilityHandler = nil; finish(.failure(error)) }
-    }
-
-    func stop() {
-        generation = UUID(); readyURL = nil; callbacks.removeAll()
-        output?.fileHandleForReading.readabilityHandler = nil
-        if let process, process.isRunning { process.terminate() }
-        process = nil; output = nil
-    }
-    deinit { stop() }
-}
-
 /// The former settings entry now hosts the workbench and the existing native settings.
 /// The native settings callback stays unchanged; preferences never pass through the page.
 final class WorkbenchPanelController: NSWindowController, NSWindowDelegate, WKNavigationDelegate {
@@ -96,10 +19,13 @@ final class WorkbenchPanelController: NSWindowController, NSWindowDelegate, WKNa
     private let settingsButton = NSButton(title: "设置", target: nil, action: nil)
     private let message = NSTextField(wrappingLabelWithString: "正在打开工作台…")
     private let retryButton = NSButton(title: "重新连接", target: nil, action: nil)
+    private let diagnosticButton = NSButton(title: "复制诊断信息", target: nil, action: nil)
     private let settingsScroll = NSScrollView()
     private(set) var webView: WKWebView?
     private(set) var showingSettings = false
     private var selectionURL: URL?
+    private(set) var serviceURL: URL?
+    private(set) var diagnosticText = ""
     private var opening = UUID()
     private(set) var uiLanguage: String
 
@@ -173,6 +99,9 @@ final class WorkbenchPanelController: NSWindowController, NSWindowDelegate, WKNa
         message.font = .systemFont(ofSize: 16)
         retryButton.target = self; retryButton.action = #selector(retry)
         retryButton.bezelStyle = .rounded
+        diagnosticButton.target = self; diagnosticButton.action = #selector(copyDiagnostics)
+        diagnosticButton.bezelStyle = .rounded
+        diagnosticButton.setAccessibilityIdentifier("copyWorkbenchDiagnostics")
     }
 
     func show(snapshot: SettingsSnapshot, near anchor: NSRect) {
@@ -204,6 +133,7 @@ final class WorkbenchPanelController: NSWindowController, NSWindowDelegate, WKNa
         workButton.title = localized("活动工作台", "Activity workbench")
         settingsButton.title = localized("设置", "Settings")
         retryButton.title = localized("重新连接", "Reconnect")
+        diagnosticButton.title = localized("复制诊断信息", "Copy diagnostics")
         settingsButton.toolTip = localized("雪绪的大小、显示、聊天、换装与其他设置", "Yukio’s size, appearance, chats, outfits and other settings")
         if wasShowingSettings { showSettings() }
         else if window?.isVisible == true { showWork() }
@@ -236,7 +166,8 @@ final class WorkbenchPanelController: NSWindowController, NSWindowDelegate, WKNa
             return
         }
         message.stringValue = localized("正在打开工作台…", "Opening the workbench…")
-        let loading = NSStackView(views: [message, retryButton])
+        diagnosticText = ""; diagnosticButton.isHidden = true
+        let loading = NSStackView(views: [message, retryButton, diagnosticButton])
         loading.orientation = .vertical; loading.alignment = .centerX; loading.spacing = 18
         fill(loading)
         let token = UUID(); opening = token
@@ -244,21 +175,42 @@ final class WorkbenchPanelController: NSWindowController, NSWindowDelegate, WKNa
             guard let self, self.opening == token, self.window?.isVisible == true, !self.showingSettings else { return }
             switch result {
             case .success(let url):
+                self.serviceURL = url
                 let configuration = WKWebViewConfiguration()
                 configuration.websiteDataStore = .nonPersistent()
                 let web = WKWebView(frame: .zero, configuration: configuration)
                 web.navigationDelegate = self; self.webView = web; self.fill(web)
-                web.load(URLRequest(url: self.localizedURL(self.selectionURL ?? url)))
-            case .failure:
-                self.message.stringValue = self.localized("工作台暂时没连上。可以点“重新连接”，右上角的“设置”仍可使用。", "The workbench is not connected. Try Reconnect; Settings is still available at the top right.")
+                web.load(URLRequest(url: self.localizedURL(Self.restoreSelection(self.selectionURL, at: url))))
+            case .failure(let error):
+                let failure = error as? WorkbenchRuntime.Failure ?? .unavailable
+                self.showConnectionFailure(failure.message(english: self.uiLanguage == "en"), code: failure.code)
             }
         }
     }
 
-    @objc private func retry() { showWork() }
+    @objc private func retry() {
+        runtime.stop(); serviceURL = nil; showWork()
+    }
+
+    func showConnectionFailure(_ text: String, code: String) {
+        webView?.navigationDelegate = nil; webView?.stopLoading(); webView = nil
+        message.stringValue = text + "\n" + localized("右上角的“设置”仍可使用。", "Settings is still available at the top right.")
+        let info = Bundle.main.infoDictionary ?? [:]
+        diagnosticText = "Yukio workbench\nversion=\(info["CFBundleShortVersionString"] ?? "unknown") (\(info["CFBundleVersion"] ?? "unknown"))\nmacOS=\(ProcessInfo.processInfo.operatingSystemVersionString)\ncode=\(code)"
+        diagnosticButton.title = localized("复制诊断信息", "Copy diagnostics")
+        diagnosticButton.isHidden = false
+        let content = NSStackView(views: [message, retryButton, diagnosticButton])
+        content.orientation = .vertical; content.alignment = .centerX; content.spacing = 18
+        fill(content)
+    }
+
+    @objc private func copyDiagnostics() {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(diagnosticText, forType: .string)
+    }
 
     private func pausePage() {
-        if let url = webView?.url, Self.isLocal(url) { selectionURL = url }
+        if let url = webView?.url, Self.isLocal(url, port: serviceURL?.port ?? 8767) { selectionURL = url }
         webView?.evaluateJavaScript("window.dispatchEvent(new Event('pagehide'))", completionHandler: nil)
     }
 
@@ -274,12 +226,32 @@ final class WorkbenchPanelController: NSWindowController, NSWindowDelegate, WKNa
     func windowWillClose(_ notification: Notification) { dismissContent() }
     func shutdown() { dismissContent(); runtime.stop() }
 
-    static func isLocal(_ url: URL) -> Bool {
-        url.scheme == "http" && url.host == "127.0.0.1" && url.port == 8767 && url.user == nil && url.password == nil
+    static func isLocal(_ url: URL, port: Int = 8767) -> Bool {
+        url.scheme == "http" && url.host == "127.0.0.1" && url.port == port && url.user == nil && url.password == nil
+    }
+
+    /// Selection was captured only from our previous service. Carry its route
+    /// across a new reserved port without ever navigating back to the old owner.
+    static func restoreSelection(_ saved: URL?, at service: URL) -> URL {
+        guard let saved, let oldPort = saved.port, isLocal(saved, port: oldPort),
+              var target = URLComponents(url: service, resolvingAgainstBaseURL: false),
+              let selection = URLComponents(url: saved, resolvingAgainstBaseURL: false) else { return service }
+        target.percentEncodedPath = selection.percentEncodedPath
+        target.percentEncodedQuery = selection.percentEncodedQuery
+        return target.url ?? service
     }
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction,
                  decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
-        let allowed = navigationAction.request.url.map { Self.isLocal($0) || $0.absoluteString == "about:blank" } ?? false
+        let allowed = navigationAction.request.url.map { Self.isLocal($0, port: serviceURL?.port ?? 8767) || $0.absoluteString == "about:blank" } ?? false
         decisionHandler(allowed ? .allow : .cancel)
+    }
+
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        guard webView === self.webView, (error as NSError).code != NSURLErrorCancelled else { return }
+        showConnectionFailure(localized("工作台页面连接中断，请点“重新连接”。", "The workbench page disconnected. Try Reconnect."), code: "page_\((error as NSError).code)")
+    }
+
+    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        self.webView(webView, didFailProvisionalNavigation: navigation, withError: error)
     }
 }
