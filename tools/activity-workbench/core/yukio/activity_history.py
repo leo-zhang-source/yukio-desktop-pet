@@ -289,6 +289,14 @@ class ActivityHistory:
                     same_file = (previous_identity == persistent_identity
                                  if previous_identity and persistent_identity
                                  else old['file_identity'] == identity)
+                    if not previous_identity and persistent_identity:
+                        # Upgrade an old Mac checkpoint even if the machine has
+                        # already rebooted. An unchanged inode is only a
+                        # candidate: the complete saved prefix is verified
+                        # below before any parser checkpoint is reused.
+                        legacy = old['file_identity'].split(':')
+                        same_file = (len(legacy) == 2 and legacy[0].isdigit()
+                                     and legacy[1] == str(info.st_ino))
                     if not same_file:
                         reason = 'file_replaced'
                     elif info.st_size < offset:

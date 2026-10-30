@@ -109,6 +109,25 @@ class HistoryRestartTests(unittest.TestCase):
         self.change_saved_device()
         self.assertEqual(self.collect()[0]['events_saved'], 0)
 
+    def test_legacy_upgrade_after_reboot_requires_inode_and_entire_saved_prefix(self):
+        self.collect(identity=None)
+        self.update_state(lambda s: s.update(file_identity='12345:' + str(self.source.stat().st_ino)))
+        self.assertEqual(self.collect()[0]['events_saved'], 0)
+        self.assertEqual(self.collect()[0]['generation'], 1)
+
+        self.database = self.root / 'changed-prefix.sqlite'
+        self.collect(identity=None)
+        self.update_state(lambda s: s.update(file_identity='12345:' + str(self.source.stat().st_ino)))
+        self.source.write_text(self.source.read_text().replace('chat', 'else'))
+        result, rows = self.collect()
+        self.assertEqual(result['generation'], 2)
+        self.assertEqual(rows[1]['reason'], 'prefix_changed')
+
+        self.database = self.root / 'changed-inode.sqlite'
+        self.collect(identity=None)
+        self.update_state(lambda s: s.update(file_identity='12345:0'))
+        self.assertEqual(self.collect()[1][1]['reason'], 'file_replaced')
+
     def test_unavailable_volume_identity_never_ignores_a_replacement(self):
         self.collect(identity=None)
         self.change_saved_device()
