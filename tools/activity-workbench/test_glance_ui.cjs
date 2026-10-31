@@ -76,14 +76,26 @@ function understanding(scope='chat',revision='work-r1'){
   chats:[{client:'codex',key:'chat-a',title:'简化首页',last_activity_ms:1}],included_chats:1,known_chats:1,max_chats:6,note:'有限公开摘录',references:[{evidence_id:'E1',title:'要求',quote:'让页面易懂',chat:'简化首页'}],
   local:Object.fromEntries(['goal','strategy','effectiveness'].map(part=>[part,{text:scope+' '+part,basis:'unknown',evidence_ids:['E1']}]))};
 }
-test('existing content has one category and work understanding has its own scope',()=>{
+test('one chat has three parallel views and details stay beside them',()=>{
  const html=fs.readFileSync(path.join(__dirname,'dist/index.html'),'utf8');
- assert.match(html,/id="happeningHeading">正在发生/);assert.match(html,/id="activityDetails"/);
- assert.match(html,/id="understandingHeading">这项工作如何推进/);
+ for(const [tab,panel] of [['tabNow','viewNow'],['tabUnderstand','viewUnderstand'],['tabPast','viewPast']]){
+  assert.match(html,new RegExp('id="'+tab+'"[^>]*role="tab"[^>]*aria-controls="'+panel+'"'));
+  assert.match(html,new RegExp('id="'+panel+'"[^>]*role="tabpanel"'));
+ }
+ assert.match(html,/id="understandingHeading"[^>]*>这项工作如何推进/);
  assert.match(html,/id="scopeProject"[^>]*disabled/);
- assert.doesNotMatch(html,/part-number|part-title">内容|part-title">解释|part-title">原因/);
- assert.ok(html.indexOf('id="deepRead"')<html.indexOf('id="activityDetails"'));
+ assert.ok(html.indexOf('id="deepRead"')<html.indexOf('id="viewUnderstand"'));
  assert.ok(html.indexOf('id="historyHeading"')>html.indexOf('id="workUnderstanding"'));
+ assert.ok(html.indexOf('id="explanationProvider"')>html.indexOf('id="inspector"'));
+ assert.doesNotMatch(html,/brand-mark|eyebrow|breadcrumb/);
+});
+test('switching views keeps the chat and only the Earlier view reads older records',async()=>{
+ const f=setup();enabledPage(f);f.run('$("pastPanel").hidden=true');
+ f.run('setView("understand")');assert.equal(f.elements.get('viewUnderstand').hidden,false);assert.equal(f.elements.get('viewNow').hidden,true);
+ assert.equal(f.run('selected.key'),'chat-a');assert.equal(f.pending.length,0);
+ f.run('setView("past")');assert.equal(f.elements.get('viewPast').hidden,false);assert.equal(f.elements.get('pastPanel').hidden,false);
+ assert.ok(f.pending.some(p=>/task-summary/.test(p.url)));assert.ok(f.pending.some(p=>/reading-history/.test(p.url)));
+ const reads=f.pending.length;f.run('setView("now");setView("past")');assert.equal(f.pending.filter(p=>/reading-history/.test(p.url)).length,1);assert.ok(f.pending.length>=reads);
 });
 function detailedUnderstanding(scope='chat',revision='details-r1'){
  const data=understanding(scope,revision);
@@ -202,19 +214,32 @@ test('a long project reading renews the lease without triggering another explana
  const poll=f.run('automatic()');assert.equal(f.pending[0].url,'/api/glance-heartbeat');
  f.pending[0].resolve({alive:true});await poll;assert.equal(f.pending.length,1);
 });
-test('projects precede recent chats and states remain markers instead of categories',()=>{
+test('chats waiting for you come first and status filters narrow the list',()=>{
  const f=setup();f.context.cards=[{client:'codex',key:'a',title:'雪绪首页',project:{id:'p',name:'Yukio'},activity_state:'working'},
  {client:'claude',key:'b',title:'检查图片',project:{id:'q',name:'封面设计'},activity_state:'inactive'},
  {client:'codex',key:'c',title:'之前的工作',activity_state:'unknown'},
  {client:'codex',key:'d',title:'需要回答',activity_state:'waiting'}];
  f.run('selected={client:"codex",key:"a"};chatCatalog=cards;renderChatNavigation()');
- const list=f.elements.get('chatLists');assert.deepEqual(list.children.filter(c=>c.tag==='h2').map(c=>c.textContent),['项目','最近聊天']);
- const rows=list.children.filter(c=>c.className?.startsWith('chat-row'));
- assert.equal(rows.length,4);assert.deepEqual(rows.map(c=>c.children[1].children[0].className),['chat-state working','chat-state inactive','chat-state unknown','chat-state waiting']);
- assert.equal(f.elements.has('filterWorking'),false);assert.equal(f.elements.has('filterInactive'),false);
- const html=fs.readFileSync(path.join(__dirname,'dist/index.html'),'utf8');assert.doesNotMatch(html,/id="filter(?:Recent|Working|Inactive)"|按工作状态查看/);
+ const list=f.elements.get('chatLists');assert.deepEqual(list.children.filter(c=>c.tag==='h2').map(c=>c.textContent),['等你处理','正在工作','最近聊天']);
+ const rows=()=>list.children.filter(c=>c.className?.startsWith('chat-row'));
+ assert.deepEqual(rows().map(c=>c.children[0].className),['chat-state waiting','chat-state working','chat-state inactive','chat-state unknown']);
+ assert.equal(f.elements.get('countAll').textContent,'4');assert.equal(f.elements.get('countWaiting').textContent,'1');assert.equal(f.elements.get('countWorking').textContent,'1');
+ f.run('setChatFilter("waiting")');assert.deepEqual(rows().map(c=>c.dataset.chatValue),[JSON.stringify({client:'codex',key:'d'})]);
+ f.run('setChatFilter("working")');assert.equal(rows().length,1);
+ f.run('setChatFilter("project")');assert.deepEqual(list.children.filter(c=>c.tag==='h2').map(c=>c.textContent),['未归入项目']);assert.equal(list.children.filter(c=>c.className==='chat-project').length,2);
+ f.run('setChatFilter("all")');
  assert.equal(f.run('filteredChats(cards,"yukio")[0].key'),'a');assert.equal(f.run('filteredChats(cards,"claude")[0].key'),'b');
  f.run('chatSearch="图片";renderChatNavigation()');assert.equal(f.run('selected.key'),'a');assert.equal(f.pending.length,0);
+});
+test('opening the page lands on the chat that needs you, by status and never by title',()=>{
+ const f=setup();f.context.cards=[{client:'codex',key:'a',activity_state:'inactive'},{client:'codex',key:'b',activity_state:'working'},{client:'claude',key:'c',activity_state:'waiting'}];
+ assert.equal(f.run('preferredChat(cards).key'),'c');f.run('cards.pop()');assert.equal(f.run('preferredChat(cards).key'),'b');f.run('cards.pop()');assert.equal(f.run('preferredChat(cards)'),null);
+});
+test('same named projects stay apart and show which folder they are',()=>{
+ const f=setup();f.context.groups=[{id:'one',name:'App',where:'Desktop',cards:[{client:'codex'}]},{id:'two',name:'App',where:'worktrees',cards:[{client:'codex'}]},{id:'three',name:'Solo',cards:[]}];
+ assert.equal(f.run('projectLabel(groups[0],groups)'),'App · Desktop');assert.equal(f.run('projectLabel(groups[1],groups)'),'App · worktrees');assert.equal(f.run('projectLabel(groups[2],groups)'),'Solo');
+ f.run('groups[1].where="Desktop"');assert.equal(f.run('projectLabel(groups[1],groups)'),'App · 2');
+ f.run('groups[1].cards[0].client="claude"');assert.equal(f.run('projectLabel(groups[1],groups)'),'App · Claude');
 });
 test('project navigation uses identity instead of joining same named projects',()=>{
  const f=setup();f.context.cards=[{client:'codex',key:'a',project:{id:'one',name:'App'}},{client:'codex',key:'b',project:{id:'two',name:'App'}}];

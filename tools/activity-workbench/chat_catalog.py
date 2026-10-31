@@ -106,8 +106,10 @@ def project_label(workspace, *, client, explicit=None, roots=()):
     if not name or name == '未命名聊天':
         return None
     identity = client + ':' + ('project:' + str(match[0]) if match else 'workspace:' + workspace)
+    # Only the rail reads `where`, to tell same-named folders apart; never model input.
     return dict(id=hashlib.sha256(identity.encode()).hexdigest()[:24], name=name,
-                source='client_project' if match else 'workspace')
+                source='client_project' if match else 'workspace',
+                where=clean(posixpath.basename(posixpath.dirname(workspace)), 40))
 
 
 def codex_project(reader, parts):

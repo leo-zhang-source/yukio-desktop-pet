@@ -7,14 +7,34 @@ protocol WorkbenchStarting: AnyObject {
     func stop()
 }
 
+/// The page runs under the transparent title bar, so this strip keeps the window draggable.
+private final class TitlebarDragView: NSView {
+    override var mouseDownCanMoveWindow: Bool { true }
+    override func mouseDown(with event: NSEvent) { window?.performDrag(with: event) }
+}
+
+/// WebKit retains its message handlers strongly; this keeps the panel free to close.
+private final class WorkbenchMessages: NSObject, WKScriptMessageHandler {
+    weak var target: WorkbenchPanelController?
+    init(target: WorkbenchPanelController) { self.target = target }
+    func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
+        target?.handle(message)
+    }
+}
+
 /// The former settings entry now hosts the workbench and the existing native settings.
 /// The native settings callback stays unchanged; preferences never pass through the page.
+/// While the page is showing it owns the whole window; native chrome returns for settings and failures.
 final class WorkbenchPanelController: NSWindowController, NSWindowDelegate, WKNavigationDelegate {
     var onChange: ((SettingsChange) -> Void)?
     private let runtime: WorkbenchStarting
     let settings = SettingsPanelController()
     private let outsideClickMonitor = SettingsOutsideClickMonitor()
     private let body = NSView()
+    private let header = NSStackView()
+    private let dragStrip = TitlebarDragView()
+    private var bodyBelowHeader: NSLayoutConstraint?
+    private var bodyAtTop: NSLayoutConstraint?
     private let workButton = NSButton(title: "活动工作台", target: nil, action: nil)
     private let settingsButton = NSButton(title: "设置", target: nil, action: nil)
     private let message = NSTextField(wrappingLabelWithString: "正在打开工作台…")
@@ -47,9 +67,10 @@ final class WorkbenchPanelController: NSWindowController, NSWindowDelegate, WKNa
         self.runtime = runtime
         self.uiLanguage = Self.preferredLanguage(preferredLanguages)
         let panel = NSPanel(contentRect: NSRect(x: 0, y: 0, width: 1100, height: 760),
-                            styleMask: [.titled, .closable, .resizable, .nonactivatingPanel],
+                            styleMask: [.titled, .closable, .resizable, .nonactivatingPanel, .fullSizeContentView],
                             backing: .buffered, defer: false)
         panel.title = uiLanguage == "zh" ? "Yukio · 活动工作台" : "Yukio · Activity workbench"
+        panel.titlebarAppearsTransparent = true; panel.titleVisibility = .hidden
         panel.level = .floating
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.hidesOnDeactivate = false; panel.isReleasedWhenClosed = false
@@ -69,31 +90,34 @@ final class WorkbenchPanelController: NSWindowController, NSWindowDelegate, WKNa
 
     private func buildUI() {
         guard let root = window?.contentView else { return }
-        let heading = NSTextField(labelWithString: "YUKIO")
-        heading.font = .systemFont(ofSize: 18, weight: .semibold)
+        let heading = NSTextField(labelWithString: "Yukio")
+        heading.font = .systemFont(ofSize: 13, weight: .semibold)
         for button in [workButton, settingsButton] {
-            button.bezelStyle = .rounded; button.font = .systemFont(ofSize: 15, weight: .semibold)
+            button.bezelStyle = .rounded; button.font = .systemFont(ofSize: 13, weight: .medium)
             button.setButtonType(.toggle); button.target = self
-            button.heightAnchor.constraint(equalToConstant: 36).isActive = true
+            button.controlSize = .regular
         }
         workButton.action = #selector(showWork); workButton.setAccessibilityIdentifier("workbenchTab")
         settingsButton.action = #selector(showSettings); settingsButton.setAccessibilityIdentifier("petSettingsTab")
         settingsButton.image = NSImage(systemSymbolName: "gearshape.fill", accessibilityDescription: nil)
         settingsButton.imagePosition = .imageLeading
-        settingsButton.contentTintColor = .controlAccentColor
-        settingsButton.widthAnchor.constraint(equalToConstant: 110).isActive = true
         settingsButton.toolTip = localized("雪绪的大小、显示、聊天、换装与其他设置", "Yukio’s size, appearance, chats, outfits and other settings")
-        let header = NSStackView(views: [heading, workButton, NSView(), settingsButton])
-        header.orientation = .horizontal; header.spacing = 18; header.alignment = .centerY
-        for view in [header, body] { view.translatesAutoresizingMaskIntoConstraints = false; root.addSubview(view) }
+        for view in [heading, workButton, NSView(), settingsButton] { header.addArrangedSubview(view) }
+        header.orientation = .horizontal; header.spacing = 12; header.alignment = .centerY
+        for view in [header, body, dragStrip] { view.translatesAutoresizingMaskIntoConstraints = false; root.addSubview(view) }
+        let below = body.topAnchor.constraint(equalTo: header.bottomAnchor, constant: 8)
+        bodyBelowHeader = below; bodyAtTop = body.topAnchor.constraint(equalTo: root.topAnchor)
         NSLayoutConstraint.activate([
-            header.topAnchor.constraint(equalTo: root.topAnchor, constant: 10),
-            header.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 20),
-            header.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -20),
-            body.topAnchor.constraint(equalTo: header.bottomAnchor, constant: 10),
+            header.topAnchor.constraint(equalTo: root.topAnchor, constant: 4),
+            header.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: 84),
+            header.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -16),
+            below,
             body.leadingAnchor.constraint(equalTo: root.leadingAnchor), body.trailingAnchor.constraint(equalTo: root.trailingAnchor),
             body.bottomAnchor.constraint(equalTo: root.bottomAnchor),
+            dragStrip.topAnchor.constraint(equalTo: root.topAnchor), dragStrip.heightAnchor.constraint(equalToConstant: 28),
+            dragStrip.leadingAnchor.constraint(equalTo: root.leadingAnchor), dragStrip.trailingAnchor.constraint(equalTo: root.trailingAnchor),
         ])
+        dragStrip.isHidden = true
         settings.embed(in: settingsScroll)
         settingsScroll.appearance = NSAppearance(named: .aqua)
         message.font = .systemFont(ofSize: 16)
@@ -149,6 +173,22 @@ final class WorkbenchPanelController: NSWindowController, NSWindowDelegate, WKNa
         body.addSubview(view); view.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([view.leadingAnchor.constraint(equalTo: body.leadingAnchor), view.trailingAnchor.constraint(equalTo: body.trailingAnchor),
             view.topAnchor.constraint(equalTo: body.topAnchor), view.bottomAnchor.constraint(equalTo: body.bottomAnchor)])
+        // The page draws its own navigation, including the way into settings.
+        let pageOwnsWindow = webView != nil && view === webView
+        header.isHidden = pageOwnsWindow; dragStrip.isHidden = !pageOwnsWindow
+        if pageOwnsWindow { bodyBelowHeader?.isActive = false; bodyAtTop?.isActive = true }
+        else { bodyAtTop?.isActive = false; bodyBelowHeader?.isActive = true }
+    }
+
+    fileprivate func handle(_ message: WKScriptMessage) {
+        guard message.frameInfo.isMainFrame, message.body as? String == "settings",
+              let url = message.frameInfo.request.url, Self.isLocal(url, port: serviceURL?.port ?? 8767) else { return }
+        showSettings()
+    }
+
+    private func releasePage() {
+        webView?.configuration.userContentController.removeScriptMessageHandler(forName: "yukio")
+        webView?.navigationDelegate = nil; webView?.stopLoading()
     }
 
     @objc func showSettings() {
@@ -178,6 +218,7 @@ final class WorkbenchPanelController: NSWindowController, NSWindowDelegate, WKNa
                 self.serviceURL = url
                 let configuration = WKWebViewConfiguration()
                 configuration.websiteDataStore = .nonPersistent()
+                configuration.userContentController.add(WorkbenchMessages(target: self), name: "yukio")
                 let web = WKWebView(frame: .zero, configuration: configuration)
                 web.navigationDelegate = self; self.webView = web; self.fill(web)
                 web.load(URLRequest(url: self.localizedURL(Self.restoreSelection(self.selectionURL, at: url))))
@@ -193,7 +234,7 @@ final class WorkbenchPanelController: NSWindowController, NSWindowDelegate, WKNa
     }
 
     func showConnectionFailure(_ text: String, code: String) {
-        webView?.navigationDelegate = nil; webView?.stopLoading(); webView = nil
+        releasePage(); webView = nil
         message.stringValue = text + "\n" + localized("右上角的“设置”仍可使用。", "Settings is still available at the top right.")
         let info = Bundle.main.infoDictionary ?? [:]
         diagnosticText = "Yukio workbench\nversion=\(info["CFBundleShortVersionString"] ?? "unknown") (\(info["CFBundleVersion"] ?? "unknown"))\nmacOS=\(ProcessInfo.processInfo.operatingSystemVersionString)\ncode=\(code)"
@@ -218,7 +259,7 @@ final class WorkbenchPanelController: NSWindowController, NSWindowDelegate, WKNa
         opening = UUID(); outsideClickMonitor.stop(); pausePage()
         // Destroy timers and page-owned model work. No hidden browser remains after closing.
         if let web = webView {
-            web.stopLoading(); web.loadHTMLString("", baseURL: nil); web.removeFromSuperview()
+            releasePage(); web.loadHTMLString("", baseURL: nil); web.removeFromSuperview()
         }
         webView = nil
     }

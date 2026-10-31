@@ -16,7 +16,7 @@ window.YukioContext = (() => {
       selection={...selection,snapshot:data.snapshot};panel.replaceChildren(node('h3',tr('这份记录里，看到了什么')));
       panel.append(node('p',data.scope_note,'hint'),node('p',tr('读取范围：保存 #')+data.window_start+'—#'+data.window_end+' · '+data.counts.records+tr(' 条记录。')+(data.window_limited?tr('已到本次读取上限，更早或更多内容请在时间线查看。'):''),'hint'));
       const metrics=node('div',undefined,'context-metrics');
-      for(const [key,label] of [['succeeded',tr('收到成功回执')],['failed',tr('收到失败回执')],['cancelled',tr('收到取消回执')],['no_receipt',tr('尚无可配对回执')],['conflict',tr('回执有冲突')],['unresolved',tr('对应有疑问')],['unknown',tr('结果不明确')]])metrics.append(node('div',label+' '+(data.status_counts[key]||0)));
+      for(const [key,label] of [['succeeded',tr('收到成功回执')],['failed',tr('收到失败回执')],['cancelled',tr('收到取消回执')],['no_receipt',tr('尚无可配对回执')],['conflict',tr('回执有冲突')],['unresolved',tr('对应有疑问')],['unknown',tr('结果不明确')]]){const cell=node('div');cell.append(node('b',String(data.status_counts[key]||0)),node('span',label));metrics.append(cell);}
       panel.append(metrics);
       if(data.latest_marker)panel.append(node('p',tr('最后观察到的阶段标记：')+data.latest_marker.title+'。'+data.latest_marker.note),proof(data.latest_marker.evidence));
       if(data.source_warning_count||data.unlinked_receipt_count)panel.append(node('p',tr('本次范围有 ')+data.source_warning_count+tr(' 条来源提醒、')+data.unlinked_receipt_count+tr(' 条无法配对的回执。请保留这些不确定。'),'notice'));

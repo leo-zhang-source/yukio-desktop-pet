@@ -189,8 +189,10 @@ class WorkUnderstanding:
         # Local summaries quote what is available. They make no semantic claim
         # that different requests have a shared goal or that a method succeeded.
         def quotes(items, limit=2):
-            return '；'.join('「' + clean(title, 46) + '」：' + clean(text, 140)
-                            for title, text, _ in items[:limit])
+            # A chat's own name adds nothing in a chat reading; repeated text is said once.
+            lines = [('「' + clean(title, 46) + '」：' if scope == 'project' else '') + clean(text, 140)
+                     for title, text, _ in items[:limit]]
+            return '；'.join(dict.fromkeys(lines))
 
         local_goal = ('记录中的要求：' + quotes(local_goals) if local_goals else
                       '还没有读到明确目标。请先在原聊天说明想得到什么结果，以及怎样算完成。')

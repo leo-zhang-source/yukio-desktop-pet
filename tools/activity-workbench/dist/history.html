@@ -2,34 +2,52 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Yukio · 本机活动工作台</title>
+  <meta name="theme-color" content="#14171d">
+  <title>Yukio · 完整记录</title>
   <link rel="stylesheet" href="/glance.css"><link rel="stylesheet" href="/style.css"><script src="/i18n.js" defer></script><script src="/explanation.js" defer></script><script src="/context.js" defer></script><script src="/app.js" defer></script>
 </head>
-<body>
-  <a class="skip-link" href="#main">跳到主要内容</a>
-  <header class="sidebar">
-    <a class="brand" href="/" aria-label="Yukio 活动工作台"><span class="brand-mark">雪</span><span class="brand-name">Yukio<small>活动工作台</small></span></a>
-    <div class="nav-caption">工作空间</div>
-    <nav aria-label="主导航">
-      <a class="nav-item" href="/"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>当前工作</span></a>
-      <a class="nav-item active" href="/history" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11a9 9 0 1 1 2.5 7M3 4v7h7M12 7v5l3 2"/></svg><span>记录详情</span></a>
-    </nav>
-    <div class="sidebar-bottom"><div class="local-space"><span class="local-dot"></span>本机工作空间</div><p>看见进展，读懂每一步。</p></div>
-  </header>
-  <div class="app-area">
-  <div class="app-bar"><span>工作空间<span class="breadcrumb-divider">/</span><strong>记录详情</strong></span><span class="app-bar-note local">仅在这台电脑上</span></div>
-  <main id="main" class="history-page">
-    <section class="intro page-heading"><div><p class="eyebrow">活动档案</p><h1>记录详情</h1><p class="page-description">沿着时间线，查看每一步的原始记录与依据。</p></div><div class="connection history-connection"><span id="connection" role="status">正在读取本机历史…</span><small id="checked"></small></div></section>
-    <div class="boundary"><strong>记录与说明</strong><span>记录数量不代表任务完成度。默认显示本机规则说明；选择“让模型解释”后，先预览再发送。模型解释单独标注，不改变原始记录。</span></div>
-    <p id="modelStatus" class="hint">正在读取解释功能配置…</p>
-    <div id="error" class="error" role="alert" hidden></div>
-    <div class="toolbar"><label>客户端 <select id="client" aria-label="选择客户端"></select></label><label>记录范围 <select id="scope" aria-label="记录范围"><option value="0">当前观察版本</option><option value="1">旧观察版本</option></select></label><button id="refresh" type="button">刷新记录</button><span id="news" role="status"></span></div>
-    <p id="recorderStatus" class="hint" role="status"></p>
-    <div class="workspace">
-      <aside class="sessions-panel"><div class="section-top"><h2>会话记录</h2><span id="groupCount"></span></div><p class="hint">同一聊天的不同来源、助手和观察版本分别保留。</p><div id="groups"></div><button id="moreGroups" hidden>查看更多会话</button></aside>
-      <section class="history" aria-label="活动时间线"><div class="history-head"><p class="eyebrow" id="selectionLabel">等待选择</p><h2 id="selection">从左侧选择一份记录</h2><p id="selectionNote" class="hint">最新保存的记录在前。保存顺序不等于不同助手实际执行的先后。</p></div><div id="notices"></div><div id="timeline"><div class="empty">你的历史仍保存在本机。<br>选择一份记录后，具体活动会出现在这里。</div></div><button id="moreEvents" hidden>查看更早记录</button></section>
+<body class="records">
+<a class="skip-link" href="#main">跳到主要内容</a>
+<div class="shell">
+<aside class="rail" aria-label="选择记录">
+  <div class="rail-head">
+    <div class="rail-title"><a class="rail-back" href="/"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3L5 8l5 5"/></svg>返回工作台</a></div>
+    <div class="rail-fields">
+      <label class="rail-field"><span>助手</span><select id="client" aria-label="选择客户端"></select></label>
+      <label class="rail-field"><span>范围</span><select id="scope" aria-label="记录范围"><option value="0">当前记录</option><option value="1">旧版记录</option></select></label>
     </div>
-    <footer>只读历史 · 解释需手动发送 · 模型解释不改写记录<br>工具报告成功、整项任务完成、你认可结果，是三件不同的事。</footer>
-  </main>
+  </div>
+  <div class="rail-list">
+    <h2>会话记录 <span id="groupCount"></span></h2>
+    <div id="groups"></div>
+    <button id="moreGroups" class="rail-more" type="button" hidden>查看更多会话</button>
+  </div>
+  <div class="rail-foot">
+    <p id="recorderStatus" role="status"></p>
+    <div class="rail-foot-row"><span id="connection" class="connection" role="status">正在读取本机历史…</span><small id="checked"></small></div>
+    <p class="local">仅在这台电脑上</p>
+  </div>
+</aside>
+<main id="main">
+  <header class="chat-head">
+    <div class="chat-head-top">
+      <div class="chat-id"><h1 id="selection">从左侧选择一份记录</h1><p id="selectionNote">最新保存的记录在前。保存顺序不等于不同助手实际执行的先后。</p></div>
+      <div class="head-actions"><span id="news" role="status"></span><button id="refresh" class="btn" type="button">刷新记录</button></div>
+    </div>
+  </header>
+  <div class="views">
+    <div class="record-body">
+      <div id="error" role="alert" hidden></div>
+      <p id="modelStatus" class="view-note">正在读取解释功能配置…</p>
+      <p id="selectionLabel" class="sr-only">等待选择</p>
+      <div id="notices"></div>
+      <section aria-label="活动时间线">
+        <div id="timeline"><p class="record-empty">你的历史仍保存在本机。选择一份记录后，具体活动会出现在这里。</p></div>
+        <button id="moreEvents" class="btn" type="button" hidden>查看更早记录</button>
+      </section>
+      <p class="footnote">只读历史，解释需手动发送，模型解释不改写记录。工具报告成功、整项任务完成、你认可结果，是三件不同的事。</p>
+    </div>
+  </div>
+</main>
 </div>
 </body></html>
