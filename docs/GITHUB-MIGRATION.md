@@ -1,6 +1,8 @@
 # GitHub 账号迁移 / Account migration
 
-2026-10-31。目标仓库为 [leo-zhang-source/yukio-desktop-pet](https://github.com/leo-zhang-source/yukio-desktop-pet)，官网为 [Yukio](https://leo-zhang-source.github.io/yukio-website/)。本次恢复可核验的源码、分支、标签、文档和历史发行原件；迁移本身不是新 App 发布。
+2026-10-31。目标仓库为 [leo-zhang-source/yukio-desktop-pet](https://github.com/leo-zhang-source/yukio-desktop-pet)，官网为 [Yukio](https://leo-zhang-source.github.io/yukio-website/)。已在新账号恢复可核验的源码、分支、标签、文档和历史发行原件；迁移本身不是新 App 发布。
+
+本次完成 91 条正常分支／标签、29 条历史发行记录和 125 个原始附件的上传与核对，附件合计 5,713,977,679 字节。官网已更新至新账号源码和下载入口；Apple 芯片 5.3 ZIP／DMG、Intel 历史 0.4.6 DMG 均通过匿名完整下载与 SHA-256 校验，官网直下载包也与原件一致。未找到的两个旧附件及其他不可恢复内容见下文。
 
 ## 版本与验收
 
