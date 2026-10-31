@@ -1,0 +1,674 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-31T23:46:19Z",
+  "title": "Design System: Yukio Workbench",
+  "extensions": {
+    "colorMeta": {
+      "ink": {
+        "role": "primary",
+        "displayName": "Working Ink",
+        "tonalRamp": [
+          "#090b0f",
+          "#23252a",
+          "#3f4249",
+          "#5d6169",
+          "#7e828a",
+          "#a1a5ad",
+          "#c6c9d0",
+          "#eceef4"
+        ]
+      },
+      "ink-hover": {
+        "role": "primary",
+        "displayName": "Ink Hover",
+        "tonalRamp": [
+          "#080b11",
+          "#21252d",
+          "#3c424d",
+          "#5b616e",
+          "#7b8390",
+          "#9ea5b2",
+          "#c3c9d4",
+          "#eaeff8"
+        ]
+      },
+      "live": {
+        "role": "secondary",
+        "displayName": "Live Blue",
+        "tonalRamp": [
+          "#000a22",
+          "#002351",
+          "#003e87",
+          "#015cc1",
+          "#2d80ec",
+          "#67a6ff",
+          "#a8ccfe",
+          "#e5efff"
+        ]
+      },
+      "live-on-rail": {
+        "role": "secondary",
+        "displayName": "Rail Live Blue",
+        "tonalRamp": [
+          "#000b1d",
+          "#002649",
+          "#00437a",
+          "#1563a9",
+          "#3e86cf",
+          "#68a9ef",
+          "#a1ceff",
+          "#e3f0ff"
+        ]
+      },
+      "wait": {
+        "role": "secondary",
+        "displayName": "Waiting Amber",
+        "tonalRamp": [
+          "#160700",
+          "#3b1c00",
+          "#643400",
+          "#914d03",
+          "#b56f33",
+          "#d7945f",
+          "#f5bb8f",
+          "#ffeadb"
+        ]
+      },
+      "wait-mark": {
+        "role": "secondary",
+        "displayName": "Amber Mark",
+        "tonalRamp": [
+          "#140800",
+          "#362000",
+          "#5c3900",
+          "#865500",
+          "#b27302",
+          "#d89637",
+          "#f6bd76",
+          "#ffebd4"
+        ]
+      },
+      "wait-mark-on-rail": {
+        "role": "secondary",
+        "displayName": "Rail Amber Mark",
+        "tonalRamp": [
+          "#130900",
+          "#352000",
+          "#5b3a00",
+          "#845600",
+          "#af7401",
+          "#d5973a",
+          "#f4bf77",
+          "#ffebd2"
+        ]
+      },
+      "wait-soft": {
+        "role": "secondary",
+        "displayName": "Amber Wash",
+        "tonalRamp": [
+          "#0f0a04",
+          "#2a2419",
+          "#494133",
+          "#696050",
+          "#8b8170",
+          "#ada494",
+          "#d0c8ba",
+          "#f4eee2"
+        ]
+      },
+      "fail": {
+        "role": "secondary",
+        "displayName": "Failure Red",
+        "tonalRamp": [
+          "#1f0000",
+          "#4d0001",
+          "#810103",
+          "#b0231b",
+          "#d84c3f",
+          "#fb7768",
+          "#ffb3a8",
+          "#ffe9e5"
+        ]
+      },
+      "fail-on-rail": {
+        "role": "secondary",
+        "displayName": "Rail Failure Red",
+        "tonalRamp": [
+          "#1f0000",
+          "#4d0003",
+          "#800108",
+          "#ae2724",
+          "#d64f45",
+          "#f8796d",
+          "#ffb3a9",
+          "#ffe9e5"
+        ]
+      },
+      "fail-soft": {
+        "role": "secondary",
+        "displayName": "Red Wash",
+        "tonalRamp": [
+          "#100909",
+          "#2c2221",
+          "#4b3e3d",
+          "#6c5d5b",
+          "#8e7e7c",
+          "#b0a19f",
+          "#d3c6c4",
+          "#f7ecea"
+        ]
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "Second Ink",
+        "tonalRamp": [
+          "#080b12",
+          "#20252f",
+          "#3b424f",
+          "#596271",
+          "#7a8393",
+          "#9da5b5",
+          "#c2cad7",
+          "#e9effa"
+        ]
+      },
+      "ink-3": {
+        "role": "neutral",
+        "displayName": "Third Ink",
+        "tonalRamp": [
+          "#070b12",
+          "#1f2530",
+          "#3a4250",
+          "#586272",
+          "#798394",
+          "#9ca6b6",
+          "#c1cad8",
+          "#e8effa"
+        ]
+      },
+      "ink-disabled": {
+        "role": "neutral",
+        "displayName": "Disabled Ink",
+        "tonalRamp": [
+          "#070b12",
+          "#1f252f",
+          "#3a434f",
+          "#586270",
+          "#798392",
+          "#9ca6b4",
+          "#c2cad6",
+          "#e8eff9"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Paper",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ]
+      },
+      "panel": {
+        "role": "neutral",
+        "displayName": "Slate Panel",
+        "tonalRamp": [
+          "#0b0b0c",
+          "#242526",
+          "#414243",
+          "#606163",
+          "#818284",
+          "#a4a5a7",
+          "#c8c9ca",
+          "#eeeef0"
+        ]
+      },
+      "hover": {
+        "role": "neutral",
+        "displayName": "Hover Wash",
+        "tonalRamp": [
+          "#0a0b0c",
+          "#242527",
+          "#414244",
+          "#606164",
+          "#818285",
+          "#a3a5a8",
+          "#c8c9cb",
+          "#edeef0"
+        ]
+      },
+      "press": {
+        "role": "neutral",
+        "displayName": "Press Wash",
+        "tonalRamp": [
+          "#0a0b0d",
+          "#232528",
+          "#404246",
+          "#5f6166",
+          "#808287",
+          "#a3a5a9",
+          "#c7c9cd",
+          "#edeef2"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "tonalRamp": [
+          "#0a0b0d",
+          "#232528",
+          "#404246",
+          "#5f6166",
+          "#808287",
+          "#a2a5a9",
+          "#c7c9cd",
+          "#edeef2"
+        ]
+      },
+      "line-2": {
+        "role": "neutral",
+        "displayName": "Control Line",
+        "tonalRamp": [
+          "#090b0e",
+          "#22252a",
+          "#3e4248",
+          "#5d6168",
+          "#7e838a",
+          "#a1a5ac",
+          "#c6c9cf",
+          "#ebeff4"
+        ]
+      },
+      "rail": {
+        "role": "neutral",
+        "displayName": "Graphite Rail",
+        "tonalRamp": [
+          "#090b0f",
+          "#23252a",
+          "#3f4248",
+          "#5d6169",
+          "#7e828a",
+          "#a1a5ad",
+          "#c6c9d0",
+          "#eceef4"
+        ]
+      },
+      "rail-2": {
+        "role": "neutral",
+        "displayName": "Rail Raised",
+        "tonalRamp": [
+          "#090b0f",
+          "#22252b",
+          "#3e424a",
+          "#5d616b",
+          "#7d828c",
+          "#a0a5af",
+          "#c5c9d2",
+          "#ebeff5"
+        ]
+      },
+      "rail-3": {
+        "role": "neutral",
+        "displayName": "Rail Selected",
+        "tonalRamp": [
+          "#090b11",
+          "#21252d",
+          "#3d424d",
+          "#5c616e",
+          "#7c828f",
+          "#9fa5b2",
+          "#c4c9d4",
+          "#eaeef7"
+        ]
+      },
+      "rail-line": {
+        "role": "neutral",
+        "displayName": "Rail Line",
+        "tonalRamp": [
+          "#090b10",
+          "#21252d",
+          "#3d424c",
+          "#5c616d",
+          "#7c828f",
+          "#9fa5b1",
+          "#c4c9d3",
+          "#eaeff7"
+        ]
+      },
+      "rail-ink": {
+        "role": "neutral",
+        "displayName": "Rail Ink",
+        "tonalRamp": [
+          "#0a0b0c",
+          "#242527",
+          "#414244",
+          "#606164",
+          "#818285",
+          "#a3a5a8",
+          "#c8c9cb",
+          "#edeef0"
+        ]
+      },
+      "rail-ink-2": {
+        "role": "neutral",
+        "displayName": "Rail Ink Soft",
+        "tonalRamp": [
+          "#080b11",
+          "#20252e",
+          "#3b424d",
+          "#5a626e",
+          "#7a8390",
+          "#9da6b2",
+          "#c3cad5",
+          "#e9eff8"
+        ]
+      },
+      "state-quiet": {
+        "role": "neutral",
+        "displayName": "Quiet Grey",
+        "tonalRamp": [
+          "#080b12",
+          "#20252e",
+          "#3b424e",
+          "#596270",
+          "#7a8392",
+          "#9da6b4",
+          "#c2cad6",
+          "#e9eff9"
+        ]
+      },
+      "state-ended": {
+        "role": "neutral",
+        "displayName": "Ended Grey",
+        "tonalRamp": [
+          "#070b12",
+          "#1f252f",
+          "#3a434f",
+          "#586271",
+          "#798393",
+          "#9ca6b5",
+          "#c1cad7",
+          "#e8effa"
+        ]
+      },
+      "state-unknown": {
+        "role": "neutral",
+        "displayName": "Unknown Grey",
+        "tonalRamp": [
+          "#070b12",
+          "#1f252f",
+          "#3a4250",
+          "#586271",
+          "#798393",
+          "#9ca6b5",
+          "#c1cad7",
+          "#e8effa"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "The one lead sentence, and the empty-state heading."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "The chat title in the header, on one line."
+      },
+      "title-sm": {
+        "displayName": "Title Small",
+        "purpose": "Block headings and timeline event titles."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Statements in spec rows and explanations."
+      },
+      "body-sm": {
+        "displayName": "Body Small",
+        "purpose": "Proofs, quotes, fold contents and inspector text."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Buttons, tabs and chat titles in the rail."
+      },
+      "label-strong": {
+        "displayName": "Label Strong",
+        "purpose": "Spec-row labels. The selected tab and status words share the size and weight."
+      },
+      "caption": {
+        "displayName": "Caption",
+        "purpose": "Times, meta lines and notes."
+      },
+      "caption-strong": {
+        "displayName": "Caption Strong",
+        "purpose": "Section headings in the rail and inspector."
+      },
+      "label-sm": {
+        "displayName": "Label Small",
+        "purpose": "Certainty marks, tags and small disclosures."
+      }
+    },
+    "shadows": [
+      {
+        "name": "segmented-thumb",
+        "value": "0 1px 2px #12151b26",
+        "purpose": "The selected option in a segmented control on a light pane."
+      },
+      {
+        "name": "overlay-drawer",
+        "value": "-8px 0 24px #12151b1f",
+        "purpose": "The inspector when it floats over content at narrow widths."
+      }
+    ],
+    "motion": [
+      {
+        "name": "state-change",
+        "value": "120ms ease",
+        "purpose": "Background, colour, border and chevron changes."
+      },
+      {
+        "name": "row-hover",
+        "value": "100ms ease",
+        "purpose": "Chat and session rows in the rail."
+      },
+      {
+        "name": "drawer-slide",
+        "value": "160ms ease",
+        "purpose": "The rail drawer at 700px and below."
+      },
+      {
+        "name": "working-spin",
+        "value": "1.2s linear infinite",
+        "purpose": "The working state ring. Closes and stops under reduced motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "inspector-overlay",
+        "value": "1000px"
+      },
+      {
+        "name": "rail-drawer",
+        "value": "700px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The rare action that matters most in a view.",
+      "html": "<button class=\"ds-btn-primary\" type=\"button\">Explain this chat</button>",
+      "css": ".ds-btn-primary{display:inline-flex;align-items:center;justify-content:center;min-height:30px;padding:4px 12px;border:1px solid var(--ink,#12151b);border-radius:6px;background:var(--ink,#12151b);color:#fff;font-size:13px;font-weight:500;line-height:1.4;cursor:pointer;transition:background .12s,border-color .12s}.ds-btn-primary:hover{background:#2a303b;border-color:#2a303b}.ds-btn-primary:active{background:#000}.ds-btn-primary:focus-visible{outline:2px solid var(--ink,#12151b);outline-offset:1px}"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "The default button.",
+      "html": "<button class=\"ds-btn\" type=\"button\">Explain this step</button>",
+      "css": ".ds-btn{display:inline-flex;align-items:center;justify-content:center;min-height:30px;padding:4px 12px;border:1px solid var(--line-2,#cdd2da);border-radius:6px;background:var(--paper,#fff);color:var(--ink,#12151b);font-size:13px;font-weight:500;line-height:1.4;cursor:pointer;transition:background .12s,border-color .12s}.ds-btn:hover{background:var(--hover,#eff1f4);border-color:#bcc3cd}.ds-btn:active{background:var(--press,#e6e9ee)}.ds-btn:focus-visible{outline:2px solid var(--ink,#12151b);outline-offset:1px}"
+    },
+    {
+      "name": "Icon Button",
+      "kind": "button",
+      "refersTo": "button-icon",
+      "description": "Header and panel actions, clear until hover.",
+      "html": "<button class=\"ds-icon-btn\" type=\"button\" aria-label=\"Refresh current work\"><svg viewBox=\"0 0 16 16\" aria-hidden=\"true\"><path d=\"M13 8a5 5 0 1 1-1.5-3.6M13 2.5v3h-3\"/></svg></button>",
+      "css": ".ds-icon-btn{display:inline-grid;place-items:center;width:30px;height:30px;padding:0;border:0;border-radius:6px;background:none;color:var(--ink-3,#5c6676);cursor:pointer;transition:background .12s,color .12s}.ds-icon-btn svg{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}.ds-icon-btn:hover{background:var(--hover,#eff1f4);color:var(--ink,#12151b)}.ds-icon-btn:active{background:var(--press,#e6e9ee)}.ds-icon-btn:focus-visible{outline:2px solid var(--ink,#12151b);outline-offset:1px}"
+    },
+    {
+      "name": "Rail Search",
+      "kind": "input",
+      "refersTo": "search-field",
+      "description": "Borderless search on the graphite rail. The ring here is added to meet the focus guardrail; the build does not have one yet.",
+      "html": "<div class=\"ds-rail\"><label class=\"ds-search\"><svg viewBox=\"0 0 16 16\" aria-hidden=\"true\"><circle cx=\"7\" cy=\"7\" r=\"4.5\"/><path d=\"M10.5 10.5L14 14\"/></svg><input type=\"search\" placeholder=\"Search chats or projects\" aria-label=\"Search chats or projects\"></label></div>",
+      "css": ".ds-rail{padding:12px;background:var(--rail,#14171d);color:var(--rail-ink,#f1f3f6)}.ds-search{display:flex;align-items:center;gap:8px;height:32px;padding:0 8px 0 10px;border-radius:6px;background:var(--rail-2,#1e222a);color:var(--rail-ink-2,#a3acba);transition:background .12s}.ds-search svg{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}.ds-search:focus-within{background:var(--rail-3,#2a2f3a)}.ds-search:has(input:focus-visible){outline:2px solid var(--rail-ink,#f1f3f6);outline-offset:1px}.ds-search input{flex:1;min-width:0;height:100%;padding:0;border:0;outline:0;background:none;color:var(--rail-ink,#f1f3f6);font:inherit;font-size:13px}.ds-search input::placeholder{color:var(--rail-ink-2,#a3acba)}"
+    },
+    {
+      "name": "Rail Filters",
+      "kind": "nav",
+      "refersTo": "rail-filter",
+      "description": "Status filters with counts; the waiting count turns amber when not zero.",
+      "html": "<div class=\"ds-rail\"><div class=\"ds-filters\" role=\"group\" aria-label=\"Filter chats\"><button type=\"button\" aria-pressed=\"true\">All <span>34</span></button><button type=\"button\" aria-pressed=\"false\">Waiting <span class=\"ds-count-has\">2</span></button><button type=\"button\" aria-pressed=\"false\">Working <span>3</span></button><button type=\"button\" aria-pressed=\"false\">Projects</button></div></div>",
+      "css": ".ds-rail{padding:12px;background:var(--rail,#14171d);color:var(--rail-ink,#f1f3f6)}.ds-filters{display:flex;gap:2px;padding:2px;border-radius:7px;background:var(--rail-2,#1e222a)}.ds-filters button{flex:1 1 auto;display:inline-flex;align-items:center;justify-content:center;gap:4px;height:26px;padding:0 6px;border:0;border-radius:5px;background:none;color:var(--rail-ink-2,#a3acba);font-size:12px;font-weight:500;white-space:nowrap;cursor:pointer;transition:background .12s,color .12s}.ds-filters button:hover{color:var(--rail-ink,#f1f3f6)}.ds-filters button[aria-pressed=true]{background:var(--rail-3,#2a2f3a);color:var(--rail-ink,#f1f3f6)}.ds-filters button:focus-visible{outline:2px solid var(--rail-ink,#f1f3f6);outline-offset:1px}.ds-count-has{color:#f0ab43;font-weight:600}"
+    },
+    {
+      "name": "View Tabs",
+      "kind": "nav",
+      "refersTo": "tab",
+      "description": "Text tabs whose underline sits on the header hairline.",
+      "html": "<div class=\"ds-tabs\" role=\"tablist\" aria-label=\"View\"><button type=\"button\" role=\"tab\" aria-selected=\"true\">Now</button><button type=\"button\" role=\"tab\" aria-selected=\"false\">Understand</button><button type=\"button\" role=\"tab\" aria-selected=\"false\">Earlier</button></div>",
+      "css": ".ds-tabs{display:flex;gap:22px;border-bottom:1px solid var(--line,#e2e5ea)}.ds-tabs button{position:relative;height:34px;padding:0 1px;border:0;background:none;color:var(--ink-3,#5c6676);font-size:13px;font-weight:500;cursor:pointer;transition:color .12s}.ds-tabs button:hover{color:var(--ink,#12151b)}.ds-tabs button[aria-selected=true]{color:var(--ink,#12151b);font-weight:600}.ds-tabs button[aria-selected=true]::after{content:\"\";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--ink,#12151b)}.ds-tabs button:focus-visible{outline:2px solid var(--ink,#12151b);outline-offset:1px}"
+    },
+    {
+      "name": "Tag",
+      "kind": "chip",
+      "refersTo": "tag",
+      "description": "A static label beside a statement or event.",
+      "html": "<span class=\"ds-tag\">Verification needed</span>",
+      "css": ".ds-tag{display:inline-block;padding:0 6px;border-radius:4px;background:var(--hover,#eff1f4);color:var(--ink-2,#3a4250);font-size:12px;font-weight:500;line-height:19px;white-space:nowrap}"
+    },
+    {
+      "name": "Chat Row",
+      "kind": "custom",
+      "refersTo": "chat-row",
+      "description": "A rail row with state mark, title, time and meta line, shown here with all four chat states.",
+      "html": "<div class=\"ds-rail\"><button class=\"ds-chat ds-chat-selected\" type=\"button\"><span class=\"ds-state ds-state-working\"></span><span class=\"ds-chat-title\">Rebuild the workbench</span><span class=\"ds-chat-time\">2 min</span><span class=\"ds-chat-meta\">Claude · yukio-cloud-handoff</span></button><button class=\"ds-chat\" type=\"button\"><span class=\"ds-state ds-state-waiting\"></span><span class=\"ds-chat-title\">Check the release notes</span><span class=\"ds-chat-time\">8 min</span><span class=\"ds-chat-meta\">Codex · yukio-cloud-handoff</span></button><button class=\"ds-chat\" type=\"button\"><span class=\"ds-state ds-state-ended\"></span><span class=\"ds-chat-title\">Fix the song embed</span><span class=\"ds-chat-time\">1 hr</span><span class=\"ds-chat-meta\">Codex · MV Player</span></button><button class=\"ds-chat\" type=\"button\"><span class=\"ds-state ds-state-unknown\"></span><span class=\"ds-chat-title\">Migrate the old content</span><span class=\"ds-chat-time\">1 hr</span><span class=\"ds-chat-meta\">Deep Code</span></button></div>",
+      "css": ".ds-rail{padding:12px;background:var(--rail,#14171d);color:var(--rail-ink,#f1f3f6)}.ds-chat{display:grid;grid-template-columns:14px minmax(0,1fr) auto;column-gap:9px;width:100%;padding:7px 8px;border:0;border-radius:6px;background:none;color:inherit;text-align:left;cursor:pointer;transition:background .1s}.ds-chat:hover{background:var(--rail-2,#1e222a)}.ds-chat-selected{background:var(--rail-3,#2a2f3a)}.ds-chat:focus-visible{outline:2px solid var(--rail-ink,#f1f3f6);outline-offset:1px}.ds-chat-title{grid-column:2;min-width:0;font-size:13px;font-weight:500;line-height:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ds-chat-time{grid-column:3;grid-row:1;font-size:12px;line-height:20px;color:var(--rail-ink-2,#a3acba)}.ds-chat-meta{grid-column:2/-1;min-width:0;font-size:12px;line-height:18px;color:var(--rail-ink-2,#a3acba);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ds-state{position:relative;box-sizing:border-box;grid-column:1;grid-row:1;display:inline-block;width:12px;height:12px;margin-top:4px;border-radius:50%}.ds-state-working{border:2px solid #62aaf6;border-top-color:transparent;animation:ds-spin 1.2s linear infinite}.ds-state-waiting{background:#f0ab43}.ds-state-waiting::after{content:\"\";position:absolute;left:5px;top:2px;width:2px;height:8px;background:linear-gradient(#14171d 0 4.5px,transparent 4.5px 6px,#14171d 6px)}.ds-state-ended{background:#616b7a;transform:scale(.72)}.ds-state-unknown{border:1.5px dashed #6e7888}@keyframes ds-spin{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){.ds-state-working{animation:none;border-top-color:#62aaf6}}"
+    },
+    {
+      "name": "Certainty Marks",
+      "kind": "custom",
+      "refersTo": "certainty-mark",
+      "description": "The signature: one form per level of certainty, with a word beside it.",
+      "html": "<div class=\"ds-marks\"><button class=\"ds-mark ds-observed\" type=\"button\">Observed in records</button><button class=\"ds-mark ds-request\" type=\"button\">Your requirements</button><button class=\"ds-mark ds-assistant\" type=\"button\">Assistant’s report</button><button class=\"ds-mark ds-inference\" type=\"button\">Interpretation</button><button class=\"ds-mark ds-unknown\" type=\"button\">Not yet clear</button><button class=\"ds-mark ds-model\" type=\"button\">Model interpretation</button></div>",
+      "css": ".ds-marks{display:flex;flex-wrap:wrap;gap:4px 14px}.ds-mark{display:inline-flex;align-items:center;gap:6px;min-height:24px;padding:0 6px 0 5px;border:0;border-radius:4px;background:none;color:var(--ink-3,#5c6676);font-size:12px;font-weight:500;line-height:1.3;cursor:pointer;transition:background .12s,color .12s}.ds-mark:hover{background:var(--hover,#eff1f4);color:var(--ink,#12151b)}.ds-mark:focus-visible{outline:2px solid var(--ink,#12151b);outline-offset:1px}.ds-mark::before{content:\"\";flex:none;width:9px;height:9px;border-radius:50%;box-sizing:border-box}.ds-observed::before{background:var(--ink,#12151b)}.ds-request::before{background:var(--ink,#12151b);border-radius:2px}.ds-assistant::before{background:linear-gradient(90deg,var(--ink,#12151b) 50%,transparent 50%);box-shadow:inset 0 0 0 1.5px var(--ink,#12151b)}.ds-inference::before{box-shadow:inset 0 0 0 1.5px var(--ink-3,#5c6676)}.ds-unknown::before{border:1.5px dashed var(--ink-3,#5c6676)}.ds-model::before{width:8px;height:8px;background:var(--ink,#12151b);border-radius:1px;transform:rotate(45deg) scale(.8)}"
+    },
+    {
+      "name": "Spec Row with Proof",
+      "kind": "card",
+      "refersTo": "proof",
+      "description": "A statement on hairlines whose mark opens its evidence in place.",
+      "html": "<section class=\"ds-spec\"><h2>Why this step</h2><div><p>The assistant is checking that the running app and the source match before changing anything.</p><button class=\"ds-spec-mark\" type=\"button\" aria-expanded=\"true\">Observed in records</button><div class=\"ds-proof\">Read the installed page and compared it with the source folder.</div></div></section>",
+      "css": ".ds-spec{display:grid;grid-template-columns:112px minmax(0,1fr);column-gap:16px;padding:12px 0;border-top:1px solid var(--line,#e2e5ea);border-bottom:1px solid var(--line,#e2e5ea)}.ds-spec h2{margin:0;font-size:13px;font-weight:600;line-height:23px;color:var(--ink-3,#5c6676)}.ds-spec p{margin:0;font-size:14px;line-height:1.65;color:var(--ink,#12151b)}.ds-spec-mark{display:inline-flex;align-items:center;gap:6px;min-height:24px;margin:3px 0 0 -5px;padding:0 6px 0 5px;border:0;border-radius:4px;background:none;color:var(--ink,#12151b);font-size:12px;font-weight:500;line-height:1.3;cursor:pointer;transition:background .12s}.ds-spec-mark::before{content:\"\";flex:none;width:9px;height:9px;border-radius:50%;background:var(--ink,#12151b)}.ds-spec-mark:hover{background:var(--hover,#eff1f4)}.ds-spec-mark:focus-visible{outline:2px solid var(--ink,#12151b);outline-offset:1px}.ds-proof{margin-top:6px;padding:9px 12px;border-radius:6px;background:var(--panel,#f5f6f8);font-size:13px;line-height:1.65;color:var(--ink-2,#3a4250)}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Honest Monitor",
+    "overview": "The workbench is a desktop tool a non-technical boss opens for seconds to learn how several AI assistants are doing. It should read like a well-kept status board: what needs you, one plain sentence about what is happening, and a mark that says how that sentence is known. Its strongest opinions are about what a colour or a shape is allowed to claim.\n\nDensity is desktop-tool tight: 14px reading text, 13px controls, 30px control height. A graphite rail, a white reading column and a pale slate inspector carry all the depth, so the page stays quiet enough for its few signals to stand out.\n\nThe user has rejected characters in this surface, and neither the earlier white-green interface nor the blue-white draft is a reference. The direction also refuses the long scrolling card stack and any skeuomorphic costume.",
+    "keyCharacteristics": [
+      "Three tone planes and one 1px line weight, with no decorative surfaces.",
+      "Ink acts; blue, amber and red only report state.",
+      "A finished turn stays neutral, and the palette has no success colour.",
+      "Every statement carries a certainty mark that opens its evidence in place.",
+      "System type from 12px to 18px, with tabular figures throughout.",
+      "Motion only confirms: 100ms to 160ms state changes, plus one spinning ring for live work."
+    ],
+    "rules": [
+      {
+        "name": "The Ink Acts Rule",
+        "body": "Working Ink is the only action colour: primary buttons, the selected tab, focus rings. There is no brand accent, and no status colour ever fills a button.",
+        "section": "colors"
+      },
+      {
+        "name": "The Three Signals Rule",
+        "body": "Blue is live work. Amber is a call on your attention: a chat waiting for you, or a caveat about the records. Red is failure. Each appears only with that meaning, and always with words, never as colour alone. The one other blue is the text-selection tint.",
+        "section": "colors"
+      },
+      {
+        "name": "The Neutral Finish Rule",
+        "body": "A finished turn is grey, never green, because finishing is not success.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tight Scale Rule",
+        "body": "Reading and controls live at 12px, 13px and 14px. Only the chat title, the 17px metric values on Records and the headline go larger. Hierarchy comes from weight and ink step, not size.",
+        "section": "typography"
+      },
+      {
+        "name": "The Twelve Pixel Rule",
+        "body": "No text renders below 12px. Labels of 9px to 11px are a known failure for this reader.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tabular Rule",
+        "body": "Figures are tabular everywhere, set once on the page body, so times and counts align without extra work.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Rule",
+        "body": "Surfaces are flat at rest. A shadow appears only on a segmented thumb or a drawer that overlaps content.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Nested Radius Rule",
+        "body": "Segmented tracks use 7px with 2px of padding, and their thumbs use 5px, so inner and outer corners stay concentric.",
+        "section": "shapes"
+      },
+      {
+        "name": "The One Hairline Rule",
+        "body": "Every divider and control border is 1px. Outside the marks themselves, the only 2px lines are the selected-tab underline and the focus ring.",
+        "section": "shapes"
+      },
+      {
+        "name": "The Shape Carries It Rule",
+        "body": "Every chat state and certainty level has its own form, so each still reads in greyscale.",
+        "section": "components"
+      },
+      {
+        "name": "The One Step Rule",
+        "body": "Evidence opens in place, directly below the statement it supports, and never sits more than one disclosure away from it.",
+        "section": "components"
+      }
+    ],
+    "dos": [
+      "Do pair every status colour with plain words, and with a distinct form wherever it marks a chat or a statement.",
+      "Do keep Working Ink for actions, and let everything else stay neutral.",
+      "Do separate content with 1px Hairlines and tone, not boxes.",
+      "Do open evidence in place from a certainty mark, on the Slate Panel tint.",
+      "Do give every focusable element the 2px focus ring: Working Ink on light panes, Rail Ink on the rail, 1px offset.",
+      "Do stop all transitions and the working ring's spin under reduced motion, leaving a closed ring.",
+      "Do truncate names to one line in rails and headers, and let reading text break anywhere; real names run from 3 to 35 characters in two languages.",
+      "Do draw icons as inline SVG at 16px with a 1.4 stroke and round caps."
+    ],
+    "donts": [
+      "Don't show characters, the pet, or any art from the approved rig in the workbench. The user confirmed this: \"不要人物\".",
+      "Don't colour a finished turn green, or add any success colour.",
+      "Don't add a brand accent, or reuse a status colour for emphasis, links or buttons.",
+      "Don't set text below 12px.",
+      "Don't stack reading content in cards, or add shadows to resting surfaces.",
+      "Don't add a second divider weight.",
+      "Don't show a new failure in amber; the amber failure tags on Records are open drift, not precedent.",
+      "Don't use monospace outside record identifiers.",
+      "Don't load fonts, images, scripts or styles from another origin, or write inline styles; the page security policy blocks them.",
+      "Don't treat the earlier white-green interface or the blue-white draft as a reference."
+    ]
+  }
+}
