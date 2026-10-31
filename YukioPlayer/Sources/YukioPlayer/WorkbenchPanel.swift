@@ -212,7 +212,9 @@ final class WorkbenchPanelController: NSWindowController, NSWindowDelegate, WKNa
         fill(loading)
         let token = UUID(); opening = token
         runtime.start { [weak self] result in
-            guard let self, self.opening == token, self.window?.isVisible == true, !self.showingSettings else { return }
+            // A running service answers synchronously, before AppKit reports the window as visible.
+            // Closing the panel replaces `opening`, so a late answer still cannot reach a closed page.
+            guard let self, self.opening == token, !self.showingSettings else { return }
             switch result {
             case .success(let url):
                 self.serviceURL = url
