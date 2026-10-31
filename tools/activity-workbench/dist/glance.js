@@ -413,7 +413,7 @@ function understandingControls(){
  const button=$('understandingExplain');
  button.disabled=!workData||!grant||!model?.automatic_on_open||workInFlight||readingBusy||Boolean(autoRun)||pageClosed;
  button.textContent=workInFlight?tr('正在解读…'):workScope==='project'?tr('解读整个项目'):tr('解读这次聊天');
- $('understandingSendNote').textContent=!model?.automatic_on_open?tr('当前为本机记录摘要。开启解释后，可生成目标、方法和有效性的连贯解读。'):
+ $('understandingSendNote').textContent=!model?.automatic_on_open?tr('开启解释后，可生成连贯解读。'):
   workScope==='project'?tr('点击后，将下方列出的同项目聊天短摘录交给所选解释服务；只生成这一次，使用你的账号额度。'):
   tr('点击后，根据这次聊天的较早要求、最新补充、公开做法和已知结果生成解读。');
 }

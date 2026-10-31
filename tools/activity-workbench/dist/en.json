@@ -885,5 +885,6 @@
 "页面打开期间持续跟进，至少间隔三分钟，有变化才更新。切换聊天后只跟进新选择的聊天；关闭页面停止后续发送。已经发出的本次请求可能返回。没有页面在运行，就没有后台解释任务。模型可能出错，操作成功不代表整项任务验收。": "While the page is open it follows along at most every three minutes, and only when something changed. Switching chats follows only the new chat. Closing the page stops further sending, though a request already sent may still return. With no page open, nothing runs in the background. Models can be wrong, and a successful action does not mean the whole task is accepted.",
 "解释设置": "Explanations",
 "所属项目": "Project",
-"协助分支": "Helper branch"
+"协助分支": "Helper branch",
+"开启解释后，可生成连贯解读。": "Turn on explanations for a connected reading."
 }
