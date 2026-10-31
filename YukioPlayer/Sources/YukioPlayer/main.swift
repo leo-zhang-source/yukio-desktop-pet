@@ -1706,6 +1706,11 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 self.answersInFlight.remove(key)
                 switch result {
                 case .success:
+                    if self.shownQuestion?.session == pending.session && self.shownQuestion?.callID == pending.callID {
+                        self.questionPanel.cardView.draftText = ""
+                        self.pickedOptions = []
+                    }
+                    self.questionPresentation.saveDraft("", picked: [], for: key)
                     self.questionPresentation.dismiss(key)
                     self.router.acknowledgeQuestion(session: pending.session, callID: pending.callID, now: nowMs())
                 case .failure(let error):
@@ -1728,10 +1733,16 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         var pending = (showQuestionCard && !petHidden) ? source?.askingQuestion : nil
         if let p = pending, questionPresentation.isDismissed(.init(p)) { pending = nil }
         if pending?.callID != shownQuestion?.callID || pending?.session != shownQuestion?.session {
-            // 换了一道题（或问完了）：选中项、输入框、提示一律重来。
-            pickedOptions = []
+            // Hide/switch without losing or transferring a draft to another chat.
+            if let previous = shownQuestion {
+                questionPresentation.saveDraft(questionPanel.cardView.draftText, picked: pickedOptions, for: .init(previous))
+            }
+            let nextKey = pending.map { QuestionPresentationState.Key($0) }
+            pickedOptions = nextKey.map { questionPresentation.picked(for: $0) } ?? []
             answerNotice = nil
-            questionPanel.cardView.answerText = ""
+            questionPanel.cardView.draftText = nextKey.map { questionPresentation.draft(for: $0) } ?? ""
+            questionPanel.cardView.diagnosticRequestID = nextKey.map { questionPresentation.diagnosticID(for: $0) } ?? "none"
+            questionPanel.cardView.recordInputState("question_changed")
         }
         shownQuestion = pending
         answerNotice = pending.flatMap { questionPresentation.notice(for: .init($0)) }
@@ -2103,6 +2114,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
             updateCards(now: nowMs(), immediate: true)
         case .showQuestionCard(let value):
             showQuestionCard = value
+            if value, let pending = router.askingQuestion { questionPresentation.reopen(.init(pending)) }
             updateQuestion(now: nowMs(), immediate: true)
         case .skin(let picked):
             do { try switchSkin(to: picked) } catch {
@@ -2152,6 +2164,9 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         deepSeekSetup.isEnabled = deepSeekInstaller == nil
         menu.addItem(deepSeekSetup)
         menu.addItem(action(tr("Background answer setup (GPT / Claude / DeepSeek)", "后台回答说明（GPT / Claude / DeepSeek）"), #selector(menuAnswerHelp)))
+        if following, let pending = router.askingQuestion, questionPresentation.isDismissed(.init(pending)) {
+            menu.addItem(action(tr("Reopen question (keep draft)", "重新打开问题卡（保留草稿）"), #selector(menuReopenQuestion)))
+        }
         menu.addItem(.separator())
         let chats = simulation == nil ? router.sessionSummaries(now: nowMs(), quietWithinMs: Self.chatListWindowMs,
                                                                 limit: Self.chatListLimit) : []
@@ -2245,6 +2260,12 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
     @objc private func menuStopDemo() { stopDemo() }
     @objc private func menuToggleFollow() { following.toggle() }
     @objc private func menuShowSettings() { showSettings() }
+    @objc private func menuReopenQuestion() {
+        guard let pending = router.askingQuestion else { return }
+        questionPresentation.reopen(.init(pending))
+        showQuestionCard = true
+        updateQuestion(now: nowMs(), immediate: true)
+    }
     @objc private func menuToggleBubble() {
         showBubble.toggle()
         let now = nowMs()

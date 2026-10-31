@@ -48,6 +48,16 @@ def atoms(row, sequence):
 def evidence_id(value):return value.get('evidence_id') or value.get('event_id') or ''
 
 
+def unlinked_summary(receipt):
+    """Describe the receipt itself, without crediting an outer request or task."""
+    status=receipt.get('outcome','unknown')
+    if receipt.get('conflicting_results') or receipt.get('result_flags_conflict'):status='conflict'
+    if status not in STATUS:status='unknown'
+    label='命令回执' if receipt.get('item_type') in ('CommandExecution','commandExecution','command_execution') else '工具回执'
+    return dict(text=label+'；'+STATUS[status][0]+'。尚未关联到具体操作，不能据此判定外层步骤或整项任务成功。',
+                status=status,basis='observed',association='unlinked',event_id=evidence_id(receipt),sequence=receipt['sequence'])
+
+
 def project(records, client):
     operations=[];orphans=[];by_id={};by_call=defaultdict(list);epoch=0
     counts=Counter();latest=None;warnings=[];atom_count=0;limited=False;processed_end=0
@@ -190,4 +200,7 @@ class ContextView:
         # STATUS insertion order deliberately matches the tuple above; assert in tests.
         latest=out['latest_marker']
         if latest:facts.append(dict(title='最后观察到的阶段标记',note=latest['title']+'。'+latest['note']+' 不代表当前仍在运行。',ids=[latest['evidence']['event_id']]))
+        for receipt in receipts[-3:]:
+            summary=unlinked_summary(receipt)
+            facts.append(dict(title='未关联回执的独立结果',note=summary['text'],ids=[summary['event_id']]))
         return out,facts

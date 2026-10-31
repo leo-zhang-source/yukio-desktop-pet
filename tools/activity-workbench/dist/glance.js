@@ -130,6 +130,8 @@ function render(data){current=data;document.body?.classList.remove('no-chat');$(
  $('projectText').textContent=brief?[tr('前面：')+brief.before,tr('现在：')+brief.now,tr('接下来：')+brief.next,tr('来源：')+brief.source_note].join('\n\n'):'';
  $('attention').hidden=data.tone!=='attention';$('attention').textContent=data.needs_you;
  $('latestStep').hidden=!data.last_step;if(data.last_step){$('stepAction').textContent=data.last_step.action;$('stepResult').textContent=data.last_step.result;}
+ $('unlinkedReceipts').hidden=!(data.unlinked_results?.length);$('unlinkedReceiptList').replaceChildren();
+ for(const receipt of data.unlinked_results||[])$('unlinkedReceiptList').append(make('p',receipt.text));
  $('historyLink').href='/history?'+new URLSearchParams({client:data.client,key:data.key,lang:uiLanguage});
  $('historyRecords').href=$('historyLink').href;
  $('historyScope').textContent=tr('按当时的要求分段，每段都能展开看目标、公开做法和结果。');

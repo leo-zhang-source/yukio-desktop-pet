@@ -7,7 +7,7 @@ import time
 from history_view import CLIENTS, CLIENT, FROM, SOURCE, GENERATION, SESSION, HistoryView, key_parts
 from source_context import SourceContext, clean
 from collector_status import read_status
-from context_view import ContextView
+from context_view import ContextView,unlinked_summary
 from handoff_view import HandoffView
 from task_summary import recap
 from plain_language import plain_words,readable_fragment
@@ -185,6 +185,7 @@ class GlanceView:
         activity=speech or (operations[0] if operations else None)
         reason=public_reason(speech)
         context=ContextView(self.history).snapshot(client,key,high)
+        unlinked_results=[unlinked_summary(r) for r in context['unlinked_receipts'] if r['sequence']>current_start][-3:]
         steps=[op for op in context['operations'] if op['request']['sequence']>current_start][-3:]
         needed={a['sequence'] for op in steps for a in [op['request']]+op['receipts'][-2:]}
         with self.history.connect(client) as db:
@@ -248,7 +249,7 @@ class GlanceView:
             needs_you=needs,recent=meaningful,source_unavailable=source['unavailable'],source_missing=source['missing'],
             partial=warnings or source['missing']>0 or material['missing']>0 or len(rows)>=360 or context['window_limited'],
             snapshot=high,scope='最近保存的一段；不是全部任务。',recorder=read_status(self.history.databases[client],client),
-            results=results,fragment=fragment,proposals=proposals,turn_marker=latest_marker,
+            results=results,unlinked_results=unlinked_results,fragment=fragment,proposals=proposals,turn_marker=latest_marker,
             evidence={k:v for k,v in [('goal',user),('content',activity),('explanation',speech),('reason',reason),('fragment',fragment)] if v})
         detail.update(local_story(user,activity,reason,last_step,fragment))
         content_refs=[dict(title='具体活动',**activity)] if activity else []
@@ -275,6 +276,7 @@ class GlanceView:
         # Model freshness follows readable meaning, not receipt IDs, repeated
         # opaque calls or polling. Real changed actions/results still invalidate.
         meaning['results']=[{k:r[k] for k in ('text','basis','status')} for r in results if not r['text'].startswith('一次工具操作；')]
+        meaning['unlinked_results']=[{k:r[k] for k in ('text','status')} for r in unlinked_results]
         meaning['fragment']={k:fragment[k] for k in ('text','material_kind')} if fragment else None
         meaning['proposals']=[p['text'] for p in proposals]
         meaning['project_goals']=[p['text'] for p in origins];meaning['previous_progress']=[p['text'] for p in checkpoints]
@@ -344,6 +346,10 @@ class GlanceView:
             references.append(dict(evidence_id=alias,title='操作与结果',quote=item['text'],record_id=item['event_id'],sequence=item['sequence']))
             if data['last_step'] and item['sequence']==data['last_step']['sequence'] and item['sequence']>=data['evidence'].get('content',{}).get('sequence',0):
                 current_operation.update(current_operation_evidence_id=alias,current_operation_status=item['status'])
+        for item in data['unlinked_results']:
+            alias='E'+str(len(facts)+1)
+            facts.append(dict(evidence_id=alias,record_marker='未关联回执的独立结果',excerpt=item['text'],evidence_class='observed'))
+            references.append(dict(evidence_id=alias,title='未关联回执',quote=item['text'],record_id=item['event_id'],sequence=item['sequence']))
         for item in data['proposals'][-2:]:
             alias='E'+str(len(facts)+1)
             facts.append(dict(evidence_id=alias,record_marker='拟修改内容，尚未确认写入',excerpt=item['text'],evidence_class='observed'))

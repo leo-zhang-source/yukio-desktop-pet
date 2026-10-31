@@ -174,6 +174,11 @@ class WorkUnderstanding:
                 outcomes.append(alias)
                 outcome_anchor = alias
                 local_outcomes.append((data['title'], item['text'], alias))
+            for item in data.get('unlinked_results', []):
+                alias = add(data, '未关联回执的独立结果', item['text'], 'observed', item)
+                outcomes.append(alias)
+                outcome_anchor = outcome_anchor or alias
+                local_outcomes.append((data['title'], item['text'], alias))
             fragment = data.get('fragment')
             if fragment:
                 alias = add(data, '实际返回的短片段（不代表完整验收）', fragment['text'], 'observed', fragment)

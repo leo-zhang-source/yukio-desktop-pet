@@ -886,5 +886,13 @@
 "解释设置": "Explanations",
 "所属项目": "Project",
 "协助分支": "Helper branch",
-"开启解释后，可生成连贯解读。": "Turn on explanations for a connected reading."
+"开启解释后，可生成连贯解读。": "Turn on explanations for a connected reading.",
+"命令回执": "Command receipt",
+"尚未关联到具体操作，不能据此判定外层步骤或整项任务成功。": "Not yet linked to a specific operation; this does not establish success of the outer step or the whole task.",
+"工具回执": "Tool receipt",
+"无法确认接收方，请重新预览。": "The recipient could not be confirmed. Please open a new preview.",
+"未关联回执": "Unlinked receipts",
+"未关联回执的独立结果": "Independent result from an unlinked receipt",
+"解释接收方或客户端配置已变化，请重新预览后再发送。": "The explanation recipient or client configuration changed. Review a new preview before sending.",
+"通过本机安装的助手发送到该客户端配置的模型服务，可能由远端服务器处理；使用你在该客户端的登录或凭据及相应用量。": "Sent through the locally installed assistant to the model service configured in that client, which may process it remotely. Uses your login or credentials and the corresponding usage allowance."
 }

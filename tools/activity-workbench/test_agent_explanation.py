@@ -217,6 +217,10 @@ else:
                     return 0, encode(dict(subtype='success', structured_output=content)).encode(), b''
                 fx.service.sender = agent.call_agent
                 with patch.object(agent, 'find_agent', return_value=['fake']), patch.object(agent, 'run_bounded', side_effect=transport):
+                    # A provider change needs a fresh grant, just as the HTTP settings route does.
+                    _, payload, refs = fx.fx.glance.prepared('codex', fx.fx.key)
+                    preview = fx.service.preview_prepared(dict(client='codex', key=fx.fx.key), payload, refs)
+                    fx.grant = fx.auto.authorize(preview['token'], True, page_owned=True)['grant']
                     self.assertEqual(fx.auto.refresh(fx.grant, True)['result']['model'], agent.LABELS[provider])
                     fx.now[0] += 11
                     current = fx.reading.current(fx.grant)

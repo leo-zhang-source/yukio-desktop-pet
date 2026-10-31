@@ -21,7 +21,8 @@ class ReadingView:
 
     def freeze(self,grant,payload,refs):
         selection=self.automation.selection(grant)
-        return self.explainer.preview_prepared(dict(selection,reading_grant=grant),payload,refs)['token']
+        return self.explainer.preview_prepared(dict(selection,reading_grant=grant),payload,refs,
+            request_config=self.automation.recipient_config(grant))['token']
 
     @staticmethod
     def payload(facts,parts,*,kind='detail',historical=False,state='unknown',naming=None):

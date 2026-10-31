@@ -26,6 +26,7 @@ def recap(data,handoffs):
     now=point(data['content'],data['content_basis'],data['part_evidence'].get('content',[]))
     outcomes=[point(r['text'],r['basis'],[dict(title='操作和对应结果',event_id=r['event_id'],sequence=r['sequence'],text=r['text'])])
               for r in data['results'] if not r['text'].startswith('一次工具操作；')][-3:]
+    outcomes.extend(point(r['text'],'observed',[dict(title='未关联回执',**r)]) for r in data.get('unlinked_results',[]))
     exchanges=[]
     for card in handoffs['items'][:6]:
         # Never join independent cards by recipient name or presumed task.
