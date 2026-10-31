@@ -36,7 +36,7 @@ Mac雪绪0.4.13保留工作台0.3.9，桌面应用名为Yukio；更新改成自�
 
 ## 直接使用
 
-下载[Mac安装包与说明](https://github.com/leozhang8654/yukio-desktop-pet/releases/tag/activity-workbench-v0.3.0)，解压后打开“雪绪活动工作台.app”。已内置运行环境；Apple芯片，构建目标macOS13+，其他系统实机结论见限制。工作台与原桌宠分开，不替换原有桌宠。
+下载[Mac安装包与说明](https://github.com/leo-zhang-source/yukio-desktop-pet/releases/tag/activity-workbench-v0.3.0)，解压后打开“雪绪活动工作台.app”。已内置运行环境；Apple芯片，构建目标macOS13+，其他系统实机结论见限制。工作台与原桌宠分开，不替换原有桌宠。
 
 打开后选择聊天，下方是内容、解释、原因。按用户明确设置，打开页面后自动解释所选聊天，页面打开时持续跟进，关掉停止后续发送。原来的“解释一次／持续解释”按钮已移除。新增的“深入解释”只在需要时展开当前工作的做法、前后联系、用途和限制；“之前做了什么”按每次要求分段，每次显示三段千问简短总结，可再展开任一段。两个新入口不改变首页的自动说明。发送范围、接收位置和限制在折叠的“说明与隐私”中查看。持续打开时通过心跳续期；浏览器异常退出后旧授权最多两分钟失效。至少间隔3分钟、没有变化不重复生成，保留调用预算。自动设置只绑定本机已配置的接收位置，不随包分发或继承到新接收位置。
 
@@ -70,9 +70,9 @@ python3 -m venv .build-venv
 
 [版本说明](../../docs/releases/activity-workbench-0.3.0.md)与[本轮核验](../../docs/validation/activity-mac-0.3.0/README.md)区分完成、测试与未验证。Windows旧构建入口保留作后续开发参考，不属于本次Mac发布。
 
-0.3.1 的当前操作结果由本机依据回执补到“内容”，模型仍须引用当前动作；错误引用、已结束却声称正在做、夸大保证等检查继续保留。三段展示会用对象类别替代技术细节；只有记录明确给出用途时，才称为“封面图”等具体用途。原始短依据默认折叠。详见[本轮修复记录](../../docs/validation/activity-explanation-0.3.1/README.md)。
+0.3.1 的当前操作结果由本机依据回执补到“内容”，模型仍须引用当前动作；错误引用、已结束却声称正在做、夸大保证等检查继续保留。三段展示会用对象类别替代技术细节；只有记录明确给出用途时，才称为“封面图”等具体用途。原始短依据默认折叠。原文曾引用 `docs/validation/activity-explanation-0.3.1/README.md`，当前可恢复源码未包含该报告。
 
-0.3.2 自动说明的测试与关闭边界见[本轮核验](../../docs/validation/activity-auto-page-0.3.2/README.md)。
+0.3.2 原文曾引用 `docs/validation/activity-auto-page-0.3.2/README.md`，当前可恢复源码未包含该报告；当前 Mac 候选的测试边界见[阶段 4 记录](../../docs/remediation/STAGE4-DELIVERY.md)。
 
 0.3.3 的设计、真实试用与限制见[深入说明与分段回顾](../../docs/ACTIVITY-READING.md)。本次只交付本机 Mac App 和桌面安装包，未推送或发布到 GitHub。
 

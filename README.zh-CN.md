@@ -2,7 +2,11 @@
 
 # Yukio · 雪绪
 
-> 本轮整改的开发入口：[DEVELOPMENT.md](DEVELOPMENT.md)。本地集成分支用于保留现有功能并继续整改，尚未发布新版本。
+> **账号迁移（2026-10-31）：**源码与历史发行资料正在恢复到 `leo-zhang-source`。主分支包含最新 Mac 集成开发成果，不代表发布了新 App。Mac 5.3 是原公开包，5.4 候选尚未完成独立环境验收。[迁移与版本状态](docs/GITHUB-MIGRATION.md) · [开发入口](DEVELOPMENT.md)。
+
+> **当前重点（2026-10-29）：优先完成 Mac 版本。** Windows 开发、适配、打包、实机测试和发布全部暂缓，作为大后期可选事项保留；现有代码与资料保留，待用户明确要求后再恢复。Windows 不阻塞当前 Mac 验收与交付，独立环境测试要求继续适用于 Mac。
+
+> **GitHub 更新节奏：**小改动先在本地积累和验证，阶段性成果或大更新准备完整后集中上传；避免短时间反复推送、修改 PR、发小版本或更新进度页。用户明确要求立即单独处理时按当次要求执行。
 
 ### 与 AI 一起开发时，陪在桌面上的伙伴。
 
@@ -11,7 +15,7 @@
 <img src="docs/readme/desk.gif" width="192" alt="雪绪阅读、书写、核对工作，最后举起完成牌">
 
 <p>
-<a href="https://github.com/leozhang8654/yukio-desktop-pet/releases/latest"><img src="https://img.shields.io/github/v/release/leozhang8654/yukio-desktop-pet?label=Latest%20release&color=426854" alt="最新公开版本"></a>
+<a href="https://github.com/leo-zhang-source/yukio-desktop-pet/releases/latest"><img src="https://img.shields.io/github/v/release/leo-zhang-source/yukio-desktop-pet?label=Latest%20release&color=426854" alt="最新公开版本"></a>
 <img src="https://img.shields.io/badge/macOS-13%2B-222222?logo=apple&logoColor=white" alt="macOS 13 或更新版本">
 <img src="https://img.shields.io/badge/Windows-downloads%20paused-lightgrey" alt="Windows 下载暂时下架">
 <img src="https://img.shields.io/badge/Language-English%20%2F%20中文-426854" alt="支持英文与中文界面">
@@ -19,7 +23,7 @@
 
 [English](README.md) · **简体中文**
 
-**[访问官网 · 试玩角色动画](https://is.gd/yukioapp)**
+**[访问官网 · 试玩角色动画](https://leo-zhang-source.github.io/yukio-website/)**
 
 [下载](#下载) · [功能亮点](#功能亮点) · [角色与动画](#角色与动画) · [开始使用](#开始使用)
 
@@ -117,15 +121,15 @@ Yukio 读取三类助手的本机活动记录。你可以指定一个来源，�
 
 ## 下载
 
-**Mac 5.3 已包含通过验证的软件内更新。** 收到提醒后点击“安装更新”，软件会下载、安装并重新打开。当前版本为5.3，之后按5.4、5.5继续，大更新再用6.0。0.4.13用户需先安装完整5.3包一次。[更新方法](docs/MANUAL-UPDATES.md)。
+**Mac 5.3 为恢复的原版下载。** 文件保留原哈希和包内更新地址。旧账号已不可用，目前软件内更新不可用，请通过下方链接手动安装。较新的 5.4 仍是未完成独立验收的开发候选。[更新说明](docs/MANUAL-UPDATES.md)。
 
 | 平台 | 下载 | 提供的体验 |
 | --- | --- | --- |
-| **Apple 芯片 Mac · macOS 13+** | **[v5.3 DMG](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v5.3/Yukio-5.3-macOS-arm64.dmg)** · [ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v5.3/Yukio-5.3-macOS-arm64.zip) | 桌面角色 + 内置活动工作台 |
-| **Intel Mac** | [v0.4.6 DMG](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-macOS.dmg) · [ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-macOS.zip) | 保留的早期桌面角色版本 |
+| **Apple 芯片 Mac · macOS 13+** | **[v5.3 DMG](https://github.com/leo-zhang-source/yukio-desktop-pet/releases/download/v5.3/Yukio-5.3-macOS-arm64.dmg)** · [ZIP](https://github.com/leo-zhang-source/yukio-desktop-pet/releases/download/v5.3/Yukio-5.3-macOS-arm64.zip) | 桌面角色 + 内置活动工作台 |
+| **Intel Mac** | [v0.4.6 DMG](https://github.com/leo-zhang-source/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-macOS.dmg) · [ZIP](https://github.com/leo-zhang-source/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-macOS.zip) | 保留的早期桌面角色版本 |
 | **Windows** | 暂时下架 | 暂停提供安装包、便携包及更新文件；源码保留 |
 
-内置工作台目前面向 Apple 芯片 Mac。Intel 下载仍为 v0.4.6。Windows 下载已于 2026 年 10 月 27 日暂时从 GitHub 下架。[Windows 发布状态](docs/WINDOWS-DISTRIBUTION.md)。Mac 会自动检查并提醒；点击“安装更新”后，由软件下载、安装并重新打开。没有点击就不会安装。如果系统询问访问安装位置，请在系统提示里确认。[更新方法](docs/MANUAL-UPDATES.md)。[所有版本与校验值](https://github.com/leozhang8654/yukio-desktop-pet/releases)。
+内置工作台面向 Apple 芯片 Mac；Intel 下载保留历史 v0.4.6。Windows 下载继续下架，相关工作按用户决定暂缓。[Windows 状态](docs/WINDOWS-DISTRIBUTION.md)。恢复原包不等于重新完成独立环境验收。[全部发行记录和校验文件](https://github.com/leo-zhang-source/yukio-desktop-pet/releases)。
 
 <details>
 <summary><b>macOS 首次打开</b></summary>
@@ -143,12 +147,12 @@ Mac：打开 DMG，将 `Yukio.app` 拖到**应用程序**后启动。目前采�
 
 ## 工作留在眼前，数据有据可循
 
-活动监测与搜索在本机处理。可选的模型解释只将所选聊天的有限摘录发送到已配置的服务；当前适配器支持无需 API 密钥鉴权的本机或内网 OpenAI 兼容接口。关闭工作台后停止发起新的解释请求，已经发出的请求仍可能完成。
+活动监测与搜索在本机处理。可选的模型解释只将所选聊天的有限摘录发送到已配置的服务；恢复的 5.3 包保留早期本机／内网解释适配器；开发源码增加了可配置的助手／服务接入，独立用户验收仍待完成。请配置你自己可获得的服务，本仓库不提供作者私人服务。关闭工作台后停止发起新的解释请求，已经发出的请求仍可能完成。
 
 解释依据可读取的活动生成，可能不完整或有误；原文依据与上下文缺失提示始终可查。下载包不包含个人连接配置或活动历史。
 
 ## 了解项目
 
-[文档](docs/README.md) · [macOS 源码与构建](YukioPlayer/README.zh-CN.md) · [Windows 源码与构建](YukioWin/README.zh-CN.md) · [版本记录](CHANGELOG.md) · [反馈问题](https://github.com/leozhang8654/yukio-desktop-pet/issues)
+[文档](docs/README.md) · [macOS 源码与构建](YukioPlayer/README.zh-CN.md) · [Windows 源码与构建](YukioWin/README.zh-CN.md) · [版本记录](CHANGELOG.md) · [反馈问题](https://github.com/leo-zhang-source/yukio-desktop-pet/issues)
 
 Yukio 由 **Swift / AppKit** 原生 Mac 角色、**Python** Windows 角色，以及 **Python / JavaScript** 活动工作台组成。角色素材、动画输入与播放器源码都在本仓库中。

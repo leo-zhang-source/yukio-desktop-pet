@@ -4,6 +4,8 @@
 
 来源缩写：M = 公开 main `ab0b017d`；I = 已安装版来源 `be9aa07f`，已接入 `964d5d61`；O = 旧主目录与阶段 0 快照。所有路径相对相应来源仓库。Windows 下载当前暂停，表中保留 Windows 源码不代表恢复分发。
 
+**2026-10-29 范围调整：当前验收动作只执行 Mac 部分。** 表中的 Windows 平台、源码和历史状态继续保留；Windows 专用及跨系统的 Windows 验收部分全部转为[大后期可选事项](WINDOWS-DEFERRED.md)，不占用当前 Mac 整改排期，也不阻塞 Mac 阶段完成。恢复前需用户明确要求。
+
 | 功能 | 平台与来源 | 源码或资料入口 | 当前状态与保留方式 | 后续验收动作 |
 | --- | --- | --- | --- | --- |
 | Claude Code 活动跟随 | Mac / Windows，M→I | `YukioPlayer/Sources/YukioCore/AgentSources.swift`；`YukioWin/yukio/sources.py` | 未验证（本轮只做源码和自动检查）；原实现保留 | 新用户安装自己的客户端，生成活动、提问、完成事件；未安装时给出真实提示 |
@@ -20,7 +22,7 @@
 | 中英文切换 | Mac / Windows，M→I | 原生 L10n、工作台 `dist/en.json` | 未验证（本轮网页和原生逻辑通过）；保留 | 切换后原生控件、网页、失败提示一致；重启保存选择 |
 | 待机隐身 | Mac / Windows，M→I | `IdleVisibilityTests.swift`、`YukioWin/tests/test_idle_visibility.py` | 未验证（本机自动检查通过）；保留 | 空闲隐藏，工作／提问／完成按规则恢复，设置入口仍可到达 |
 | 设置单页总览 | Mac，`089d8dc1`→`5c747d94` | `SettingsPanel.swift`、`docs/SETTINGS-OVERVIEW.md` | 未验证（本轮保留且布局测试通过）；不回退为旧分页 | 宽／窄窗口、长标题、中英文，全部原开关可达且重启保留 |
-| Windows 紧凑设置 | Windows，M；小屏候选 `7c7ca92d` | `YukioWin/yukio/pet_settings.py` | 未验证；当前实现保留，小屏滚动候选单列 | Windows 小屏与高缩放能触达底部控件；候选须在 Windows 验收后接入 |
+| Windows 紧凑设置 | Windows，M；小屏候选 `7c7ca92d` | `YukioWin/yukio/pet_settings.py` | 未验证；当前实现与候选保留，转大后期可选 | 当前不执行；以后用户明确恢复，再验证 Windows 小屏与高缩放能触达底部控件 |
 | 原生工作台打开、重连与退出 | Mac，I；候选 `ad4bc936` | `WorkbenchPanel.swift`、`tools/activity-workbench/launcher.py` | 已知缺陷：固定端口及启动状态边界；当前实现和修复候选分别保留 | 占用端口、旧进程、超时、重复打开、退出重开；不结束无关服务 |
 | 活动记录、项目侧栏、搜索和历史 | Mac 集成工作台；跨平台工作台源码，I | `tools/activity-workbench/` 及其 `core/yukio` | 未验证（262 项后端检查通过）；工作台专用 core 保留 | 新用户自己的记录；缺失、超量、截断、重启不伪造历史，原资料不丢失 |
 | 当前解释、深入解释、分段回顾与交接 | 工作台，I | `agent_explanation.py`、`explanation.py`、`glance_automation.py` 等 | 未验证（模拟协议通过，真实账号生成未完成）；保留选择与授权机制 | 用户安装并登录自己的客户端，先明确授权；未登录／超时／额度不足可理解，停用后不再调度 |

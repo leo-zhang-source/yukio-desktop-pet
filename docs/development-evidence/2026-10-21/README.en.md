@@ -1,6 +1,6 @@
 # Yukio development evidence archive — 2026-10-21
 
-[Browse the detailed index](README.md) · [Download all six archives](https://github.com/leozhang8654/yukio-desktop-pet/releases/tag/development-evidence-2026-10-21) · [Per-file manifest](manifest.json) · [SHA-256 checksums](SHA256SUMS.txt)
+[Browse the detailed index](README.md) · [Download all six archives](https://github.com/leo-zhang-source/yukio-desktop-pet/releases/tag/development-evidence-2026-10-21) · [Per-file manifest](manifest.json) · [SHA-256 checksums](SHA256SUMS.txt)
 
 This archive preserves 9,192 development files: Qianxia concepts, segmentation and animation iterations, existing independent-agent reviews and failures, Yukio interaction experiments, answer-channel diagnostics, local activity-collector source, and requirements/research documents. All 43 highlighted items from the local audit are included. 1,662 text, selected image and research files are also browsable under `files/`.
 

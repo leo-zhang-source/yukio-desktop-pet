@@ -1,6 +1,6 @@
 # Yukio 开发过程资料归档 · 2026-10-21
 
-[下载全部资料分包](https://github.com/leozhang8654/yukio-desktop-pet/releases/tag/development-evidence-2026-10-21) · [逐文件清单](manifest.json) · [包校验值](SHA256SUMS.txt) · [排除清单](excluded.json)
+[下载全部资料分包](https://github.com/leo-zhang-source/yukio-desktop-pet/releases/tag/development-evidence-2026-10-21) · [逐文件清单](manifest.json) · [包校验值](SHA256SUMS.txt) · [排除清单](excluded.json)
 
 本页保存千夏设计与蒙版迭代、动画候选和评审、雪绪抛掷实验、回答功能排错、活动检测实现与需求调研。资料由项目开发过程中使用的本地工作目录整理而来，保留用户反馈、AI 辅助制作、既有 Agent 评审和自动化测试的实际角色。
 
@@ -14,12 +14,12 @@
 
 | 分包 | 内容 | 文件数 | 下载大小 |
 |---|---|---:|---:|
-| [01-qianxia-design-and-cutouts.zip](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/development-evidence-2026-10-21/01-qianxia-design-and-cutouts.zip) | 千夏概念、选稿、抠图、精修与准备阶段 | 2,680 | 1083.5 MiB |
-| [02-qianxia-motion-candidates.zip](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/development-evidence-2026-10-21/02-qianxia-motion-candidates.zip) | 千夏多轮动画候选、参数、工具及编码检查 | 2,799 | 1250.4 MiB |
-| [03-qianxia-reviews-and-interactions.zip](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/development-evidence-2026-10-21/03-qianxia-reviews-and-interactions.zip) | 既有独立 Agent 评审、退回证据与提起姿态迭代 | 711 | 88.1 MiB |
-| [04-yukio-animation-experiments.zip](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/development-evidence-2026-10-21/04-yukio-animation-experiments.zip) | 雪绪头颈、目光、抛掷和手感实验 | 2,295 | 720.7 MiB |
-| [05-local-source-docs-and-validation.zip](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/development-evidence-2026-10-21/05-local-source-docs-and-validation.zip) | 本地源码快照、文档、素材、测试与回执 | 701 | 63.5 MiB |
-| [06-research-and-requirements.zip](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/development-evidence-2026-10-21/06-research-and-requirements.zip) | 原始需求、搜索大纲与四份 PDF 调研／教学资料 | 6 | 2.6 MiB |
+| [01-qianxia-design-and-cutouts.zip](https://github.com/leo-zhang-source/yukio-desktop-pet/releases/download/development-evidence-2026-10-21/01-qianxia-design-and-cutouts.zip) | 千夏概念、选稿、抠图、精修与准备阶段 | 2,680 | 1083.5 MiB |
+| [02-qianxia-motion-candidates.zip](https://github.com/leo-zhang-source/yukio-desktop-pet/releases/download/development-evidence-2026-10-21/02-qianxia-motion-candidates.zip) | 千夏多轮动画候选、参数、工具及编码检查 | 2,799 | 1250.4 MiB |
+| [03-qianxia-reviews-and-interactions.zip](https://github.com/leo-zhang-source/yukio-desktop-pet/releases/download/development-evidence-2026-10-21/03-qianxia-reviews-and-interactions.zip) | 既有独立 Agent 评审、退回证据与提起姿态迭代 | 711 | 88.1 MiB |
+| [04-yukio-animation-experiments.zip](https://github.com/leo-zhang-source/yukio-desktop-pet/releases/download/development-evidence-2026-10-21/04-yukio-animation-experiments.zip) | 雪绪头颈、目光、抛掷和手感实验 | 2,295 | 720.7 MiB |
+| [05-local-source-docs-and-validation.zip](https://github.com/leo-zhang-source/yukio-desktop-pet/releases/download/development-evidence-2026-10-21/05-local-source-docs-and-validation.zip) | 本地源码快照、文档、素材、测试与回执 | 701 | 63.5 MiB |
+| [06-research-and-requirements.zip](https://github.com/leo-zhang-source/yukio-desktop-pet/releases/download/development-evidence-2026-10-21/06-research-and-requirements.zip) | 原始需求、搜索大纲与四份 PDF 调研／教学资料 | 6 | 2.6 MiB |
 
 ## 43 项重点材料
 
