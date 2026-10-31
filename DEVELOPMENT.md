@@ -25,3 +25,9 @@
 阶段 2 的场景检查、阶段 3 的修复和阶段 4 的候选构建已有记录。最新本机回归的历史结果为 585 项，详见[阶段 4 交付记录](docs/remediation/STAGE4-DELIVERY.md)；该结果不能替代[独立用户要求](docs/remediation/PORTABILITY.md)。下一步从阶段 4 未完成项继续，不重新把阶段 1 说明当成当前状态，也不因此恢复 Windows 工作。
 
 10 月 31 日新增的[独立 Mac 界面记录](docs/remediation/STAGE4-INDEPENDENT-20261031.md)已随迁移保留：基础界面检查取得证据，G4 仍未通过，正式发布边界不变。
+
+## Development policies (English)
+
+**Current focus (2026-10-29): complete the Mac version first.** Windows development, adaptation, packaging, native testing and releases are deferred to an optional late phase. Existing code and records remain preserved; resume only when explicitly requested by the user. Windows work does not block current Mac acceptance or delivery. Independent-environment testing remains required for Mac.
+
+**GitHub update cadence:** accumulate small changes locally and publish reviewed milestones or major updates together. Avoid rapid repeated pushes, PR edits, releases and progress-page changes unless the user explicitly requests an immediate separate update.

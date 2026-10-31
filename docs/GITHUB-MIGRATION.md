@@ -31,4 +31,6 @@ Git 仓库不包含 Issue／PR 对话、评审、stars、关注关系和完整�
 
 ## English
 
-This migration restores verified source history and historical artifacts under `leo-zhang-source`. Main contains integrated development work; the original Mac 5.3 download and the unaccepted 5.4 candidate are separate versions. Original package hashes, tags and historical evidence are retained. The old embedded update endpoint is unavailable, so use manual downloads until a new signed update and independently accepted build are delivered. Windows distribution remains deferred. Missing old assets and unbacked GitHub discussions/settings cannot be reconstructed from Git history.
+**Account migration (2026-10-31):** recoverable source and historical releases have been restored under `leo-zhang-source`. This main branch includes the latest integrated Mac development work; it is not a new app release. Mac 5.3 is the original public package. The 5.4 candidate has not completed independent acceptance. [Developer entry](../DEVELOPMENT.md).
+
+Original package hashes, tags and historical evidence are retained. The old embedded update endpoint is unavailable, so use manual downloads until a new signed update and independently accepted build are delivered. Windows distribution remains deferred. Missing old assets and unbacked GitHub discussions/settings cannot be reconstructed from Git history.

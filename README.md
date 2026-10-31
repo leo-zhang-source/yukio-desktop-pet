@@ -2,12 +2,6 @@
 
 # Yukio
 
-> **Account migration (2026-10-31):** recoverable source and historical releases have been restored under `leo-zhang-source`. This main branch includes the latest integrated Mac development work; it is not a new app release. Mac 5.3 is the original public package. The 5.4 candidate has not completed independent acceptance. [Migration and version status](docs/GITHUB-MIGRATION.md) · [Developer entry](DEVELOPMENT.md).
-
-> **Current focus (2026-10-29): complete the Mac version first.** Windows development, adaptation, packaging, native testing and releases are deferred to an optional late phase. Existing code and records remain preserved; resume only when explicitly requested by the user. Windows work does not block current Mac acceptance or delivery. Independent-environment testing remains required for Mac.
-
-> **GitHub update cadence:** accumulate small changes locally and publish reviewed milestones or major updates together. Avoid rapid repeated pushes, PR edits, releases and progress-page changes unless the user explicitly requests an immediate separate update.
-
 ### A desktop companion for coding with AI.
 
 **See your agents at work. Understand the progress. Step in when it matters.**

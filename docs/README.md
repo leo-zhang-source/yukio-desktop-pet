@@ -1,6 +1,8 @@
 # 文档导航
 
 - [项目使用说明](../README.zh-CN.md)：下载、运行和构建。
+- [账号迁移与版本状态](GITHUB-MIGRATION.md)
+- [开发入口与项目约定](../DEVELOPMENT.md)：平台范围、发布节奏与验收要求。
 - [macOS 开发说明](../YukioPlayer/README.zh-CN.md)
 - [Windows 开发说明](../YukioWin/README.zh-CN.md)
 - [设计与接续记录](HANDOFF.md)
