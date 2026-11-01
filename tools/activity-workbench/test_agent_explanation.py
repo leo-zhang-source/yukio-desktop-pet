@@ -264,5 +264,18 @@ class ProviderHTTPTests(unittest.TestCase):
                 server.shutdown(); server.server_close(); thread.join()
 
 
+class ProbeStageTests(unittest.TestCase):
+    def test_help_and_login_timeouts_remain_distinct_without_a_generation(self):
+        flags=b'--print --safe-mode --output-format --no-session-persistence --tools --disable-slash-commands --strict-mcp-config --mcp-config --system-prompt --json-schema\n  auth  Login commands'
+        for outcomes,reason,count in [([ExplanationError('agent_timeout')],'agent_compatibility_timeout',1),
+                                      ([(0,flags,b''),ExplanationError('agent_timeout')],'agent_login_check_timeout',2),
+                                      ([(0,flags,b''),(0,b'{"loggedIn":false}',b'')],'agent_login_required',2)]:
+            with patch.object(agent,'run_bounded',side_effect=outcomes) as run:
+                result=agent.probe_agent('claude',['claude'])
+                self.assertEqual(result['reason'],reason)
+                self.assertEqual(run.call_count,count)
+                self.assertTrue(all(call.args[1]=='' for call in run.call_args_list))
+
+
 if __name__ == '__main__':
     unittest.main()

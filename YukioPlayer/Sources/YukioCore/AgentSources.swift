@@ -1,4 +1,5 @@
 import Foundation
+import SQLite3
 
 /// 一行 JSON → 事件。三家的解析器都能这样用（Claude 的在 LiveSources 里自己接）。
 public protocol LineParsing: AnyObject {
@@ -137,6 +138,8 @@ public final class CodexSessionsSource {
     private var titles: [String: String] = [:]
     private var emittedTitles: [String: String] = [:]
     private var indexStamp: String?
+    private var databaseTitles: [String: String] = [:]
+    private var lastTitleRead: Double = -.infinity
     private final class Metadata {
         var parents: [String: String] = [:]
         var origins: [String: String] = [:]
@@ -203,12 +206,58 @@ public final class CodexSessionsSource {
         metadata.origins[session] == "codex-chrome-extension-sidepanel"
     }
 
+    /// CLI chats may have a title in the state database without an index entry.
+    /// Read only exact known IDs; titles never determine routing or identity.
+    private func readDatabaseTitles() -> [String: String]? {
+        let path = sessionsDir.deletingLastPathComponent().appendingPathComponent("state_5.sqlite").path
+        guard FileManager.default.fileExists(atPath: path) else { return [:] }
+        var db: OpaquePointer?
+        guard sqlite3_open_v2(path, &db, SQLITE_OPEN_READONLY | SQLITE_OPEN_NOMUTEX, nil) == SQLITE_OK else {
+            if let db { sqlite3_close(db) }
+            return nil
+        }
+        defer { sqlite3_close(db) }
+        sqlite3_busy_timeout(db, 10)
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(db, "SELECT id, substr(title,1,1000) FROM threads LIMIT 10000", -1, &statement, nil) == SQLITE_OK else { return nil }
+        defer { sqlite3_finalize(statement) }
+        let deadline = ProcessInfo.processInfo.systemUptime + 0.025
+        var loaded: [String: String] = [:]
+        var result = sqlite3_step(statement)
+        while result == SQLITE_ROW {
+            guard ProcessInfo.processInfo.systemUptime < deadline else { return nil }
+            if let rawID = sqlite3_column_text(statement, 0), let rawTitle = sqlite3_column_text(statement, 1) {
+                let id = String(cString: rawID)
+                if knownSessions.contains(id), let title = Self.safeDatabaseTitle(String(cString: rawTitle)) { loaded[id] = title }
+            }
+            result = sqlite3_step(statement)
+        }
+        return result == SQLITE_DONE ? loaded : nil
+    }
+
+    static func safeDatabaseTitle(_ value: String) -> String? {
+        // Some CLI versions store the opening prompt as a title. Do not promote
+        // embedded context, credentials, code or private addresses into a bubble.
+        var text = value
+        if let range = text.range(of: "## My request:", options: .backwards) { text = String(text[range.upperBound...]) }
+        let unsafe = #"(?i)<|```|# AGENTS\.md|PRIVATE KEY|\bsk-[A-Za-z0-9_-]{12,}|\bgh[pousr]_|Bearer\s|(?:password|api[_ -]?key|secret|token)\s*[\"']?\s*[:=]|https?://|/Users/|/home/|[\w.+-]+@[\w.-]+|\b\d{1,3}(?:\.\d{1,3}){3}\b"#
+        guard text.range(of: unsafe, options: .regularExpression) == nil else { return nil }
+        text = text.components(separatedBy: "。").first ?? text
+        text = text.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }.joined(separator: " ")
+        guard !text.isEmpty, !text.unicodeScalars.contains(where: { CharacterSet.controlCharacters.contains($0) }) else { return nil }
+        return String(text.prefix(100)) + (text.count > 100 ? "…" : "")
+    }
+
     public func poll(now: Double) -> [PetEvent] {
         var out = tree.poll(now: now)
         // 文件被删时用当前时间报中断（记录里没有时间可用）。
         for i in out.indices where out[i].ts == 0 && out[i].kind == .taskAbort { out[i].ts = now }
         knownSessions.formUnion(out.map(\.session))
         knownSessions.formUnion(metadata.sessions)
+        if now < lastTitleRead || now - lastTitleRead >= 5000 {
+            if let loaded = readDatabaseTitles() { databaseTitles = loaded }
+            lastTitleRead = now
+        }
         let indexURL = sessionsDir.deletingLastPathComponent().appendingPathComponent("session_index.jsonl")
         if let attrs = try? FileManager.default.attributesOfItem(atPath: indexURL.path) {
             let stamp = "\(attrs[.modificationDate] ?? "")-\(attrs[.size] ?? "")"
@@ -226,8 +275,8 @@ public final class CodexSessionsSource {
             }
         }
         for id in knownSessions.sorted() {
-            let parentTitle = metadata.parents[id].flatMap { titles[$0] }
-            let resolved = titles[id] ?? parentTitle.map { "\($0) · " + tr("Helping", "协作中") }
+            let parentTitle = metadata.parents[id].flatMap { titles[$0] ?? databaseTitles[$0] }
+            let resolved = titles[id] ?? databaseTitles[id] ?? parentTitle.map { "\($0) · " + tr("Helping", "协作中") }
             guard let title = resolved, emittedTitles[id] != title else { continue }
             out.append(PetEvent(ts: now, source: CodexRolloutParser.source,
                                 session: id, kind: .sessionTitle, detail: title))

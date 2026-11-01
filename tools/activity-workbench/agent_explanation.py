@@ -119,6 +119,7 @@ def probe_agent(provider, command):
                 {'--print', '--safe-mode', '--output-format', '--no-session-persistence',
                  '--tools', '--disable-slash-commands', '--strict-mcp-config',
                  '--mcp-config', '--system-prompt', '--json-schema'})
+    phase = 'compatibility'
     try:
         with tempfile.TemporaryDirectory(prefix='yukio-agent-check-') as folder:
             root = Path(folder)
@@ -131,6 +132,7 @@ def probe_agent(provider, command):
                 # Never guess a subcommand: an old CLI may treat it as a prompt.
                 return dict(state='unknown')
             args = ['login', 'status'] if provider == 'codex' else ['auth', 'status', '--json']
+            phase = 'login'
             code, out, err = run_bounded(command + args, '', root, 5)
             if provider == 'claude':
                 try:
@@ -148,7 +150,7 @@ def probe_agent(provider, command):
                 return dict(state='unavailable', reason=reason)
             return dict(state='ready')
     except ExplanationError as exc:
-        return dict(state='unavailable', reason='agent_probe_timeout' if exc.code == 'agent_timeout' else exc.code)
+        return dict(state='unavailable', reason=('agent_compatibility_timeout' if phase == 'compatibility' else 'agent_login_check_timeout') if exc.code == 'agent_timeout' else exc.code)
 
 
 def select_agent(config, client=None):

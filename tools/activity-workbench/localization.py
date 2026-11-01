@@ -56,7 +56,8 @@ def localize(value):
             quoted=item.get('kind') in ('user','assistant','operation_note')
             result={}
             for k,v in item.items():
-                if isinstance(v,str) and (k=='name' or (k=='title' and original_title)):result[k]=v
+                if k=='reason' and isinstance(v,str) and re.fullmatch(r'[a-z]+(?:_[a-z]+)+',v):result[k]=v
+                elif isinstance(v,str) and (k=='name' or (k=='title' and original_title)):result[k]=v
                 elif isinstance(v,str) and k=='text' and quoted:result[k]=plain_words(v,'zh' if re.search(r'[\u3400-\u9fff]',v) else 'en')
                 else:result[k]=walk(v,k)
             if words and not quoted and item.get('basis') in ('inference','unknown') and isinstance(result.get('text'),str) and re.search(r'[\u3400-\u9fff]',result['text']):

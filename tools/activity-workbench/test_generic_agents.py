@@ -169,7 +169,7 @@ class ProbeTests(unittest.TestCase):
 
     def test_probe_failures_do_not_trigger_a_generation_or_another_subcommand(self):
         with patch.object(agent, 'run_bounded', side_effect=ExplanationError('agent_timeout')) as run:
-            self.assertEqual(agent.probe_agent('codex',['client'])['reason'],'agent_probe_timeout')
+            self.assertEqual(agent.probe_agent('codex',['client'])['reason'],'agent_compatibility_timeout')
         self.assertEqual(run.call_count,1)
 
     def test_probes_work_through_real_unicode_path_subprocesses(self):

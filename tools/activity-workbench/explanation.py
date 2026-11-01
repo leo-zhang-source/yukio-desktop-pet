@@ -312,9 +312,14 @@ RESULT_PATTERNS_EN={
     'succeeded':r'reported success'}
 
 def current_claim(text):
-    return any(re.search(r'正在|仍在|\b(?:(?:is|are|am)(?: still)?|still|currently) (?:[A-Za-z]{3,}ing)',c,re.I)
-               and not re.search(r'不再|并非|无法确认|不能确认|是否|(?:not|cannot|unclear|whether|unconfirmed)',c,re.I)
-               for c in re.split(r'[。；，.!?]',text))
+    for clause in re.split(r'[。；，.!?]',text):
+        if re.search(r'不再|并非|无法确认|不能确认|是否|(?:not|cannot|unclear|whether|unconfirmed)',clause,re.I):continue
+        for match in re.finditer(r'正在|仍在|\b(?:(?:is|are|am)(?: still)?|still|currently) (?:[A-Za-z]{3,}ing)',clause,re.I):
+            # A narrow past-time prefix is not a claim that this turn is still open.
+            # Evaluate every claim: a later “现在仍在” must still be rejected.
+            if re.fullmatch(r'\s*(?:此前|当时|先前|那时|刚才)(?:助手|模型|它)?(?:还)?',clause[:match.start()]):continue
+            return True
+    return False
 
 
 def complete_response(content,payload):
@@ -532,6 +537,8 @@ MESSAGES={
     'agent_config_unsupported':'无法安全读取 Agent 的模型设置。请检查客户端配置；从源码运行自定义服务时需 Python 3.11 或更新版本。',
     'agent_model_unavailable':'Agent 选择的模型不支持当前登录。请先在对应命令行客户端选择可用模型，再重试。',
     'agent_probe_timeout':'检查助手是否可用时超时，尚未发送聊天摘录。请检查客户端后重试。',
+    'agent_compatibility_timeout':'读取命令行客户端功能说明超过 5 秒，尚未检查登录或发送摘录。请在终端运行所选客户端的 --help，确认能打开后重试。',
+    'agent_login_check_timeout':'客户端功能检查通过，但登录状态检查超过 5 秒；这不代表未登录，尚未发送摘录。请运行 codex login status 或 claude auth status --json 检查所选客户端，再重试。',
 
     'unnamed_subject':'这次说明没说清具体是哪组按钮，暂时保留已有内容。',
     'service_unavailable':'模型暂时没有响应，仍可查看下面的本机说明。',

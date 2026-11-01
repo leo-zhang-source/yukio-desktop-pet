@@ -1,9 +1,36 @@
 import Foundation
+import SQLite3
 import Testing
 @testable import YukioCore
 
 /// 跟哪一家、以及各家的记录目录怎么扫。
 @Suite(.serialized) struct AgentSourceTests {
+    @Test func databaseTitlesFollowExactIDsAndIndexRenameStillWins() throws {
+        let sessions = root.appendingPathComponent("sessions")
+        let t = now()
+        for id in ["chat-a", "chat-b"] {
+            try append(sessions.appendingPathComponent(id + ".jsonl"), "{\"type\":\"session_meta\",\"payload\":{\"id\":\"\(id)\"}}\n")
+        }
+        var db: OpaquePointer?
+        #expect(sqlite3_open(root.appendingPathComponent("state_5.sqlite").path, &db) == SQLITE_OK)
+        defer { sqlite3_close(db) }
+        #expect(sqlite3_exec(db, "CREATE TABLE threads (id TEXT PRIMARY KEY,title TEXT); INSERT INTO threads VALUES ('chat-a','Same title'),('chat-b','Same title'),('unrelated','Hidden');", nil, nil, nil) == SQLITE_OK)
+        let source = CodexSessionsSource(sessionsDir: sessions)
+        let first = source.poll(now: t).filter { $0.kind == .sessionTitle }
+        #expect(Set(first.map(\.session)) == ["chat-a", "chat-b"])
+        #expect(first.allSatisfy { $0.detail == "Same title" })
+        #expect(sqlite3_exec(db, "UPDATE threads SET title='Renamed B' WHERE id='chat-b';", nil, nil, nil) == SQLITE_OK)
+        try append(root.appendingPathComponent("session_index.jsonl"), "{\"id\":\"chat-a\",\"thread_name\":\"Index A\"}\n")
+        let renamed = source.poll(now: t + 6000).filter { $0.kind == .sessionTitle }
+        #expect(renamed.first(where: { $0.session == "chat-a" })?.detail == "Index A")
+        #expect(renamed.first(where: { $0.session == "chat-b" })?.detail == "Renamed B")
+        #expect(source.poll(now: t + 7000).isEmpty)
+        #expect(CodexSessionsSource.safeDatabaseTitle("api_key=secret-value") == nil)
+        #expect(CodexSessionsSource.safeDatabaseTitle("<environment_context>private</environment_context>") == nil)
+        #expect(CodexSessionsSource.safeDatabaseTitle("   ") == nil)
+        #expect(CodexSessionsSource.safeDatabaseTitle(String(repeating: "x", count: 150))?.count == 101)
+    }
+
     let root: URL
 
     init() throws {

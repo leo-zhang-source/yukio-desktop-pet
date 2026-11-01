@@ -2028,6 +2028,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
             settingsWindow = controller
         }
         controller.show(snapshot: currentSettingsSnapshot(), near: panel.frame)
+        softwareUpdates.settingsWindow = controller.window
     }
 
     private func refreshSettingsPanel() {

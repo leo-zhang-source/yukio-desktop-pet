@@ -283,8 +283,18 @@ final class WorkbenchPanelController: NSWindowController, NSWindowDelegate, WKNa
         target.percentEncodedQuery = selection.percentEncodedQuery
         return target.url ?? service
     }
+    static func isSetupDocumentation(_ url: URL) -> Bool {
+        ["https://developers.openai.com/codex/cli", "https://code.claude.com/docs/en/setup"].contains(url.absoluteString)
+    }
+
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction,
                  decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+        if navigationAction.navigationType == .linkActivated,
+           let url = navigationAction.request.url, Self.isSetupDocumentation(url) {
+            NSWorkspace.shared.open(url)
+            decisionHandler(.cancel)
+            return
+        }
         let allowed = navigationAction.request.url.map { Self.isLocal($0, port: serviceURL?.port ?? 8767) || $0.absoluteString == "about:blank" } ?? false
         decisionHandler(allowed ? .allow : .cancel)
     }

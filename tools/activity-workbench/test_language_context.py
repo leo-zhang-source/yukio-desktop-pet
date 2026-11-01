@@ -11,6 +11,27 @@ import test_glance
 
 
 class LanguageAndContextTests(unittest.TestCase):
+    def test_error_codes_are_not_prose_and_success_warning_is_localized(self):
+        from explanation import MESSAGES
+        with language_context('en'):
+            for code,message in MESSAGES.items():
+                result=localize(dict(mode='fallback',reason=code,message=message))
+                self.assertEqual(result['reason'],code)
+            result=localize(dict(warning='模型解释，可能有误。引用和格式已检查，但不代表每句话已经被证明正确。'))
+            self.assertNotRegex(result['warning'],r'[\u3400-\u9fff]')
+
+    def test_past_chinese_activity_is_allowed_but_current_claim_remains_blocked(self):
+        from explanation import current_claim,validate_output
+        payload=dict(scope=dict(reading='summary',current_turn_state='ended',reading_parts=[dict(part='section1',allowed=['E1'],required=['E1'])]),facts=[dict(evidence_id='E1')])
+        for text in ['此前正在检查文件，随后已停止。','当时助手正在检查文件。','The assistant was checking files.']:
+            self.assertFalse(current_claim(text),text)
+            response=dict(explanations=[dict(part='section1',title='检查记录',text=text,basis='inference',evidence_ids=['E1'])])
+            self.assertEqual(validate_output(encode(response),payload)[0]['text'],text)
+        for text in ['正在检查文件。','此前正在检查文件，现在仍在检查。','当时助手正在检查而现在仍在执行。','The assistant is checking files.']:
+            self.assertTrue(current_claim(text),text)
+            response=dict(explanations=[dict(part='section1',title='检查记录',text=text,basis='inference',evidence_ids=['E1'])])
+            with self.assertRaisesRegex(ExplanationError,'closed_turn_claim'):validate_output(encode(response),payload)
+
     def test_english_history_uses_its_own_prompt_and_still_rejects_chinese_headings(self):
         payload=dict(scope=dict(language='en',reading='summary',reading_parts=[dict(part='section1',allowed=['E1'],required=['E1'])]),facts=[dict(evidence_id='E1')])
         instructions=output_system(payload)
