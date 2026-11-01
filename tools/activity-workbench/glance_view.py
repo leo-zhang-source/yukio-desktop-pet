@@ -238,8 +238,8 @@ class GlanceView:
         for item in items:
             identity=(item['kind'],item['text'])
             if item['kind']=='user' or identity in seen:continue
-            seen.add(identity);meaningful.append(item)
-            if len(meaningful)==3:break
+            seen.add(identity);meaningful.append(dict(item,stamp=content_rows.get(item.get('sequence'),{}).get('timestamp_ms')))
+            if len(meaningful)==8:break
         detail=dict(client=client,key=key,session_id=parts[2],title=title,title_source='客户端聊天名称' if source['title'] else '根据你的要求显示',
             status=status,tone=tone,last_activity_ms=latest_stamp,age_seconds=round(age) if age is not None else None,
             project=codex_project(self.reader,parts) if client=='codex' and not source['unavailable'] else source.get('project'),

@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#14171d">
+  <meta name="theme-color" content="#0e1014">
   <title>雪绪 · 当前工作</title>
   <link rel="stylesheet" href="/glance.css"><script src="/i18n.js" defer></script><script src="/glance.js" defer></script>
 </head>
@@ -12,7 +12,7 @@
 <div class="shell">
 <aside class="rail" id="chatNavigation" aria-label="选择聊天">
   <div class="rail-head">
-    <div class="rail-title"><strong>工作台</strong><button id="chatNavClose" class="icon-btn rail-close" aria-label="收起聊天列表"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div>
+    <div class="rail-title"><strong>活动工作台</strong><button id="chatNavClose" class="icon-btn rail-close" aria-label="收起聊天列表"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div>
     <label class="rail-search"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/></svg><input id="chatSearch" type="search" placeholder="搜索聊天或项目" aria-label="搜索聊天或项目" autocomplete="off"><kbd aria-hidden="true">/</kbd></label>
     <div class="rail-filters" role="group" aria-label="筛选聊天">
       <button id="filterAll" type="button" aria-pressed="true"><span>全部</span><span id="countAll" class="count"></span></button>
@@ -23,7 +23,7 @@
   </div>
   <div id="chatLists" class="rail-list"><p class="rail-empty">正在整理最近的聊天…</p></div>
   <div class="rail-foot">
-    <p id="chatListNote" hidden></p>
+    <p id="chatListNote">聊天只在本机整理，选择后再解释。</p>
     <div class="rail-foot-row"><span id="connection" class="connection" role="status">正在连接…</span><button id="openSettings" class="rail-link" type="button" hidden><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="2.2"/><path d="M8 1.8v2M8 12.2v2M1.8 8h2M12.2 8h2M3.6 3.6L5 5M11 11l1.4 1.4M12.4 3.6L11 5M5 11l-1.4 1.4"/></svg>设置</button></div>
   </div>
 </aside>
@@ -32,20 +32,16 @@
   <header class="chat-head" id="chatHead">
     <div class="chat-head-top">
       <button id="chatBrowse" class="icon-btn narrow-only" aria-label="选择聊天" aria-controls="chatNavigation" aria-expanded="false"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4h11M2.5 8h11M2.5 12h11"/></svg></button>
-      <div class="chat-id"><h1 id="chatName">正在读取聊天…</h1><p id="chatLocation"></p></div>
-      <span id="status" class="status"></span>
-    </div>
-    <div class="chat-head-bar">
-      <div class="tabs" role="tablist" aria-label="查看方式">
-        <button id="tabNow" type="button" role="tab" aria-selected="true" aria-controls="viewNow" title="按 1 切换">现在</button>
-        <button id="tabUnderstand" type="button" role="tab" aria-selected="false" aria-controls="viewUnderstand" tabindex="-1" title="按 2 切换">看懂</button>
-        <button id="tabPast" type="button" role="tab" aria-selected="false" aria-controls="viewPast" tabindex="-1" title="按 3 切换">经过</button>
-      </div>
+      <div class="chat-id"><h1 id="chatName">正在读取聊天…</h1><p class="chat-sub"><span id="status" class="status"></span><span id="chatLocation"></span></p></div>
       <div class="head-actions">
         <button id="reload" class="icon-btn" type="button" aria-label="刷新当前工作" title="刷新当前工作（R）"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M13 8a5 5 0 1 1-1.5-3.6M13 2.5v3h-3"/></svg></button>
-        <a id="historyLink" class="btn-text" href="/history">完整记录</a>
+        <a id="historyLink" class="btn-text" href="/history">查看记录详情</a>
         <button id="inspectorToggle" class="icon-btn" type="button" aria-label="显示或隐藏右侧属性" aria-controls="inspector" title="显示或隐藏右侧属性"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="3" width="12" height="10" rx="1.5"/><path d="M10 3v10"/></svg></button>
       </div>
+    </div>
+    <div class="tabs" role="tablist" aria-label="查看方式">
+      <button id="tabNow" type="button" role="tab" aria-selected="true" aria-controls="viewNow" title="按 1 切换">现在与看懂</button>
+      <button id="tabPast" type="button" role="tab" aria-selected="false" aria-controls="viewPast" tabindex="-1" title="按 2 切换">历史回顾</button>
     </div>
   </header>
   <p id="alert" role="status" hidden></p>
@@ -53,55 +49,50 @@
   <div class="views">
   <article id="work" class="work" hidden>
     <section id="viewNow" class="view" role="tabpanel" aria-labelledby="tabNow" tabindex="0">
-      <p id="attention" class="attention" role="status" hidden></p>
-      <div class="lead-block" id="story">
-        <p id="content" class="lead"></p>
-        <div class="claim-foot"><button id="contentBasis" class="mark" aria-expanded="false" aria-controls="contentProof"></button><span id="modelNote" role="status"></span></div>
-        <div id="contentProof" class="proof" hidden></div>
-      </div>
-      <div class="spec">
-        <section class="spec-row"><h2>和前面的关系</h2><div class="spec-body"><p id="explanation"></p><button id="explanationBasis" class="mark" aria-expanded="false" aria-controls="explanationProof"></button><div id="explanationProof" class="proof" hidden></div></div></section>
-        <section class="spec-row"><h2>为什么做这一步</h2><div class="spec-body"><p id="reason"></p><button id="reasonBasis" class="mark" aria-expanded="false" aria-controls="reasonProof"></button><div id="reasonProof" class="proof" hidden></div></div></section>
-        <section class="spec-row" id="latestStep" hidden><h2>最近一步</h2><div class="spec-body"><p id="stepAction"></p><p id="stepResult" class="sub"></p></div></section>
-        <section class="spec-row" id="unlinkedReceipts" hidden><h2>未关联回执</h2><div class="spec-body" id="unlinkedReceiptList"></div></section>
-        <section class="spec-row"><h2>最近做了什么</h2><div class="spec-body recent-list" id="recent"></div></section>
-      </div>
-      <div class="view-actions"><button id="deepRead" class="btn" type="button" aria-expanded="false" aria-controls="deepPanel">详细解释这一步</button></div>
-      <section id="deepPanel" class="panel" hidden aria-labelledby="deepHeading"><h2 id="deepHeading">详细解释</h2><p id="deepNote" class="panel-note" role="status"></p><div id="deepText" class="prose"></div><button id="deepRetry" class="btn" type="button" hidden>重新解释这一段</button></section>
-      <details id="previousModel" class="fold" hidden><summary>上一段的模型说明</summary><div id="previousText"></div></details>
-      <details id="detailsBox" class="fold"><summary>这段说明的全部依据</summary><div id="evidence"></div></details>
-    </section>
-
-    <section id="viewUnderstand" class="view" role="tabpanel" aria-labelledby="tabUnderstand" tabindex="0" hidden>
-      <div id="workUnderstanding">
-        <h2 id="understandingHeading" class="sr-only">这项工作如何推进</h2>
-        <div class="view-bar">
-          <div class="segmented" role="group" aria-label="工作解读范围"><button id="scopeChat" type="button" aria-pressed="true">这次聊天</button><button id="scopeProject" type="button" aria-pressed="false" disabled>整个项目</button></div>
-          <p id="understandingTitle" class="bar-title"></p>
-          <button id="understandingExplain" class="btn primary" type="button">解读这次聊天</button>
+      <section id="nowPanel" class="now-panel quiet" aria-labelledby="happeningHeading">
+        <header class="now-head"><h2 id="happeningHeading">正在发生</h2><span id="nowAge"></span></header>
+        <p id="attention" class="attention-note" role="status" hidden></p>
+        <div id="story">
+          <p id="content" class="lead"></p>
+          <div class="claim-foot"><button id="contentBasis" class="mark" aria-expanded="false" aria-controls="contentProof"></button><span id="modelNote" role="status">模型说明会自动显示在下方。</span></div>
+          <div id="contentProof" class="proof" hidden></div>
         </div>
-        <p class="view-note"><span id="understandingNote" role="status">正在整理工作目标与方法…</span> <span id="understandingSendNote"></span></p>
-        <div id="understandingParts" class="spec"></div>
+        <div class="now-grid">
+          <section><h3>这一步的解释</h3><p id="explanation"></p><button id="explanationBasis" class="mark" aria-expanded="false" aria-controls="explanationProof"></button><div id="explanationProof" class="proof" hidden></div></section>
+          <section><h3>这一步的原因</h3><p id="reason"></p><button id="reasonBasis" class="mark" aria-expanded="false" aria-controls="reasonProof"></button><div id="reasonProof" class="proof" hidden></div></section>
+        </div>
+        <div class="now-actions"><button id="deepRead" class="btn" type="button" aria-expanded="false" aria-controls="deepPanel">详细解释正在发生的事</button></div>
+        <section id="deepPanel" class="panel" hidden aria-labelledby="deepHeading"><h3 id="deepHeading">把眼前这件事讲清楚</h3><p id="deepNote" class="panel-note" role="status"></p><div id="deepText" class="prose"></div><button id="deepRetry" class="btn" type="button" hidden>重新解释这一段</button></section>
+      </section>
+      <section id="workUnderstanding" class="understand" aria-labelledby="understandingHeading">
+        <header class="understand-head"><div><h2 id="understandingHeading">这项工作如何推进</h2><p>从目标到结果</p></div><div class="segmented" role="group" aria-label="工作解读范围"><button id="scopeChat" type="button" aria-pressed="true">这次聊天</button><button id="scopeProject" type="button" aria-pressed="false" disabled>整个项目</button></div></header>
+        <p id="understandingTitle" class="understand-title"></p>
+        <p id="understandingNote" class="view-note" role="status">正在整理工作目标与方法…</p>
+        <div id="understandingParts" class="parts"></div>
+        <div class="understand-foot"><p id="understandingSendNote"></p><button id="understandingExplain" class="btn primary" type="button">解读这次聊天</button></div>
         <details id="understandingSources" class="fold"><summary>使用了哪些聊天与记录</summary><div id="understandingChats"></div><p id="understandingCoverage" class="footnote"></p></details>
-      </div>
+      </section>
+      <details id="detailsBox" class="fold"><summary>查看这段说明的依据</summary><div id="evidence"></div></details>
+      <details id="previousModel" class="fold" hidden><summary>上一段的模型说明</summary><div id="previousText"></div></details>
     </section>
-
     <section id="viewPast" class="view" role="tabpanel" aria-labelledby="tabPast" tabindex="0" hidden>
-      <section class="block" aria-labelledby="summaryHeading"><h2 id="summaryHeading">工作小结</h2><div id="taskSummary" class="spec"></div></section>
-      <section class="block" aria-labelledby="historyHeading"><h2 id="historyHeading">分段回顾</h2><p id="historyScope" class="view-note"></p>
-        <section id="pastPanel" hidden aria-labelledby="historyHeading"><p id="pastNote" class="view-note" role="status"></p><div id="pastText"></div><div class="pager"><button id="pastNewer" class="btn" type="button" hidden>回到最近</button><button id="pastOlder" class="btn" type="button" hidden>再往前看</button><button id="pastRetry" class="btn" type="button" hidden>重新读取这一页</button></div></section>
+      <section class="block" aria-labelledby="summaryHeading"><h2 id="summaryHeading">任务与交接小结</h2><div id="taskSummary" class="spec"></div></section>
+      <section class="block" aria-labelledby="historyHeading"><h2 id="historyHeading">历史回顾</h2><p class="block-sub">把前后的工作接起来</p><p id="historyScope" class="view-note"></p><p class="view-note">按当时的要求分段，查看目标、公开做法和结果。每段都能深入解释，也可以继续往前翻。</p>
+        <section id="pastPanel" hidden aria-labelledby="pastHeading"><h3 id="pastHeading">之前做了什么</h3><p id="pastNote" class="view-note" role="status"></p><div id="pastText"></div><div class="pager"><button id="pastNewer" class="btn" type="button" hidden>回到最近</button><button id="pastOlder" class="btn" type="button" hidden>再往前看</button><button id="pastRetry" class="btn" type="button" hidden>重新读取这一页</button></div></section>
       </section>
       <details id="projectBox" class="fold" hidden><summary>整个项目与前后步骤</summary><p id="projectText"></p></details>
       <details id="handoffBox" class="fold"><summary>助手之间怎么交接</summary><div id="handoffs"></div></details>
-      <p class="footnote foot-link"><span>需要查找更早的聊天或具体记录？</span> <a id="historyRecords" href="/history">打开完整记录</a></p>
+      <p class="footnote foot-link"><span>需要查找更早的聊天或具体记录？</span> <a id="historyRecords" href="/history">打开记录详情 ↗</a></p>
     </section>
   </article>
-  <div id="empty" class="empty" hidden><h2>还没有读到聊天</h2><p>在 Codex、Claude 或 Deep Code 开始一个任务，这里会自动显示。</p><div id="emptyClients" class="empty-clients"></div><details class="fold"><summary>已经在工作，却没有显示？</summary><p>先确认客户端已经留下本机聊天记录，再重新打开工作台。没有显示不代表 AI 没有工作，也可能是记录暂时读不到。</p></details></div>
+  <div id="empty" class="empty" hidden><h2>等你开始一段工作。</h2><p>在 Codex、Claude 或 Deep Code 开始一个小任务，</p><p>雪绪读到新活动后会自动显示。</p><div id="emptyClients" class="empty-clients"></div><details class="fold"><summary>已经在工作，却没有显示？</summary><p>先确认客户端已经留下本机聊天记录，再重新打开工作台。没有显示不代表 AI 没有工作，也可能是记录暂时读不到。</p></details></div>
   </div>
 </main>
 <aside class="inspector" id="inspector" aria-label="这段聊天的属性">
-  <section class="ins-section" aria-labelledby="propsHeading"><h2 id="propsHeading">属性</h2>
-    <dl class="kv"><dt>助手</dt><dd id="metaClient"></dd><dt>所属项目</dt><dd id="metaProject"></dd><dt>最近活动</dt><dd id="metaActivity"></dd></dl>
+  <section class="ins-section" aria-labelledby="streamHeading"><h2 id="streamHeading">最近做了什么</h2>
+    <div id="latestStep" class="latest-step" hidden><span>最近一步</span><p id="stepAction"></p><small id="stepResult"></small></div>
+    <div id="recent" class="stream"></div>
+    <div id="unlinkedReceipts" class="unlinked" hidden><h3>未关联回执</h3><div id="unlinkedReceiptList"></div></div>
     <p id="scope" class="ins-note"></p>
   </section>
   <section class="ins-section" aria-labelledby="goalLabel"><h2 id="goalLabel">这次的要求</h2><p id="goalShort" class="ins-text"></p><p id="projectFocus" class="ins-note" hidden></p>
@@ -115,7 +106,7 @@
   </section>
   <details class="ins-section privacy"><summary>说明与隐私</summary>
     <p>按你的设置，打开页面后会将当前所选聊天的名称、近期要求、公开说明、项目背景和可对应的操作结果短摘录，交给你选择的本机 Agent 或内网模型生成说明。Agent 会按自己的账号与服务设置处理摘录并使用相应额度。不会发送完整聊天、整份文件或内部思考。常见凭据会过滤；原始短片段可能包含少量代码。</p>
-    <p>点“详细解释这一步”会展开点击时的工作片段；打开“经过”才读取较早的记录，每次三段、每段最多四条短摘录。没有开启模型时也能查看本机记录。工作解读默认在本机整理；点“解读这次聊天”才发送该聊天的目标、方法与结果短摘录。选择“整个项目”后，点“解读整个项目”会发送列出的同项目聊天短摘录，每次最多六段聊天，不读取整个项目目录。首页、工作解读、回顾和详细解释共用每小时次数上限。</p>
+    <p>点“详细解释正在发生的事”会展开点击时的工作片段；打开“历史回顾”才读取较早的记录，每次三段、每段最多四条短摘录。没有开启模型时也能查看本机记录。工作解读默认在本机整理；点“解读这次聊天”才发送该聊天的目标、方法与结果短摘录。选择“整个项目”后，点“解读整个项目”会发送列出的同项目聊天短摘录，每次最多六段聊天，不读取整个项目目录。首页、工作解读、回顾和详细解释共用每小时次数上限。</p>
     <p>页面打开期间持续跟进，至少间隔三分钟，有变化才更新。切换聊天后只跟进新选择的聊天；关闭页面停止后续发送。已经发出的本次请求可能返回。没有页面在运行，就没有后台解释任务。模型可能出错，操作成功不代表整项任务验收。</p>
     <p id="modelDetails"></p>
   </details>

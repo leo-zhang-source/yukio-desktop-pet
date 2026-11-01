@@ -76,26 +76,28 @@ function understanding(scope='chat',revision='work-r1'){
   chats:[{client:'codex',key:'chat-a',title:'简化首页',last_activity_ms:1}],included_chats:1,known_chats:1,max_chats:6,note:'有限公开摘录',references:[{evidence_id:'E1',title:'要求',quote:'让页面易懂',chat:'简化首页'}],
   local:Object.fromEntries(['goal','strategy','effectiveness'].map(part=>[part,{text:scope+' '+part,basis:'unknown',evidence_ids:['E1']}]))};
 }
-test('one chat has three parallel views and details stay beside them',()=>{
+test('now leads the page with the work reading beneath it and earlier records apart',()=>{
  const html=fs.readFileSync(path.join(__dirname,'dist/index.html'),'utf8');
- for(const [tab,panel] of [['tabNow','viewNow'],['tabUnderstand','viewUnderstand'],['tabPast','viewPast']]){
-  assert.match(html,new RegExp('id="'+tab+'"[^>]*role="tab"[^>]*aria-controls="'+panel+'"'));
-  assert.match(html,new RegExp('id="'+panel+'"[^>]*role="tabpanel"'));
- }
- assert.match(html,/id="understandingHeading"[^>]*>这项工作如何推进/);
+ assert.match(html,/id="tabNow"[^>]*role="tab"[^>]*aria-controls="viewNow"/);assert.match(html,/id="tabPast"[^>]*role="tab"[^>]*aria-controls="viewPast"/);
+ assert.doesNotMatch(html,/id="tabUnderstand"|id="viewUnderstand"/);
+ assert.match(html,/id="happeningHeading">正在发生/);assert.match(html,/id="understandingHeading">这项工作如何推进/);
+ assert.ok(html.indexOf('id="nowPanel"')<html.indexOf('id="workUnderstanding"'));
+ assert.ok(html.indexOf('id="workUnderstanding"')<html.indexOf('id="viewPast"'));
+ assert.ok(html.indexOf('id="deepRead"')<html.indexOf('id="workUnderstanding"'));
  assert.match(html,/id="scopeProject"[^>]*disabled/);
- assert.ok(html.indexOf('id="deepRead"')<html.indexOf('id="viewUnderstand"'));
- assert.ok(html.indexOf('id="historyHeading"')>html.indexOf('id="workUnderstanding"'));
- assert.ok(html.indexOf('id="explanationProvider"')>html.indexOf('id="inspector"'));
- assert.doesNotMatch(html,/brand-mark|eyebrow|breadcrumb/);
+ assert.doesNotMatch(html,/brand-mark|breadcrumb/);
+ for(const label of ['这一步的解释','这一步的原因','详细解释正在发生的事','把眼前这件事讲清楚','任务与交接小结','最近做了什么','最近一步','完整要求和之前的补充','整个项目与前后步骤','助手之间怎么交接','查看这段说明的依据','上一段的模型说明','历史回顾','之前做了什么','从目标到结果','把前后的工作接起来','使用了哪些聊天与记录','说明与隐私'])assert.ok(html.includes(label),label);
 });
-test('switching views keeps the chat and only the Earlier view reads older records',async()=>{
+test('switching views keeps the chat and only the history view reads older records',async()=>{
  const f=setup();enabledPage(f);f.run('$("pastPanel").hidden=true');
- f.run('setView("understand")');assert.equal(f.elements.get('viewUnderstand').hidden,false);assert.equal(f.elements.get('viewNow').hidden,true);
- assert.equal(f.run('selected.key'),'chat-a');assert.equal(f.pending.length,0);
- f.run('setView("past")');assert.equal(f.elements.get('viewPast').hidden,false);assert.equal(f.elements.get('pastPanel').hidden,false);
- assert.ok(f.pending.some(p=>/task-summary/.test(p.url)));assert.ok(f.pending.some(p=>/reading-history/.test(p.url)));
- const reads=f.pending.length;f.run('setView("now");setView("past")');assert.equal(f.pending.filter(p=>/reading-history/.test(p.url)).length,1);assert.ok(f.pending.length>=reads);
+ assert.equal(f.pending.length,0);f.run('setView("past")');assert.equal(f.elements.get('viewPast').hidden,false);assert.equal(f.elements.get('viewNow').hidden,true);assert.equal(f.elements.get('pastPanel').hidden,false);
+ assert.equal(f.run('selected.key'),'chat-a');assert.ok(f.pending.some(p=>/task-summary/.test(p.url)));assert.ok(f.pending.some(p=>/reading-history/.test(p.url)));
+ f.run('setView("now");setView("past")');assert.equal(f.pending.filter(p=>/reading-history/.test(p.url)).length,1);
+ f.run('setView("understand")');assert.equal(f.elements.get('viewNow').hidden,false);
+});
+test('the now panel takes the colour of the current state',()=>{
+ const f=setup();f.context.data={...currentWork(),tone:'attention',needs_you:'等你回答'};f.run('render(data)');
+ assert.equal(f.elements.get('nowPanel').className,'now-panel attention');assert.equal(f.elements.get('attention').textContent,'等你回答');
 });
 function detailedUnderstanding(scope='chat',revision='details-r1'){
  const data=understanding(scope,revision);

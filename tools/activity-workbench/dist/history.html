@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#14171d">
-  <title>Yukio · 完整记录</title>
+  <title>Yukio · 记录详情</title>
   <link rel="stylesheet" href="/glance.css"><link rel="stylesheet" href="/style.css"><script src="/i18n.js" defer></script><script src="/explanation.js" defer></script><script src="/context.js" defer></script><script src="/app.js" defer></script>
 </head>
 <body class="records">
@@ -14,11 +14,11 @@
     <div class="rail-title"><a class="rail-back" href="/"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3L5 8l5 5"/></svg>返回工作台</a></div>
     <div class="rail-fields">
       <label class="rail-field"><span>助手</span><select id="client" aria-label="选择客户端"></select></label>
-      <label class="rail-field"><span>范围</span><select id="scope" aria-label="记录范围"><option value="0">当前记录</option><option value="1">旧版记录</option></select></label>
+      <label class="rail-field"><span>范围</span><select id="scope" aria-label="记录范围"><option value="0">当前观察版本</option><option value="1">旧观察版本</option></select></label>
     </div>
   </div>
   <div class="rail-list">
-    <h2>会话记录 <span id="groupCount"></span></h2>
+    <h2>会话记录 <span id="groupCount"></span></h2><p class="rail-empty">同一聊天的不同来源、助手和观察版本分别保留。</p>
     <div id="groups"></div>
     <button id="moreGroups" class="rail-more" type="button" hidden>查看更多会话</button>
   </div>
@@ -38,6 +38,7 @@
   <div class="views">
     <div class="record-body">
       <div id="error" role="alert" hidden></div>
+      <p class="view-note"><strong>记录与说明</strong> 记录数量不代表任务完成度。默认显示本机规则说明；选择“让模型解释”后，先预览再发送。模型解释单独标注，不改变原始记录。</p>
       <p id="modelStatus" class="view-note">正在读取解释功能配置…</p>
       <p id="selectionLabel" class="sr-only">等待选择</p>
       <div id="notices"></div>

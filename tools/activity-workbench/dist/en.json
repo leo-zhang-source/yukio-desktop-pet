@@ -894,5 +894,8 @@
 "未关联回执": "Unlinked receipts",
 "未关联回执的独立结果": "Independent result from an unlinked receipt",
 "解释接收方或客户端配置已变化，请重新预览后再发送。": "The explanation recipient or client configuration changed. Review a new preview before sending.",
-"通过本机安装的助手发送到该客户端配置的模型服务，可能由远端服务器处理；使用你在该客户端的登录或凭据及相应用量。": "Sent through the locally installed assistant to the model service configured in that client, which may process it remotely. Uses your login or credentials and the corresponding usage allowance."
+"通过本机安装的助手发送到该客户端配置的模型服务，可能由远端服务器处理；使用你在该客户端的登录或凭据及相应用量。": "Sent through the locally installed assistant to the model service configured in that client, which may process it remotely. Uses your login or credentials and the corresponding usage allowance.",
+"现在与看懂": "Now & understanding",
+"Yukio · 记录详情": "Yukio · Record details",
+"点“详细解释正在发生的事”会展开点击时的工作片段；打开“历史回顾”才读取较早的记录，每次三段、每段最多四条短摘录。没有开启模型时也能查看本机记录。工作解读默认在本机整理；点“解读这次聊天”才发送该聊天的目标、方法与结果短摘录。选择“整个项目”后，点“解读整个项目”会发送列出的同项目聊天短摘录，每次最多六段聊天，不读取整个项目目录。首页、工作解读、回顾和详细解释共用每小时次数上限。": "“Explain what is happening” opens the work at the moment you click. Older records are read only when you open History review, three steps at a time with up to four short excerpts each. Local records stay readable with explanations off. Understanding is prepared locally; only “Explain this chat” sends that chat's goal, method and result excerpts. With “Whole project”, “Explain the whole project” sends excerpts from the listed chats, up to six chats, and never reads the project folder. All explanations share one hourly limit."
 }
