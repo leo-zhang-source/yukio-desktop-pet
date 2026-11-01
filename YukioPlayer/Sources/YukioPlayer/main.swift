@@ -2411,6 +2411,53 @@ app.run()
 
 #if DEBUG
 extension AppController {
+    /// Exercise the production question controller with two artificial requests;
+    /// no polling, assistant connection, or answer submission takes place.
+    func questionDraftsForCheck() -> [String: Bool] {
+        following = true; showQuestionCard = true; manuallyHidden = false; hideWhenIdle = false
+        setUpWindow(); setUpQuestion()
+        defer { panel.removeChildWindow(questionPanel); questionPanel.close(); panel.close() }
+        let now = nowMs()
+        let question = PetQuestion(text: "Synthetic question", options: [.init(label: "One"), .init(label: "Two")], multiSelect: true)
+        for session in ["draft-A", "draft-B"] {
+            router.ingest(PetEvent(ts: now, source: "test", session: session, kind: .taskStart), now: now)
+            router.ingest(PetEvent(ts: now + 1, source: "test", session: session, kind: .activityStart,
+                                  eventID: "question-" + session, activity: .question_for_user, question: question), now: now + 1)
+        }
+        func show(_ session: String) {
+            _ = router.focusSessionTemporarily(session, now: now + 2)
+            router.settle(now: now + 2)
+            updateQuestion(now: now + 2, immediate: true)
+        }
+        show("draft-A")
+        questionPanel.makeKeyAndOrderFront(nil)
+        _ = questionPanel.makeFirstResponder(questionPanel.cardView.field)
+        let editor = questionPanel.cardView.field.currentEditor() as? NSTextView
+        editor?.insertText("  A 你好123  ", replacementRange: NSRange(location: NSNotFound, length: 0))
+        pickedOptions = [1]
+        if let editor {
+            _ = questionPanel.cardView.control(questionPanel.cardView.field, textView: editor,
+                                               doCommandBy: #selector(NSResponder.cancelOperation(_:)))
+        }
+        var checks = ["escapeDismissesQuestion": shownQuestion == nil && questionPanel.ignoresMouseEvents,
+                      "escapeDoesNotSubmit": answersInFlight.isEmpty]
+        menuReopenQuestion()
+        checks["escapeReopenKeepsExactDraftAndChoice"] = questionPanel.cardView.draftText == "  A 你好123  " && pickedOptions == [1]
+        show("draft-B")
+        checks["newQuestionDoesNotInheritDraft"] = questionPanel.cardView.draftText.isEmpty && pickedOptions.isEmpty
+        questionPanel.cardView.draftText = "B independent draft"
+        for _ in 0..<10 {
+            show("draft-A")
+            checks["switchRestoresOnlyA"] = (checks["switchRestoresOnlyA"] ?? true) && questionPanel.cardView.draftText == "  A 你好123  " && pickedOptions == [1]
+            show("draft-B")
+            checks["switchRestoresOnlyB"] = (checks["switchRestoresOnlyB"] ?? true) && questionPanel.cardView.draftText == "B independent draft" && pickedOptions.isEmpty
+        }
+        manuallyHidden = true; updateQuestion(now: now + 3, immediate: true)
+        manuallyHidden = false; updateQuestion(now: now + 4, immediate: true)
+        checks["petHideReopenKeepsDraft"] = questionPanel.cardView.draftText == "B independent draft"
+        return checks
+    }
+
     /// Exercise the real child windows without polling the user's conversations.
     func chatCardsForCheck() -> [String: Bool] {
         following = true; showBubble = true; showCards = true; hideWhenIdle = false

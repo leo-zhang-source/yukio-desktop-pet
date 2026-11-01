@@ -72,4 +72,92 @@ import YukioCore
         let retryEditor = try #require(panel.cardView.field.currentEditor() as? NSTextView)
         #expect(retryEditor.string == "Yukio 你好123")
     }
+    @Test func failureRestoresOwnedEditorAndSelectionWithoutAnotherClick() throws {
+        _ = NSApplication.shared
+        let panel = QuestionPanel()
+        defer { panel.makeFirstResponder(nil); panel.close() }
+        let question = PetQuestion(text: "Synthetic question", options: [])
+        panel.cardView.card = QuestionCardLayout(question, canOpenChat: false)
+        panel.makeKeyAndOrderFront(nil)
+        #expect(panel.makeFirstResponder(panel.cardView.field))
+        let editor = try #require(panel.cardView.field.currentEditor() as? NSTextView)
+        editor.insertText("Yukio 你好123", replacementRange: NSRange(location: NSNotFound, length: 0))
+        editor.setSelectedRange(NSRange(location: 11, length: 0))
+        panel.cardView.card = QuestionCardLayout(question, canOpenChat: false, isSending: true)
+        panel.cardView.card = QuestionCardLayout(question, canOpenChat: false, sentNotice: "Failed")
+        let restored = try #require(panel.cardView.field.currentEditor() as? NSTextView)
+        #expect(panel.firstResponder === restored)
+        #expect(restored.selectedRange() == NSRange(location: 11, length: 0))
+        restored.insertText("abc", replacementRange: NSRange(location: NSNotFound, length: 0))
+        #expect(panel.cardView.draftText == "Yukio 你好123abc")
+    }
+
+    @Test func failureDoesNotStealFocusFromAnotherEditorOrNewQuestion() throws {
+        _ = NSApplication.shared
+        let panel = QuestionPanel()
+        defer { panel.makeFirstResponder(nil); panel.close() }
+        let question = PetQuestion(text: "Synthetic question", options: [])
+        let normal = QuestionCardLayout(question, canOpenChat: false)
+        panel.cardView.card = normal
+        panel.makeKeyAndOrderFront(nil)
+        #expect(panel.makeFirstResponder(panel.cardView.field))
+        panel.cardView.card = QuestionCardLayout(question, canOpenChat: false, isSending: true)
+        let other = NSTextField(frame: NSRect(x: 0, y: 0, width: 60, height: 20))
+        panel.cardView.addSubview(other)
+        #expect(panel.makeFirstResponder(other))
+        let otherEditor = try #require(other.currentEditor())
+        panel.cardView.card = normal
+        #expect(panel.firstResponder === otherEditor)
+        #expect(panel.cardView.field.currentEditor() == nil)
+        #expect(panel.makeFirstResponder(panel.cardView.field))
+        panel.cardView.card = QuestionCardLayout(question, canOpenChat: false, isSending: true)
+        panel.cardView.draftText = "Different question's draft"
+        panel.cardView.card = normal
+        #expect(panel.cardView.field.currentEditor() == nil)
+        #expect(panel.cardView.draftText == "Different question's draft")
+    }
+
+    @Test func failureInBackgroundDoesNotActivateTheQuestionWindow() throws {
+        _ = NSApplication.shared
+        let panel = QuestionPanel()
+        defer { panel.makeFirstResponder(nil); panel.close() }
+        let question = PetQuestion(text: "Synthetic question", options: [])
+        panel.cardView.card = QuestionCardLayout(question, canOpenChat: false)
+        panel.makeKeyAndOrderFront(nil)
+        #expect(panel.makeFirstResponder(panel.cardView.field))
+        panel.cardView.card = QuestionCardLayout(question, canOpenChat: false, isSending: true)
+        panel.resignKey()
+        panel.cardView.card = QuestionCardLayout(question, canOpenChat: false, sentNotice: "Failed")
+        #expect(!panel.isKeyWindow)
+        #expect(panel.cardView.field.currentEditor() == nil)
+    }
+
+    @Test func sameQuestionRefreshKeepsMarkedTextAndEditor() throws {
+        _ = NSApplication.shared
+        let panel = QuestionPanel()
+        defer { panel.makeFirstResponder(nil); panel.close() }
+        let layout = QuestionCardLayout(PetQuestion(text: "Synthetic question", options: []), canOpenChat: false)
+        panel.cardView.card = layout
+        panel.makeKeyAndOrderFront(nil)
+        #expect(panel.makeFirstResponder(panel.cardView.field))
+        let editor = try #require(panel.cardView.field.currentEditor() as? NSTextView)
+        editor.setMarkedText("nihao", selectedRange: NSRange(location: 5, length: 0), replacementRange: NSRange(location: NSNotFound, length: 0))
+        for _ in 0..<20 { panel.cardView.card = layout }
+        #expect(panel.cardView.field.currentEditor() === editor)
+        #expect(editor.hasMarkedText() && editor.string == "nihao")
+    }
+
+    @Test func controllerPreservesDraftsAcrossEscapeAndTwoChats() throws {
+        _ = NSApplication.shared
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Resources/Assets")
+        let catalog = try AnimationCatalog.load(assetsRoot: root)
+        let library = try SpriteLibrary(catalog: catalog, assetsRoot: root)
+        let suite = "local.yukio.question-drafts-tests." + UUID().uuidString
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let controller = AppController(catalog: catalog, library: library, defaults: defaults)
+        for (name, passed) in controller.questionDraftsForCheck() { #expect(passed, "\(name)") }
+    }
+
 }

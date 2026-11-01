@@ -79,6 +79,7 @@ final class QuestionCardView: NSView, NSTextFieldDelegate {
     var onActivate: (() -> Void)?
 
     let field = NSTextField(frame: .zero)
+    private var suspendedSelection: NSRange?
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -107,18 +108,39 @@ final class QuestionCardView: NSView, NSTextFieldDelegate {
     private func placeField() {
         defer { recordInputState("layout") }
         guard let card else {
+            suspendedSelection = nil
             field.isHidden = true
             return
         }
         field.isHidden = card.isApproval
+        var resumeSelection: NSRange?
         if field.isEnabled == card.isSending {
             // AppKit can discard the active field editor when disabling a field.
             // Preserve its uncommitted draft so a failed send remains editable.
-            let draft = field.currentEditor()?.string
+            let editor = field.currentEditor() as? NSTextView
+            let draft = editor?.string
+            if card.isSending {
+                suspendedSelection = window?.isKeyWindow == true && window?.firstResponder === editor
+                    ? editor?.selectedRange() : nil
+            } else {
+                resumeSelection = suspendedSelection
+                suspendedSelection = nil
+            }
             field.isEnabled = !card.isSending
             if let draft { field.stringValue = draft }
         }
         field.frame = card.textFieldFrame(in: bounds).insetBy(dx: 5, dy: 4)
+        // A failed send re-enables the field but AppKit does not restore its
+        // editor. Resume only our own still-focused window, never another input.
+        if let selection = resumeSelection, let window, window.isKeyWindow,
+           window.isVisible, !field.isHidden,
+           window.firstResponder == nil || window.firstResponder === window || window.firstResponder === self,
+           window.makeFirstResponder(field), let editor = field.currentEditor() as? NSTextView {
+            let length = (editor.string as NSString).length
+            let location = min(selection.location, length)
+            editor.setSelectedRange(NSRange(location: location, length: min(selection.length, length - location)))
+            recordInputState("editing_resumed_after_send")
+        }
     }
 
     override func setFrameSize(_ newSize: NSSize) {
@@ -131,6 +153,7 @@ final class QuestionCardView: NSView, NSTextFieldDelegate {
         get { field.currentEditor()?.string ?? field.stringValue }
         set {
             // End this question's editing before replacing it with another draft.
+            suspendedSelection = nil
             window?.makeFirstResponder(nil)
             field.stringValue = newValue
         }
