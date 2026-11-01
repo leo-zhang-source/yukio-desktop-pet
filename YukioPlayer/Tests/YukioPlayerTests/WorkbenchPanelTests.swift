@@ -35,9 +35,8 @@ import YukioCore
         let root = try #require(app.window?.contentView)
         let settings = try #require(find(root, "petSettingsTab", as: NSButton.self))
         settings.performClick(nil)
-        let headings = try ["appearanceSettingsGroup", "chatSettingsGroup", "generalSettingsGroup"].map {
-            let group = try #require(find(root, $0, as: NSStackView.self))
-            return (group.arrangedSubviews.first as? NSTextField)?.stringValue
+        let headings = try ["appearanceSettingsHeading", "chatSettingsHeading", "generalSettingsHeading"].map {
+            try #require(find(root, $0, as: NSTextField.self)).stringValue
         }
         #expect(headings == ["Appearance", "Chats & notices", "General"])
         #expect(try #require(find(root, "hideWhenIdleSwitch", as: NSSwitch.self)).toolTip == "Hide while idle and appear when working or showing a notice.")

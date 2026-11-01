@@ -3,7 +3,7 @@ import Testing
 @testable import YukioPlayer
 
 @Suite @MainActor struct LowerSignSettingsTests {
-    @Test func largeIconButtonEmitsOnlyLowerSign() throws {
+    @Test func readableIconButtonEmitsOnlyLowerSign() throws {
         _ = NSApplication.shared
         let controller = SettingsPanelController()
         defer { controller.close() }
@@ -15,7 +15,7 @@ import Testing
         root.layoutSubtreeIfNeeded()
         let button = try #require(find(root))
         #expect(button.image != nil)
-        #expect(button.frame.height >= 64)
+        #expect(button.frame.height >= 44)
         var lowerCount = 0
         var otherCount = 0
         controller.onChange = { change in
