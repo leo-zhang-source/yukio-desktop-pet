@@ -216,6 +216,8 @@ def build(args):
     run('sign-candidate', ['codesign', '--force', '--sign', '-', app])
     run('verify-signature', ['codesign', '--verify', '--deep', '--strict', app])
     run('check-packaged-assets', [contents / 'MacOS/YukioPlayer', '--check'])
+    run('check-packaged-workbench', [runtime / 'runtime/YukioRuntime/YukioRuntime',
+        '--check', '--data-dir', out / 'home/workbench-check'])
     archive = out / ('Yukio-' + config['version'] + '-candidate-' + config['build'] + '-macOS-arm64.zip')
     run('archive-app', ['ditto', '-c', '-k', '--norsrc', '--keepParent', app, archive])
     dmg = archive.with_suffix('.dmg')
