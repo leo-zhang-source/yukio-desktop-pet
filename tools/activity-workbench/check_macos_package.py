@@ -28,7 +28,7 @@ def check(archive, output):
     manifest=json.loads((package/'MANIFEST.json').read_text(encoding='utf-8'))
     for name,digest in manifest['files'].items():
         assert hashlib.sha256((package/name).read_bytes()).hexdigest()==digest,name
-    assert not any(p.name in ('lan-model.json','page-explanation-policy.json','work-context.json','explanation-provider.json') or p.suffix in ('.sqlite','.jsonl','.log') for p in package.rglob('*'))
+    assert not any(p.name in ('lan-model.json','page-explanation-policy.json','work-context.json','explanation-provider.json','local-explanation-options.json') or p.suffix in ('.sqlite','.jsonl','.log') for p in package.rglob('*'))
     sources=output/'模拟聊天';data=output/'记录'
     for client in ('codex','claude','deepcode'):(sources/client).mkdir(parents=True)
     rows=[dict(type='session_meta',payload=dict(id='mac-synthetic-chat')),

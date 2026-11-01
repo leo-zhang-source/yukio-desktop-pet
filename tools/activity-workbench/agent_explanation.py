@@ -16,8 +16,26 @@ from explanation import (ExplanationError, MAX_RESPONSE_BYTES, encode,
 
 PROVIDERS = ('auto', 'codex', 'claude', 'lan')
 LABELS = {'auto': '本机 Agent（跟随聊天）', 'codex': 'Codex',
-          'claude': 'Claude Code', 'lan': '自选内网模型'}
+          'claude': 'Claude Code', 'lan': '千问（本机专用）'}
 SETTINGS = 'explanation-provider.json'
+LOCAL_OPTIONS = 'local-explanation-options.json'
+
+
+def local_lan_enabled(directory):
+    """Private opt-in on the owner's installation; never shipped with the App."""
+    if not directory:
+        return False
+    try:
+        path = Path(directory) / LOCAL_OPTIONS
+        with path.open('rb') as stream:
+            raw = stream.read(513)
+        if len(raw) > 512:
+            return False
+        value = json.loads(raw)
+        return (isinstance(value, dict) and set(value) == {'lan'}
+                and type(value['lan']) is bool and value['lan'])
+    except (OSError, ValueError, TypeError):
+        return False
 
 
 def preferences(directory):
@@ -31,12 +49,17 @@ def preferences(directory):
     if (not isinstance(value, dict) or set(value) != {'provider', 'automatic_on_open'}
             or value['provider'] not in PROVIDERS or type(value['automatic_on_open']) is not bool):
         raise ValueError('Invalid explanation settings')
+    if value['provider'] == 'lan' and not local_lan_enabled(directory):
+        # A copied/old LAN preference must not enable or reveal a private model.
+        return dict(provider='auto', automatic_on_open=False)
     return value
 
 
 def configuration(directory, choice=None):
     choice = choice or preferences(directory)['provider']
     if choice == 'lan':
+        if not local_lan_enabled(directory):
+            raise ValueError('Local explanation option is disabled')
         return load_config(Path(directory) / 'lan-model.json')
     if choice not in PROVIDERS:
         raise ValueError('Invalid explanation provider')
@@ -47,6 +70,8 @@ def configuration(directory, choice=None):
 def save_preferences(directory, provider, automatic_on_open):
     if not directory or provider not in PROVIDERS or type(automatic_on_open) is not bool:
         raise ValueError('Invalid explanation settings')
+    if provider == 'lan' and not local_lan_enabled(directory):
+        raise ValueError('Local explanation option is disabled')
     directory = Path(directory)
     directory.mkdir(parents=True, exist_ok=True, mode=0o700)
     # Atomic, private, and contains no credentials, executable paths or excerpts.
@@ -409,5 +434,6 @@ def call_agent(config, payload):
 
 def provider_options(directory):
     return [dict(id='auto', label=LABELS['auto'], available=True)] + [
-        dict(id=p, label=LABELS[p], available=bool(find_agent(p))) for p in ('codex', 'claude')] + [
-        dict(id='lan', label=LABELS['lan'], available=bool(directory and (Path(directory) / 'lan-model.json').is_file()))]
+        dict(id=p, label=LABELS[p], available=bool(find_agent(p))) for p in ('codex', 'claude')] + ([
+        dict(id='lan', label=LABELS['lan'], available=(Path(directory) / 'lan-model.json').is_file())]
+        if local_lan_enabled(directory) else [])

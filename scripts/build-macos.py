@@ -24,7 +24,8 @@ from update_channel import validate_update_channel
 
 ROOT = Path(__file__).resolve().parents[1]
 PRIVATE_NAMES = {'auth.json', 'credentials.json', 'lan-model.json', 'work-context.json',
-                 'page-explanation-policy.json', 'explanation-provider.json', '.env'}
+                 'page-explanation-policy.json', 'explanation-provider.json',
+                 'local-explanation-options.json', '.env'}
 MACHO = {bytes.fromhex(value) for value in
          ('feedface', 'cefaedfe', 'feedfacf', 'cffaedfe', 'cafebabe', 'bebafeca', 'cafebabf', 'bfbafeca')}
 

@@ -950,5 +950,7 @@
 "读取助手版本超时。请确认助手能正常打开，再重试。": "Reading the assistant version timed out. Check that it opens normally, then try again.",
 "还未找到助手。先按官方说明安装，再回来检查。": "Assistant not found. Follow the official installation guide, then check again.",
 "还未登录。复制下面的命令，在这台电脑的终端粘贴并回车，按官方页面完成登录，再回来检查。": "Not signed in. Copy the command below, paste it into Terminal on this computer, and press Return. Complete sign-in on the official website, then check again.",
-"连接你的解释助手": "Connect your explanation assistant"
+"连接你的解释助手": "Connect your explanation assistant",
+"千问（本机专用）": "Qwen (this computer only)",
+"本机记录说明": "Local record notes"
 }

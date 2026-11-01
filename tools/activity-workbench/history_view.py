@@ -186,7 +186,7 @@ class HistoryView:
                 out.append(dict(id=client, name=CLIENTS[client], available=True, saved_records=count, revision=latest))
             except (sqlite3.Error, OSError, ValueError):
                 out.append(dict(id=client, name=CLIENTS[client], available=False))
-        return dict(clients=out, mode='local', explanation='规则说明，尚未使用千问', ordering='保存顺序；不是跨助手的实际执行先后')
+        return dict(clients=out, mode='local', explanation='本机记录说明', ordering='保存顺序；不是跨助手的实际执行先后')
 
     def groups(self, client, *, archive=False, offset=0, limit=30, snapshot=0):
         if type(archive) is not bool or not 0 <= offset <= 100000 or not 1 <= limit <= 50 or snapshot < 0:
