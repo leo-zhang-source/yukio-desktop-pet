@@ -1,8 +1,16 @@
 # In-app updates / 应用内更新
 
-> **2026-10-27：Windows 下载与更新文件暂时下架，相关 GitHub 发布/公开下载验证工作流暂停。** macOS 发布和更新保持可用。Windows 小节保留为历史实现参考；恢复发布前需明确重新启用。[发布状态](WINDOWS-DISTRIBUTION.md)。
+> **2026-10-27：Windows 下载与更新文件暂时下架，相关 GitHub 发布/公开下载验证工作流暂停。** Mac 公共可用性请以本文最新状态为准。Windows 小节保留为历史实现参考；恢复发布前需明确重新启用。[发布状态](WINDOWS-DISTRIBUTION.md)。
 
-## Mac 0.4.7 的本轮入口与范围
+## 当前 Mac 状态（2026-10-31）
+
+公开 `releases/latest` 和 `releases/latest/download/appcast.xml` 在本轮匿名检查中均返回 HTTP 404。当前不能承诺用户可通过公开通道下载或更新，也不能据此判断已有安装是最新版。未发现本机可用的 Developer ID Application 签名身份；正式签名、公证与普通浏览器下载后的 Gatekeeper 验收仍未完成。Windows 按用户决定继续暂缓。
+
+开发与候选构建使用 [统一 Mac 构建入口](remediation/MAC-BUILD.md) 和 `scripts/macos-release.json`。下面 `build-app.sh`、0.4.7 与旧双架构步骤保留为历史实现，不作为当前完整包入口。日常修复留在本地，只有用户明确要求上传时才执行公开交付。
+
+本轮更新提示与窗口修复见[后续修复记录](remediation/REMAINING-REPAIRS-20261031.md)：错误提示使用 App 当前语言，保留安全错误编号；手动检查临时降低工作台窗口层级，结束后恢复。该实现不代表公开源已恢复或独立升级已验收。
+
+## Mac 0.4.7 的历史入口与范围
 
 右键雪绪打开内置工作台，在顶部右侧进入设置，再选“更多设置 → 检查更新”。Mac 0.4.7 面向 Apple 芯片，更新列表包含 `sparkle:hardwareRequirements=arm64`，同时保留先前 0.4.6 的通用项。新包和更新列表保持原公钥的签名校验，内部构建号从本机 27.3 增到 28。
 
