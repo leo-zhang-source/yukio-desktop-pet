@@ -4,8 +4,8 @@ var uiLanguage=globalThis.YukioI18n?.language||'zh';
 const $=id=>document.getElementById(id), make=(tag,text)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n;};
 const names={codex:'Codex',claude:'Claude',deepcode:'Deep Code'}, basis={observed:tr('记录所见'),assistant:tr('助手自述'),user_request:tr('你的要求'),inference:tr('推测'),unknown:tr('尚不清楚')};
 let selected=null, current=null, epoch=0, busy=false, cardsAt=0, model=null, grant=null, modelAnswer=null, refreshAgain=false, synthetic=false, modelPending=false, attemptMessage='', pageClosed=false, autoRun=null, nextRetry=0;
-let chatCatalog=[],chatSearch='',chatLimited=false,chatFilter='all',activeView='now';
-const viewPanels={now:'viewNow',past:'viewPast'},viewTabs={now:'tabNow',past:'tabPast'};
+let chatCatalog=[],chatSearch='',chatLimited=false,chatFilter='all',activeView='now',openBlock=null,blockEpoch=0,nowScroll=0,stepsOpen=false;
+const viewPanels={now:'viewNow',detail:'viewDetail',settings:'viewSettings'},stepsShown=5;
 const openProjects=new Set(),activityLabels={working:tr('正在工作'),waiting:tr('等你处理'),inactive:tr('本轮已结束'),unknown:tr('状态待确认')};
 const chatValue=c=>JSON.stringify({client:c.client,key:c.key});
 function filteredChats(cards,query){
@@ -120,30 +120,39 @@ function showAnswer(result,refs,snapshot,revision){
  if(result.mode!=='model'){attemptMessage=result.message||tr('模型暂时没能解释，先保留已有说明。');render(current);return;}
  attemptMessage='';modelAnswer={result,refs,snapshot,revision};render(current);
 }
+function stepRow(item){
+ const row=make('button'),kind=item.kind==='assistant'?'assistant':'observed',text=make('span',item.text),mark=make('small',basis[kind]);
+ row.className='hblock step';row.type='button';row.dataset.stepSequence=String(item.sequence);row.setAttribute('aria-current',String(openBlock?.kind==='step'&&openBlock.sequence===item.sequence));
+ text.className='hblock-text';mark.className='mark static';mark.dataset.basis=kind;row.append(make('time',clock(item.stamp)),text,mark);row.onclick=()=>openStep(item,row);return row;
+}
+function renderSteps(data){
+ // Rows are buttons now, so an unchanged poll must leave them (and keyboard focus) alone.
+ const box=$('recent'),rows=data.recent.filter(item=>!(data.content&&(item.text.includes(data.content)||data.content.includes(item.text)))),shown=stepsOpen?rows:rows.slice(0,stepsShown),signature=JSON.stringify([data.key,shown.map(i=>[i.sequence,i.text,i.kind,i.stamp])]);
+ $('stepsMore').hidden=shown.length===rows.length;$('stepsMore').textContent=tr('再看 ')+(rows.length-shown.length)+tr(' 步');
+ if(box.dataset.signature===signature)return;box.dataset.signature=signature;
+ const focused=box.contains(document.activeElement)?document.activeElement?.dataset.stepSequence:null;box.replaceChildren();
+ for(const item of shown){const row=stepRow(item);box.append(row);if(row.dataset.stepSequence===focused)row.focus();}
+}
 function render(data){current=data;document.body?.classList.remove('no-chat');$('chatName').textContent=chatCatalog.find(c=>c.client===data.client&&c.key===data.key)?.title||data.title;$('chatLocation').textContent=[names[data.client],data.project?.name,age(data.last_activity_ms)].filter(Boolean).join(' · ');
  $('nowPanel').className='now-panel '+data.tone;$('nowAge').textContent=age(data.last_activity_ms);
  // Navigation reads the latest lifecycle marker independently. The bounded
  // explanation excerpt may omit that marker in a long turn; it must not
  // replace the catalogue's state with a less complete observation.
- renderChatNavigation();if($('handoffBox').open)loadHandoffs();if(activeView==='past')loadTaskSummary();$('work').hidden=false;$('empty').hidden=true;$('status').textContent=data.status;$('status').className='status '+data.tone;$('goal').textContent=data.goal;const brief=data.project_context;
+ renderChatNavigation();if(openBlock?.kind==='handoffs')loadHandoffs();if(openBlock?.kind==='summary')loadTaskSummary();$('work').hidden=false;$('empty').hidden=true;$('status').textContent=data.status;$('status').className='status '+data.tone;$('goal').textContent=data.goal;const brief=data.project_context;
  const originalBrief=uiLanguage==='en'&&brief&&/[\u3400-\u9fff]/.test(brief.goal+brief.now);
  $('goalShort').textContent=originalBrief?(data.goal_short||data.goal):(brief?.goal||data.goal_short||data.goal);
  $('goalLabel').textContent=originalBrief?tr('这次的要求（原文）'):brief?tr('整个任务'):tr('这次的要求');
  $('projectFocus').hidden=!brief||originalBrief;$('projectFocus').textContent=originalBrief?'':brief?.now||'';
- $('projectBox').hidden=!brief;
+ $('openProject').hidden=!brief;
  $('projectText').textContent=brief?[tr('前面：')+brief.before,tr('现在：')+brief.now,tr('接下来：')+brief.next,tr('来源：')+brief.source_note].join('\n\n'):'';
  $('attention').hidden=data.tone!=='attention';$('attention').textContent=data.needs_you;
- $('latestStep').hidden=!data.last_step;if(data.last_step){$('stepAction').textContent=data.last_step.action;$('stepResult').textContent=data.last_step.result;}
  $('unlinkedReceipts').hidden=!(data.unlinked_results?.length);$('unlinkedReceiptList').replaceChildren();
  for(const text of new Set((data.unlinked_results||[]).map(receipt=>receipt.text)))$('unlinkedReceiptList').append(make('p',text));
  $('historyLink').href='/history?'+new URLSearchParams({client:data.client,key:data.key,lang:uiLanguage});
- $('historyRecords').href=$('historyLink').href;
+ $('historyRecords').href=$('historyLink').href;$('detailRecords').href=$('historyLink').href;
  $('historyScope').textContent=tr('这次聊天的历史：')+data.title+tr(' · 切换左侧聊天可回顾项目中的其他工作。');
  $('scope').textContent=data.source_unavailable?tr('这段原文暂时读不到，等待来源恢复。'):data.partial?tr('这次只看到一部分，缺失内容没有补猜。'):tr('依据最近可读取的一段聊天。');
- $('recent').replaceChildren();for(const item of data.recent){
-  if(data.content&&(item.text.includes(data.content)||data.content.includes(item.text)))continue;
-  const row=make('p'),kind=item.kind==='assistant'?'assistant':'observed',body=make('span',item.text),mark=make('small',basis[kind]);row.className='ev';body.className='ev-text';mark.className='mark static';mark.dataset.basis=kind;body.append(mark);row.append(make('time',clock(item.stamp)),body);$('recent').append(row);
- }
+ renderSteps(data);
  const applicable=modelAnswer&&modelAnswer.revision===data.revision;
  $('previousModel').hidden=true;
  // A single requested explanation is a snapshot, not a live claim. Keep it
@@ -214,7 +223,6 @@ async function loadHandoffs(){
  }catch(error){if(own===handoffEpoch){delete $('handoffs').dataset.contentKey;$('handoffs').replaceChildren(make('p',tr('暂时没读到交接信息，已有工作说明仍可查看。')));}}
  finally{handoffBusy=false;}
 }
-$('handoffBox').addEventListener('toggle',()=>{if($('handoffBox').open)loadHandoffs();});
 function renderProviderSettings(){
  const select=$('explanationProvider');select.replaceChildren();
  for(const provider of model?.providers||[]){const option=make('option',provider.label+(provider.available?'':tr('（未找到）')));option.value=provider.id;option.disabled=!provider.available;select.append(option);}
@@ -236,7 +244,7 @@ async function setExplanationProvider(enabled){
 $('providerEnable').onclick=()=>setExplanationProvider(true);
 $('providerDisable').onclick=()=>setExplanationProvider(false);
 async function stopAuto(){const old=grant;grant=null;if(old){try{await api('glance-stop',{grant:old});}catch{}}}
-async function choose(value,keepAnswer=false){resetReading();epoch++;selected=JSON.parse(value);rememberPlace();if(!keepAnswer)modelAnswer=null;current=null;attemptMessage='';modelPending=false;autoRun=null;nextRetry=0;if(!keepAnswer)$('work').hidden=true;$('detailsBox').open=false;$('taskSummary').replaceChildren();delete $('taskSummary').dataset.contentKey;delete $('handoffs').dataset.contentKey;summaryEpoch++;handoffEpoch++;renderChatNavigation();for(const part of ['content','explanation','reason']){$(part+'Proof').hidden=true;$(part+'Basis').setAttribute('aria-expanded','false');}await stopAuto();await refresh(true);if(activeView==='past')openPast();}
+async function choose(value,keepAnswer=false){resetReading();epoch++;selected=JSON.parse(value);rememberPlace();if(!keepAnswer){modelAnswer=null;setView('now');}current=null;attemptMessage='';modelPending=false;autoRun=null;nextRetry=0;if(!keepAnswer)$('work').hidden=true;$('detailsBox').open=false;$('taskSummary').replaceChildren();delete $('taskSummary').dataset.contentKey;delete $('handoffs').dataset.contentKey;summaryEpoch++;handoffEpoch++;renderChatNavigation();for(const part of ['content','explanation','reason']){$(part+'Proof').hidden=true;$(part+'Basis').setAttribute('aria-expanded','false');}await stopAuto();await refresh(true);}
 async function refresh(force=false){if(busy){refreshAgain=refreshAgain||force;return;}if(document.hidden&&!force)return;busy=true;const own=epoch;try{
  if(force||Date.now()-cardsAt>30000){const data=await api('current');if(own!==epoch)return;cardsAt=data.unavailable?.length?0:Date.now();chatCatalog=data.cards;chatLimited=Boolean(data.limited);const prior=selected?JSON.stringify(selected):'';$('chat').replaceChildren();
  for(const [helper,label] of [[false,tr('你的聊天')],[true,tr('协助助手的工作')]]){const group=make('optgroup');group.label=label;for(const c of data.cards.filter(c=>Boolean(c.is_helper)===helper)){const option=make('option',names[c.client]+' · '+c.title+' · '+age(c.last_activity_ms));option.value=JSON.stringify({client:c.client,key:c.key});group.append(option);}if(group.children.length)$('chat').append(group);}
@@ -244,7 +252,7 @@ async function refresh(force=false){if(busy){refreshAgain=refreshAgain||force;re
  if(prior&&[...$('chat').options].some(o=>o.value===prior))$('chat').value=prior;
  else if(selected){const next=continuation(selected,data.cards);if(next){await choose(JSON.stringify(next),true);return;}const option=make('option',names[selected.client]+' · '+(current?.title||tr('当前聊天')));option.value=prior;$('chat').prepend(option);$('chat').value=prior;}
  else selected=preferredChat(data.cards)||JSON.parse($('chat').value);}
- if(!selected)return;const data=await api('glance?'+new URLSearchParams(selected));if(own!==epoch)return;note('');render(data);void loadUnderstanding(force);connection(synthetic?tr('模拟活动 · 用于检查'):tr('已连接本机记录'));$('refreshNote').textContent=synthetic?tr('模拟活动 · 用于检查'):tr('自动跟进新消息');void automatic();
+ if(!selected)return;const data=await api('glance?'+new URLSearchParams(selected));if(own!==epoch)return;note('');render(data);void loadUnderstanding(force);followPast();connection(synthetic?tr('模拟活动 · 用于检查'):tr('已连接本机记录'));$('refreshNote').textContent=synthetic?tr('模拟活动 · 用于检查'):tr('自动跟进新消息');void automatic();
  }catch(error){if(own===epoch){note(error.message);connection(tr('暂未连上'),true);if(current){$('status').textContent=tr('显示断开前内容');$('status').className='status quiet';}}}finally{busy=false;if(refreshAgain){refreshAgain=false;refresh(true);}}}
 function revokeOnClose(token){if(token)fetch('/api/glance-stop',{method:'POST',headers:{'Content-Type':'application/json','X-Yukio-Workbench':'1','X-Yukio-Language':uiLanguage},body:JSON.stringify({grant:token}),keepalive:true}).catch(()=>{});}
 function closePage(){resetReading();pageClosed=true;epoch++;const old=grant;grant=null;autoRun=null;modelPending=false;revokeOnClose(old);}
@@ -282,17 +290,51 @@ $('chat').onchange=()=>choose($('chat').value);$('reload').onclick=()=>refresh(t
 $('chatSearch').oninput=()=>{chatSearch=$('chatSearch').value;renderChatNavigation();};
 $('chatBrowse').onclick=()=>toggleChatBrowser(true);$('chatNavClose').onclick=()=>toggleChatBrowser(false);$('chatBackdrop').onclick=()=>toggleChatBrowser(false);
 function rememberPlace(){
- if(!selected)return;const query={...selected,lang:uiLanguage};if(activeView!=='now')query.view=activeView;
- window.history?.replaceState(null,'','/?'+new URLSearchParams(query));
+ if(selected)window.history?.replaceState(null,'','/?'+new URLSearchParams({...selected,lang:uiLanguage}));
 }
-function setView(name,focusTab=false){
+function setView(name){
  activeView=viewPanels[name]?name:'now';
- for(const [id,panel] of Object.entries(viewPanels)){const on=id===activeView,tab=$(viewTabs[id]);$(panel).hidden=!on;tab.setAttribute('aria-selected',String(on));tab.tabIndex=on?0:-1;if(on&&focusTab)tab.focus();}
- rememberPlace();if(activeView==='past'&&current)openPast();
+ for(const [id,panel] of Object.entries(viewPanels))$(panel).hidden=id!==activeView;
+ document.body?.classList.toggle('settings-open',activeView==='settings');
+ $('railSettings').setAttribute('aria-expanded',String(activeView==='settings'));
+ if(activeView!=='detail'&&openBlock){openBlock.row?.setAttribute('aria-current','false');openBlock=null;blockEpoch++;}
+}
+function leaveNow(){if(activeView==='now')nowScroll=$('views').scrollTop;}
+function backToNow(){
+ const back=openBlock?.row||$('railSettings');setView('now');$('views').scrollTop=nowScroll;back.focus();
+}
+function showSettings(){leaveNow();setView('settings');$('views').scrollTop=0;$('viewSettings').focus();}
+function showBlock(block,title,meta=''){
+ // One detail at a time, and the blocks stay in the side column so the next is one click away.
+ leaveNow();openBlock?.row?.setAttribute('aria-current','false');
+ const own=++blockEpoch;openBlock=block;block.row?.setAttribute('aria-current','true');
+ $('detailTitle').textContent=title;$('detailMeta').textContent=meta;$('detailNote').textContent='';$('detailBody').replaceChildren();
+ for(const [kind,id] of [['summary','summaryBlock'],['project','projectBlock'],['handoffs','handoffBlock']])$(id).hidden=block.kind!==kind;
+ setView('detail');pastControls();$('views').scrollTop=0;document.body?.classList.remove('inspector-open');$('viewDetail').focus();return own;
+}
+function detailSection(title,text){const section=make('section');section.append(make('h3',title),make('p',text));return section;}
+async function openStep(item,row){
+ const kind=item.kind==='assistant'?'assistant':'observed',own=showBlock({kind:'step',row,sequence:item.sequence},item.text,[clock(item.stamp),basis[kind]].filter(Boolean).join(' · ')),box=$('detailBody');
+ const outcome=current?.results?.find(r=>r.sequence===item.sequence)?.text||(current?.last_step?.sequence===item.sequence?current.last_step.result:'');
+ if(outcome)box.append(detailSection(tr('这一步的结果'),outcome));
+ $('detailNote').textContent=tr('正在读取这条记录…');
+ const route='timeline?'+new URLSearchParams({...selected,before:item.sequence+1});
+ // The history file can be briefly busy while another page reads it, so one failure gets one quiet retry.
+ const read=()=>api(route).catch(()=>new Promise(resolve=>setTimeout(resolve,800)).then(()=>own===blockEpoch?api(route):null));
+ try{const data=await read();if(!data||own!==blockEpoch)return;
+  const record=data.items.find(r=>r.evidence?.sequence===item.sequence);$('detailNote').textContent=record?'':tr('这条记录不在最近的可读范围内，可在记录详情查看。');
+  if(record)box.append(detailSection(tr('记录里怎么写'),record.title+' · '+record.note));
+  for(const part of record?.preview||[])box.append(detailSection(part.title,part.note));
+ }catch{if(own===blockEpoch)$('detailNote').textContent=tr('这条记录暂时没读到。可以再点一次，或到记录详情查看。');}
 }
 function openPast(){
- // Opening this view is the click that reads older records, one page at a time.
- void loadTaskSummary();const panel=$('pastPanel');if(panel.hidden)panel.hidden=false;if(!pastPage&&!readingBusy)void loadPast();
+ // The list beside the work reads this Mac's records only. Sending stays a separate click.
+ const panel=$('pastPanel');if(panel.hidden)panel.hidden=false;if(!pastPage&&!pastLoading)void loadPast();
+}
+function followPast(){
+ openPast();
+ // Only the newest page moves with new work; a page someone paged back to stays put.
+ if(pastPage&&!pastPage.before&&!pastPage.summarized&&openBlock?.kind!=='past'&&!pastLoading&&Date.now()-pastAt>60000)void loadPast();
 }
 function toggleInspector(){
  const body=document.body;if(!body)return;
@@ -305,23 +347,24 @@ function moveChatFocus(step){
 }
 window.addEventListener('keydown',event=>{
  const active=document.activeElement,typing=/^(INPUT|TEXTAREA|SELECT)$/.test(active?.tagName||'');
- if(event.key==='Escape'){toggleChatBrowser(false);document.body?.classList.remove('inspector-open');if(active===$('chatSearch')&&chatSearch){$('chatSearch').value='';chatSearch='';renderChatNavigation();}return;}
+ if(event.key==='Escape'){toggleChatBrowser(false);document.body?.classList.remove('inspector-open');if(active===$('chatSearch')&&chatSearch){$('chatSearch').value='';chatSearch='';renderChatNavigation();}else if(activeView!=='now')backToNow();return;}
  if((event.metaKey||event.ctrlKey)&&event.key==='k'){event.preventDefault();$('chatSearch').focus();return;}
  if(event.metaKey||event.ctrlKey||event.altKey)return;
  if($('chatNavigation').contains?.(active)&&['ArrowDown','ArrowUp'].includes(event.key)){event.preventDefault();moveChatFocus(event.key==='ArrowDown'?1:-1);return;}
- if(active?.getAttribute?.('role')==='tab'&&['ArrowLeft','ArrowRight'].includes(event.key)){const order=Object.keys(viewPanels),next=order[(order.indexOf(activeView)+(event.key==='ArrowRight'?1:order.length-1))%order.length];event.preventDefault();setView(next,true);return;}
  if(typing)return;
  if(event.key==='/'){event.preventDefault();$('chatSearch').focus();}
- else if(['1','2'].includes(event.key))setView(Object.keys(viewPanels)[Number(event.key)-1]);
  else if(event.key==='r'&&!event.repeat)void refresh(true);
 });
 $('filterAll').onclick=()=>setChatFilter('all');$('filterWaiting').onclick=()=>setChatFilter('waiting');$('filterWorking').onclick=()=>setChatFilter('working');$('filterProject').onclick=()=>setChatFilter('project');
-$('tabNow').onclick=()=>setView('now');$('tabPast').onclick=()=>setView('past');
+$('detailBack').onclick=backToNow;$('settingsBack').onclick=backToNow;$('railSettings').onclick=()=>activeView==='settings'?backToNow():showSettings();
+$('openSummary').onclick=()=>{showBlock({kind:'summary',row:$('openSummary')},tr('任务与交接小结'));void loadTaskSummary();};
+$('openProject').onclick=()=>showBlock({kind:'project',row:$('openProject')},tr('整个项目与前后步骤'));
+$('openHandoffs').onclick=()=>{showBlock({kind:'handoffs',row:$('openHandoffs')},tr('助手之间怎么交接'));void loadHandoffs();};
 $('inspectorToggle').onclick=toggleInspector;
 $('openSettings').onclick=()=>window.webkit?.messageHandlers?.yukio?.postMessage('settings');
 
-let readingEpoch=0,readingBusy=false,deepLoaded=false,pastPage=null;
-function resetReading(){resetUnderstanding();readingEpoch++;readingBusy=false;deepLoaded=false;pastPage=null;for(const id of ['deepPanel','pastPanel'])$(id).hidden=true;$('deepRead').setAttribute('aria-expanded','false');$('deepText').replaceChildren();$('pastText').replaceChildren();}
+let readingEpoch=0,readingBusy=false,deepLoaded=false,pastPage=null,pastLoading=false,pastAt=0;
+function resetReading(){resetUnderstanding();readingEpoch++;readingBusy=false;deepLoaded=false;pastPage=null;pastLoading=false;pastAt=0;for(const id of ['deepPanel','pastPanel'])$(id).hidden=true;$('deepRead').setAttribute('aria-expanded','false');$('deepText').replaceChildren();$('pastText').replaceChildren();delete $('pastText').dataset.signature;delete $('recent').dataset.signature;stepsOpen=false;}
 function readingReady(){if(!grant)throw Error(tr('首页说明还在准备，请稍后再点。'));if(readingBusy||autoRun||workInFlight)throw Error(tr('有一段说明正在生成，请稍后再点。'));}
 function readingActive(own,panel){return own===readingEpoch&&!pageClosed&&!$(panel).hidden;}
 async function readingModel(token,own,panel,status,visible=()=>true){
@@ -359,50 +402,70 @@ async function loadDeep(){
  }catch(error){if(readingActive(own,'deepPanel')){$('deepNote').textContent=error.message;$('deepRetry').hidden=false;}}
  finally{if(started&&own===readingEpoch){readingBusy=false;$('deepRetry').hidden=false;}}
 }
+function pastBlock(card,page){
+ const row=make('button'),title=make('span',card.title),caption=make('span',(card.position?card.position+' · ':'')+age(card.stamp)+tr('的要求')),short=make('span',card.local_summary||card.local?.find(p=>p.part==='request')?.text||tr('这段暂时没有说明。'));
+ row.className='hblock';row.type='button';title.className='hblock-title';caption.className='hblock-time';short.className='hblock-text';row.append(title,caption,short);
+ Object.assign(card,{heading:title,short,row});row.onclick=()=>openPastCard(card,page);return row;
+}
 async function loadPast(snapshot=0,before=0){
- const own=readingEpoch;let started=false;$('pastRetry').hidden=true;$('pastOlder').hidden=true;
- const localOnly=!grant||!model?.automatic_on_open;
- try{if(localOnly){if(readingBusy)throw Error(tr('有一段说明正在生成，请稍后再点。'));}else readingReady();readingBusy=true;started=true;$('pastNote').textContent=tr('正在分段回顾这段聊天…');
- const page=localOnly?await api('reading-history?'+new URLSearchParams({...selected,snapshot,before})):await api('reading-history',{grant,snapshot,before});if(!readingActive(own,'pastPanel'))return;
- pastPage=page;page.before=before;$('pastText').replaceChildren();$('pastNewer').hidden=!before;
- for(const card of page.cards){
-  const section=make('section');section.className='past-card';const heading=make('h3',card.title);card.heading=heading;section.append(heading);
-  const time=make('p',(card.position?card.position+' · ':'')+age(card.stamp)+tr('的要求'));time.className='reading-caption';section.append(time);
-  const short=make('p',card.local_summary||card.local?.find(p=>p.part==='request')?.text||tr('模型正在总结这一段…'));section.append(short);card.short=short;card.container=section;
-  const button=make('button',tr('深入看这一段')),detail=make('div');button.className='btn';button.type='button';detail.className='past-detail';detail.hidden=true;
-  button.setAttribute('aria-expanded','false');button.onclick=()=>loadPastDetail(card,button,detail);
-  section.append(button,detail);$('pastText').append(section);
-  if(card.missing_reply){const limit=make('p',card.note);limit.className='reading-caption';section.append(limit);}
- }
- if(!page.token){$('pastNote').textContent=(page.cards.length?tr('本机记录详情 · 开启解释后，可请模型进一步讲解。'):tr('这部分还没有可读取的公开内容。'))+' '+page.note;return;}
- $('pastNote').textContent=tr('模型正在为这三段写简短总结…');
- const answer=await readingModel(page.token,own,'pastPanel',$('pastNote'));if(!answer||!readingActive(own,'pastPanel'))return;
- if(answer.result.mode!=='model')throw Error(answer.result.message||tr('模型暂时没能总结，点击下方重新读取。'));
- for(const card of page.cards){const item=answer.result.explanations.find(i=>i.part===card.id);card.short.textContent=item?.text||tr('这段暂时没有说明。');
+ const own=readingEpoch;pastLoading=true;$('pastRetry').hidden=true;$('pastOlder').hidden=true;if(!pastPage)$('pastNote').textContent=tr('正在分段回顾这段聊天…');
+ try{const page=await api('reading-history?'+new URLSearchParams({...selected,snapshot,before}));if(!readingActive(own,'pastPanel'))return;
+ pastAt=Date.now();page.before=before;const box=$('pastText'),signature=JSON.stringify([before,page.cards.map(c=>[c.id,c.start,c.title,c.stamp,c.local_summary])]);
+ if(pastPage&&box.dataset.signature===signature)return;
+ box.dataset.signature=signature;pastPage=page;box.replaceChildren();$('pastNewer').hidden=!before;for(const card of page.cards)box.append(pastBlock(card,page));
+ $('pastNote').textContent=page.cards.length?page.note:tr('这部分还没有可读取的公开内容。')+' '+page.note;
+ }catch(error){if(readingActive(own,'pastPanel')){$('pastNote').textContent=error.message;$('pastRetry').hidden=false;}}
+ finally{if(own===readingEpoch){pastLoading=false;$('pastOlder').hidden=!pastPage?.has_more;pastControls();}}
+}
+function pastSummary(card){
+ const section=detailSection(tr('模型总结'),card.summary.text),refs=make('details'),label=make('summary',tr('模型总结 · 查看依据'));label.className='mark';label.dataset.basis='model';refs.append(label);
+ for(const ref of card.summary.refs)refs.append(make('blockquote',ref.title+'：'+ref.quote));section.append(refs);return section;
+}
+function drawPastCard(card){
+ const box=$('detailBody');readingParts(box,card.parts,card.answer||{result:{explanations:card.local||[]},references:card.references||[]},!card.answer);
+ if(card.summary)box.replaceChildren(pastSummary(card),...box.children);
+}
+function openPastCard(card,page){
+ showBlock({kind:'past',row:card.row,card,page},card.heading?.textContent||card.title,(card.position?card.position+' · ':'')+age(card.stamp)+tr('的要求'));drawPastCard(card);
+ $('detailNote').textContent=card.answer?tr('模型深入说明 · 基于点击时的记录。'):(model?.automatic_on_open?tr('本机记录详情 · 下方可请模型进一步解释。'):tr('本机记录详情 · 开启解释后，可请模型进一步讲解。'))+(card.missing_reply?' '+card.note:'');
+}
+function pastControls(){
+ const ready=Boolean(grant&&model?.automatic_on_open)&&!pageClosed,busy=readingBusy||workInFlight||Boolean(autoRun),summarize=$('pastSummarize'),explain=$('detailExplain');
+ summarize.hidden=!model?.automatic_on_open||!pastPage?.cards?.length;summarize.disabled=!ready||busy||Boolean(pastPage?.summarized);
+ explain.hidden=!model?.automatic_on_open||openBlock?.kind!=='past';explain.disabled=!ready||busy;
+}
+async function explainPastCard(){
+ const block=openBlock;if(block?.kind!=='past'||!grant||!model?.automatic_on_open)return;
+ const own=readingEpoch,{card,page}=block,status=$('detailNote'),visible=()=>openBlock===block;let started=false;
+ try{readingReady();readingBusy=true;started=true;pastControls();status.textContent=tr('模型正在展开这一段…');
+ const frozen=await api('reading-history',{grant,snapshot:page.snapshot,before:page.before||0});if(!readingActive(own,'pastPanel')||!visible())return;
+ const token=frozen.cards.find(c=>c.id===card.id&&c.start===card.start)?.detail_token;if(!token)throw Error(tr('这一段的记录已有变化，请重新打开。'));
+ const answer=await readingModel(token,own,'pastPanel',status,visible);if(!answer||!readingActive(own,'pastPanel')||!visible())return;
+ if(answer.result.mode!=='model')throw Error(answer.result.message||tr('这次没有生成详细说明。'));
+ card.answer=answer;drawPastCard(card);status.textContent=tr('模型深入说明 · 基于点击时的记录。');
+ }catch(error){if(readingActive(own,'pastPanel')&&visible())status.textContent=error.message;}
+ finally{if(started&&own===readingEpoch)readingBusy=false;pastControls();}
+}
+async function summarizePast(){
+ const page=pastPage;if(!page||!grant||!model?.automatic_on_open)return;
+ const own=readingEpoch,status=$('pastNote'),visible=()=>pastPage===page;let started=false;
+ try{readingReady();readingBusy=true;started=true;pastControls();status.textContent=tr('模型正在为这三段写简短总结…');
+ const frozen=await api('reading-history',{grant,snapshot:page.snapshot,before:page.before||0});if(!readingActive(own,'pastPanel')||!visible())return;
+ const answer=await readingModel(frozen.token,own,'pastPanel',status,visible);if(!answer||!readingActive(own,'pastPanel')||!visible())return;
+ if(answer.result.mode!=='model')throw Error(answer.result.message||tr('模型暂时没能总结，可以稍后再点一次。'));
+ for(const card of page.cards){const item=answer.result.explanations.find(i=>i.part===card.id);if(!item)continue;
   // A dedicated subject title preserves names after commas and complete pairs.
   // Legacy cached replies fall back to a sentence, never its first short clause.
-  if(item)card.heading.textContent=item.title||item.text.split(/[。；]/)[0];
-  const evidence=make('details'),evidenceLabel=make('summary',tr('模型总结 · 查看依据'));evidenceLabel.className='mark';evidenceLabel.dataset.basis='model';evidence.append(evidenceLabel);for(const id of item?.evidence_ids||[]){const ref=answer.references.find(r=>r.evidence_id===id);if(ref)evidence.append(make('blockquote',ref.title+'：'+ref.quote));}card.container.append(evidence);
+  card.short.textContent=item.text;card.heading.textContent=item.title||item.text.split(/[。；]/)[0];
+  card.summary={text:item.text,refs:(item.evidence_ids||[]).map(id=>answer.references.find(r=>r.evidence_id===id)).filter(Boolean)};
  }
- $('pastNote').textContent=page.note;
- }catch(error){if(readingActive(own,'pastPanel')){for(const card of pastPage?.cards||[])if(card.short.textContent===tr('模型正在总结这一段…'))card.short.textContent=tr('暂时没有模型总结；下面仍可单独展开这一段。');$('pastNote').textContent=error.message;$('pastRetry').hidden=false;}}
- finally{if(started&&own===readingEpoch){readingBusy=false;$('pastOlder').hidden=!pastPage?.has_more;$('pastRetry').hidden=false;$('pastRetry').textContent=tr('重新读取这一页');}}
-}
-async function loadPastDetail(card,button,box){
- if(!box.hidden){box.hidden=true;button.setAttribute('aria-expanded','false');return;}
- box.hidden=false;button.setAttribute('aria-expanded','true');if(card.loaded)return;
- const own=readingEpoch;let started=false;const status=make('p',tr('模型正在展开这一段…'));
- readingParts(box,card.parts,{result:{explanations:card.local||[]},references:card.references||[]},true);box.append(status);
- if(!grant||!model?.automatic_on_open||!card.detail_token){status.textContent=tr('本机记录详情 · 开启解释后，可请模型进一步讲解。');return;}
- try{readingReady();readingBusy=true;started=true;
- const answer=await readingModel(card.detail_token,own,'pastPanel',status,()=>!box.hidden);if(!answer||!readingActive(own,'pastPanel')||box.hidden)return;
- if(answer.result.mode!=='model')throw Error(answer.result.message||tr('这次没有生成详细说明。'));
- readingParts(box,card.parts,answer);card.loaded=true;
- }catch(error){if(readingActive(own,'pastPanel')){status.textContent=error.message;box.append(make('p',tr('收起后再展开可以重试；放久了请重新读取这一页。')));}}
- finally{if(started&&own===readingEpoch)readingBusy=false;}
+ page.summarized=true;status.textContent=page.note;
+ }catch(error){if(readingActive(own,'pastPanel'))status.textContent=error.message;}
+ finally{if(started&&own===readingEpoch)readingBusy=false;pastControls();}
 }
 $('deepRead').onclick=()=>{const panel=$('deepPanel');panel.hidden=!panel.hidden;$('deepRead').setAttribute('aria-expanded',String(!panel.hidden));if(!panel.hidden&&!deepLoaded)void loadDeep();};
 $('deepRetry').onclick=()=>loadDeep();$('pastRetry').onclick=()=>loadPast(pastPage?.snapshot||0,pastPage?.before||0);$('pastNewer').onclick=()=>loadPast();$('pastOlder').onclick=()=>{if(pastPage)void loadPast(pastPage.snapshot,pastPage.next_before);};
+$('stepsMore').onclick=()=>{stepsOpen=true;if(current)renderSteps(current);};$('pastSummarize').onclick=summarizePast;$('detailExplain').onclick=explainPastCard;
 
 let workScope='chat',workData=null,workAnswer=null,workEpoch=0,workLoad=null,workAt=0,workInFlight=false,workRequestEpoch=-1,workMessage='',workDetails={};
 function resetUnderstanding(scope='chat'){
@@ -418,7 +481,7 @@ function understandingControls(){
  $('scopeProject').disabled=!current?.project;
  const button=$('understandingExplain');
  button.disabled=!workData||!grant||!model?.automatic_on_open||workInFlight||readingBusy||Boolean(autoRun)||pageClosed;
- button.textContent=workInFlight?tr('正在解读…'):workScope==='project'?tr('解读整个项目'):tr('解读这次聊天');
+ button.textContent=workInFlight?tr('正在解读…'):workScope==='project'?tr('解读整个项目'):tr('解读这次聊天');pastControls();
  $('understandingSendNote').textContent=!model?.automatic_on_open?tr('当前为本机记录摘要。开启解释后，可生成目标、方法和有效性的连贯解读。'):
   workScope==='project'?tr('点击后，将下方列出的同项目聊天短摘录交给所选解释服务；只生成这一次，使用你的账号额度。'):
   tr('点击后，根据这次聊天的较早要求、最新补充、公开做法和已知结果生成解读。');
@@ -531,5 +594,5 @@ $('scopeChat').onclick=()=>chooseWorkScope('chat');$('scopeProject').onclick=()=
 for(const part of ['content','explanation','reason'])$(part+'Basis').onclick=()=>{const box=$(part+'Proof');box.hidden=!box.hidden;$(part+'Basis').setAttribute('aria-expanded',String(!box.hidden));};
 window.addEventListener('pagehide',closePage);
 window.addEventListener('pageshow',()=>{pageClosed=false;nextRetry=0;void automatic();});
-(async()=>{try{const initial=new URLSearchParams(location.search);if(names[initial.get('client')]&&/^[A-Za-z0-9_-]{1,4096}$/.test(initial.get('key')||''))selected={client:initial.get('client'),key:initial.get('key')};if(initial.get('view'))setView(initial.get('view'));if(window.webkit?.messageHandlers?.yukio){document.documentElement?.classList.add('in-panel');$('openSettings').hidden=false;}const data=await api('clients');model=data.explanation;renderProviderSettings();synthetic=data.mode==='synthetic';if(synthetic)connection(tr('模拟活动 · 用于检查'));$('modelDetails').textContent=model?.configured?tr('使用你设置的模型，每小时最多 ')+model.max_calls_per_hour+tr(' 次。'):tr('未配置模型，仍可查看本机说明。');await refresh(true);if(data.mode==='synthetic'){$('refreshNote').textContent=tr('模拟活动 · 用于检查');document.title=tr('雪绪 · 模拟当前工作');}}catch(error){note(error.message);}})();
+(async()=>{try{const initial=new URLSearchParams(location.search);if(names[initial.get('client')]&&/^[A-Za-z0-9_-]{1,4096}$/.test(initial.get('key')||''))selected={client:initial.get('client'),key:initial.get('key')};if(window.webkit?.messageHandlers?.yukio){document.documentElement?.classList.add('in-panel');$('petSettings').hidden=false;}const data=await api('clients');model=data.explanation;renderProviderSettings();synthetic=data.mode==='synthetic';if(synthetic)connection(tr('模拟活动 · 用于检查'));$('modelDetails').textContent=model?.configured?tr('使用你设置的模型，每小时最多 ')+model.max_calls_per_hour+tr(' 次。'):tr('未配置模型，仍可查看本机说明。');await refresh(true);if(data.mode==='synthetic'){$('refreshNote').textContent=tr('模拟活动 · 用于检查');document.title=tr('雪绪 · 模拟当前工作');}}catch(error){note(error.message);}})();
 setInterval(()=>refresh(),6000);setInterval(automatic,15000);

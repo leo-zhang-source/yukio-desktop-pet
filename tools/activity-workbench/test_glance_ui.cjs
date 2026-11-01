@@ -76,24 +76,64 @@ function understanding(scope='chat',revision='work-r1'){
   chats:[{client:'codex',key:'chat-a',title:'简化首页',last_activity_ms:1}],included_chats:1,known_chats:1,max_chats:6,note:'有限公开摘录',references:[{evidence_id:'E1',title:'要求',quote:'让页面易懂',chat:'简化首页'}],
   local:Object.fromEntries(['goal','strategy','effectiveness'].map(part=>[part,{text:scope+' '+part,basis:'unknown',evidence_ids:['E1']}]))};
 }
-test('now leads the page with the work reading beneath it and earlier records apart',()=>{
+test('the request leads, then now, then the work reading, with history beside them',()=>{
  const html=fs.readFileSync(path.join(__dirname,'dist/index.html'),'utf8');
- assert.match(html,/id="tabNow"[^>]*role="tab"[^>]*aria-controls="viewNow"/);assert.match(html,/id="tabPast"[^>]*role="tab"[^>]*aria-controls="viewPast"/);
- assert.doesNotMatch(html,/id="tabUnderstand"|id="viewUnderstand"/);
- assert.match(html,/id="happeningHeading">正在发生/);assert.match(html,/id="understandingHeading">这项工作如何推进/);
- assert.ok(html.indexOf('id="nowPanel"')<html.indexOf('id="workUnderstanding"'));
- assert.ok(html.indexOf('id="workUnderstanding"')<html.indexOf('id="viewPast"'));
+ assert.doesNotMatch(html,/role="tab"|id="tabNow"|id="tabPast"|id="viewPast"|id="tabUnderstand"/);
+ assert.ok(html.indexOf('id="goalBand"')<html.indexOf('id="nowPanel"'));assert.ok(html.indexOf('id="nowPanel"')<html.indexOf('id="workUnderstanding"'));
  assert.ok(html.indexOf('id="deepRead"')<html.indexOf('id="workUnderstanding"'));
+ assert.match(html,/id="happeningHeading">正在发生/);assert.match(html,/id="understandingHeading">这项工作如何推进/);
+ const side=html.slice(html.indexOf('id="inspector"'));assert.match(side,/id="historyHeading">历史回顾/);
+ for(const label of ['任务与交接小结','之前做了什么','整个项目与前后步骤','助手之间怎么交接','把前后的工作接起来'])assert.ok(side.includes(label),label);
+ assert.doesNotMatch(html,/最近做了什么|最近一步|latestStep/);
  assert.match(html,/id="scopeProject"[^>]*disabled/);
  assert.doesNotMatch(html,/brand-mark|breadcrumb/);
- for(const label of ['这一步的解释','这一步的原因','详细解释正在发生的事','把眼前这件事讲清楚','任务与交接小结','最近做了什么','最近一步','完整要求和之前的补充','整个项目与前后步骤','助手之间怎么交接','查看这段说明的依据','上一段的模型说明','历史回顾','之前做了什么','从目标到结果','把前后的工作接起来','使用了哪些聊天与记录','说明与隐私'])assert.ok(html.includes(label),label);
+ for(const label of ['这一步的解释','这一步的原因','详细解释正在发生的事','把眼前这件事讲清楚','完整要求和之前的补充','查看这段说明的依据','上一段的模型说明','从目标到结果','使用了哪些聊天与记录'])assert.ok(html.includes(label),label);
 });
-test('switching views keeps the chat and only the history view reads older records',async()=>{
- const f=setup();enabledPage(f);f.run('$("pastPanel").hidden=true');
- assert.equal(f.pending.length,0);f.run('setView("past")');assert.equal(f.elements.get('viewPast').hidden,false);assert.equal(f.elements.get('viewNow').hidden,true);assert.equal(f.elements.get('pastPanel').hidden,false);
- assert.equal(f.run('selected.key'),'chat-a');assert.ok(f.pending.some(p=>/task-summary/.test(p.url)));assert.ok(f.pending.some(p=>/reading-history/.test(p.url)));
- f.run('setView("now");setView("past")');assert.equal(f.pending.filter(p=>/reading-history/.test(p.url)).length,1);
- f.run('setView("understand")');assert.equal(f.elements.get('viewNow').hidden,false);
+test('settings sit at the top of the rail and hold the explanation and privacy controls',()=>{
+ const html=fs.readFileSync(path.join(__dirname,'dist/index.html'),'utf8');
+ assert.ok(html.indexOf('id="railSettings"')<html.indexOf('id="chatSearch"'));
+ const settings=html.slice(html.indexOf('id="viewSettings"'),html.indexOf('id="empty"'));
+ for(const label of ['解释设置','解释交给','id="providerEnable"','说明与隐私','id="refreshNote"','id="openSettings"'])assert.ok(settings.includes(label),label);
+ assert.ok(html.indexOf('</article>')<html.indexOf('id="viewSettings"'),'settings must stay reachable before any chat exists');
+ const side=html.slice(html.indexOf('id="inspector"'));assert.doesNotMatch(side,/explanationProvider|说明与隐私|refreshNote/);
+});
+test('settings open and close without losing the chat',()=>{
+ const f=setup();enabledPage(f);f.elements.get('railSettings').onclick();
+ assert.equal(f.elements.get('viewSettings').hidden,false);assert.equal(f.elements.get('viewNow').hidden,true);assert.equal(f.run('selected.key'),'chat-a');
+ f.run('$("views").scrollTop=0');f.elements.get('settingsBack').onclick();assert.equal(f.elements.get('viewNow').hidden,false);assert.equal(f.elements.get('viewSettings').hidden,true);
+});
+test('the history column reads locally, sends nothing, and opens one detail at a time',async()=>{
+ const f=setup();enabledPage(f);f.run('grant="page-only";$("pastPanel").hidden=true');assert.equal(f.pending.length,0);
+ f.run('followPast()');assert.equal(f.elements.get('pastPanel').hidden,false);assert.equal(f.pending.length,1);
+ assert.match(f.pending[0].url,/reading-history\?/);assert.equal(f.pending[0].options.method,'GET');
+ f.run('followPast()');assert.equal(f.pending.length,1);
+ f.pending[0].resolve({cards:[{id:'section1',start:5,title:'调整首页',stamp:1,parts:[{part:'request',title:'这段要解决什么'}],local:[{part:'request',text:'当时的要求',evidence_ids:[]}],references:[]}],token:null,snapshot:9,next_before:0,has_more:false,note:'三段一页'});await tick();
+ f.elements.get('pastText').children[0].onclick();
+ assert.equal(f.elements.get('viewDetail').hidden,false);assert.equal(f.elements.get('viewNow').hidden,true);assert.equal(f.elements.get('detailTitle').textContent,'调整首页');
+ assert.equal(f.elements.get('detailBody').children[0].children[1].textContent,'当时的要求');assert.equal(f.elements.get('detailExplain').hidden,false);
+ assert.equal(f.pending.length,1);assert.equal(f.run('selected.key'),'chat-a');
+ f.elements.get('detailBack').onclick();assert.equal(f.elements.get('viewNow').hidden,false);assert.equal(f.run('openBlock'),null);
+});
+test('a step block shows its result and saved record without a model',async()=>{
+ const f=setup();f.context.data={...currentWork(),recent:[{kind:'operation_note',text:'运行检查',sequence:7,stamp:1}],results:[{sequence:7,text:'运行检查；结果仍不明确。'}]};
+ f.run('selected={client:"codex",key:"chat-a"};render(data)');const row=f.elements.get('recent').children[0];row.onclick();
+ assert.equal(f.elements.get('detailTitle').textContent,'运行检查');assert.equal(f.elements.get('detailBody').children[0].children[1].textContent,'运行检查；结果仍不明确。');
+ assert.match(f.pending[0].url,/timeline\?.*before=8/);assert.equal(f.pending[0].options.method,'GET');
+ f.pending[0].resolve({items:[{evidence:{sequence:9}},{evidence:{sequence:7},title:'已发起一个操作',note:'不代表已成功',preview:[]}]});await tick();
+ assert.equal(f.elements.get('detailBody').children[1].children[1].textContent,'已发起一个操作 · 不代表已成功');assert.equal(f.elements.get('detailNote').textContent,'');
+ assert.equal(f.pending.length,1);
+});
+test('a late step record cannot land in the block opened after it',async()=>{
+ const f=setup();f.context.data={...currentWork(),recent:[{kind:'operation_note',text:'第一步',sequence:7},{kind:'operation_note',text:'第二步',sequence:8}]};
+ f.run('selected={client:"codex",key:"chat-a"};render(data)');const rows=f.elements.get('recent').children;rows[0].onclick();rows[1].onclick();
+ f.pending[0].resolve({items:[{evidence:{sequence:7},title:'第一条',note:'旧',preview:[]}]});await tick();
+ assert.equal(f.elements.get('detailTitle').textContent,'第二步');assert.equal(f.elements.get('detailBody').children.length,0);
+});
+test('an unchanged poll leaves the step blocks and keyboard focus alone',()=>{
+ const f=setup();f.context.data={...currentWork(),recent:[{kind:'operation_note',text:'运行检查',sequence:7,stamp:1}]};f.run('render(data)');
+ const row=f.elements.get('recent').children[0];f.run('render(data)');assert.equal(f.elements.get('recent').children[0],row);
+ f.document.activeElement=row;f.context.data={...f.context.data,recent:[{kind:'operation_note',text:'新一步',sequence:8,stamp:2},...f.context.data.recent]};f.run('render(data)');
+ assert.equal(f.elements.get('recent').children[1].focused,true);
 });
 test('the now panel takes the colour of the current state',()=>{
  const f=setup();f.context.data={...currentWork(),tone:'attention',needs_you:'等你回答'};f.run('render(data)');
@@ -147,8 +187,8 @@ test('current details and paged history remain readable with explanations off',a
  const card={id:'section1',title:'较早要求',stamp:1,parts:[{part:'request',title:'当时的要求'}],local:[{part:'request',text:'较早的公开记录',evidence_ids:[]}],references:[]};
  f.pending[0].resolve({cards:[card],token:null,snapshot:42,next_before:10,has_more:true,note:'每次三段'});await request;
  assert.equal(f.elements.get('pastOlder').hidden,false);
- f.run('$("offlineDetail").hidden=true');await f.run('loadPastDetail(pastPage.cards[0],$("offlineButton"),$("offlineDetail"))');
- assert.equal(f.elements.get('offlineDetail').children[0].children[1].textContent,'较早的公开记录');assert.equal(f.pending.length,1);
+ f.run('openPastCard(pastPage.cards[0],pastPage)');assert.equal(f.elements.get('detailBody').children[0].children[1].textContent,'较早的公开记录');assert.equal(f.pending.length,1);
+ assert.equal(f.elements.get('detailExplain').hidden,true);
 });
 test('English current details keep untranslated excerpts in supporting notes',async()=>{
  const f=setup();f.context.work=currentWork();f.run('uiLanguage="en";current=work;$("deepPanel").hidden=false');
@@ -323,22 +363,26 @@ test('closing during detailed preparation prevents its model send',async()=>{
  assert.equal(f.pending.filter(p=>p.url==='/api/reading-explain').length,0);
  assert.equal(f.elements.get('deepText').children.length,0);
 });
-test('history summarizes one visible page in one call and details only the clicked section',async()=>{
+test('history summarizes one visible page in one click and details only the clicked section',async()=>{
  const f=setup();enabledPage(f);f.run('grant="page-only";$("pastPanel").hidden=false');
- const request=f.run('loadPast(42,21)');assert.deepEqual(JSON.parse(f.pending[0].options.body),{grant:'page-only',snapshot:42,before:21});
- f.pending[0].resolve({cards:[{id:'section1',title:'调整首页',stamp:1,detail_token:'only-this-section',parts:[{part:'work',title:'具体做了什么'}]}],token:'one-page',snapshot:42,next_before:10,has_more:true,note:'三段一页'});await tick();
- assert.equal(f.pending[1].url,'/api/reading-explain');assert.equal(JSON.parse(f.pending[1].options.body).token,'one-page');
- f.pending[1].resolve({result:{mode:'model',explanations:[{part:'section1',text:'助手汇报调整了首页。',evidence_ids:[]}]},references:[]});await request;
+ const list=f.run('loadPast(42,21)');assert.equal(f.pending[0].options.method,'GET');
+ f.pending[0].resolve({cards:[{id:'section1',start:7,title:'调整首页',stamp:1,parts:[{part:'work',title:'具体做了什么'}],local:[],references:[]}],token:null,snapshot:42,next_before:10,has_more:true,note:'三段一页'});await list;
+ assert.equal(f.pending.length,1);assert.equal(f.elements.get('pastSummarize').hidden,false);
+ const summary=f.run('summarizePast()');assert.deepEqual(JSON.parse(f.pending[1].options.body),{grant:'page-only',snapshot:42,before:21});
+ f.pending[1].resolve({cards:[{id:'section1',start:7,detail_token:'only-this-section'}],token:'one-page'});await tick();
+ assert.equal(f.pending[2].url,'/api/reading-explain');assert.equal(JSON.parse(f.pending[2].options.body).token,'one-page');
+ f.pending[2].resolve({result:{mode:'model',explanations:[{part:'section1',text:'助手汇报调整了首页。',evidence_ids:[]}]},references:[]});await summary;
  assert.equal(f.elements.get('pastText').children[0].children[2].textContent,'助手汇报调整了首页。');
- const detail=f.run('loadPastDetail(pastPage.cards[0],$("fakeButton"),$("fakeBox"))'); // Initially open: just fold it.
- await detail;f.run('$("fakeBox").hidden=true');const open=f.run('loadPastDetail(pastPage.cards[0],$("fakeButton"),$("fakeBox"))');
- assert.equal(JSON.parse(f.pending[2].options.body).token,'only-this-section');
- f.pending[2].resolve({result:{mode:'model',explanations:[{part:'work',text:'收起了复杂的记录。',evidence_ids:[]}]},references:[]});await open;
- assert.equal(f.elements.get('fakeBox').children[0].children[1].textContent,'收起了复杂的记录。');
+ f.run('openPastCard(pastPage.cards[0],pastPage)');assert.equal(f.pending.length,3);
+ const open=f.run('explainPastCard()');assert.equal(f.pending[3].url,'/api/reading-history');
+ f.pending[3].resolve({cards:[{id:'section1',start:7,detail_token:'only-this-section'}]});await tick();
+ assert.equal(JSON.parse(f.pending[4].options.body).token,'only-this-section');
+ f.pending[4].resolve({result:{mode:'model',explanations:[{part:'work',text:'收起了复杂的记录。',evidence_ids:[]}]},references:[]});await open;
+ assert.equal(f.elements.get('detailBody').children[1].children[1].textContent,'收起了复杂的记录。');
 });
 test('a second reading click cannot unlock an in-flight reading request',async()=>{
- const f=setup();enabledPage(f);f.run('grant="page-only";$("deepPanel").hidden=false;$("pastPanel").hidden=false');
- const request=f.run('loadDeep()');await f.run('loadPast()');assert.equal(f.run('readingBusy'),true);assert.equal(f.pending.length,1);
+ const f=setup();enabledPage(f);f.run('grant="page-only";$("deepPanel").hidden=false;$("pastPanel").hidden=false;pastPage={cards:[{}],snapshot:1}');
+ const request=f.run('loadDeep()');await f.run('summarizePast()');assert.equal(f.run('readingBusy'),true);assert.equal(f.pending.length,1);
  f.listeners.pagehide();f.pending[0].resolve({token:'late',parts:[]});await request;
 });
 test('a slow detailed explanation keeps its page lease alive without starting a competing model call',async()=>{
@@ -353,18 +397,20 @@ test('closing while a reading call waits for the shared cooldown cancels its nex
  f.listeners.pagehide();f.timers[0]();await request;
  assert.equal(f.pending.filter(p=>p.url==='/api/reading-explain').length,1);
 });
-test('folding a history segment during cooldown cancels its retry while the history page stays open',async()=>{
- const f=setup();enabledPage(f);f.run('grant="page-only";$("pastPanel").hidden=false;$("segmentBox").hidden=true');
- f.context.segment={detail_token:'one-segment',parts:[],local:[],references:[]};
- const request=f.run('loadPastDetail(segment,$("segmentButton"),$("segmentBox"))');
- f.pending[0].resolve({error:'稍后再试',reason:'rate_limited'},409);await tick();
- await f.run('loadPastDetail(segment,$("segmentButton"),$("segmentBox"))');f.timers[0]();await request;
- assert.equal(f.pending.length,1);assert.equal(f.run('readingBusy'),false);
+test('leaving a history detail during cooldown cancels its retry while the list stays open',async()=>{
+ const f=setup();enabledPage(f);f.run('grant="page-only";$("pastPanel").hidden=false');
+ f.context.segment={id:'section1',start:3,parts:[],local:[],references:[]};f.context.page={snapshot:4,before:0};
+ f.run('openPastCard(segment,page)');const request=f.run('explainPastCard()');
+ f.pending[0].resolve({cards:[{id:'section1',start:3,detail_token:'one-segment'}]});await tick();
+ f.pending[1].resolve({error:'稍后再试',reason:'rate_limited'},409);await tick();
+ f.run('backToNow()');f.timers[0]();await request;
+ assert.equal(f.pending.length,2);assert.equal(f.run('readingBusy'),false);
 });
 test('history uses its dedicated subject title and preserves both names after a comma',async()=>{
- const f=setup();enabledPage(f);f.run('grant="page-only";$("pastPanel").hidden=false');const request=f.run('loadPast()');
- f.pending[0].resolve({cards:[{id:'section1',title:'两个按钮',stamp:1,detail_token:'section-detail',parts:[]}],token:'page',snapshot:1,next_before:0,has_more:false,note:'三段一页'});await tick();
- f.pending[1].resolve({result:{mode:'model',explanations:[{part:'section1',title:'新增“深入解释”和“之前做了什么”入口',text:'用户要求新增两个入口，名称是“深入解释”和“之前做了什么”。',evidence_ids:[]}]},references:[]});await request;
+ const f=setup();enabledPage(f);f.run('grant="page-only";$("pastPanel").hidden=false');const list=f.run('loadPast()');
+ f.pending[0].resolve({cards:[{id:'section1',start:2,title:'两个按钮',stamp:1,parts:[]}],token:null,snapshot:1,next_before:0,has_more:false,note:'三段一页'});await list;
+ const summary=f.run('summarizePast()');f.pending[1].resolve({cards:[],token:'page'});await tick();
+ f.pending[2].resolve({result:{mode:'model',explanations:[{part:'section1',title:'新增“深入解释”和“之前做了什么”入口',text:'用户要求新增两个入口，名称是“深入解释”和“之前做了什么”。',evidence_ids:[]}]},references:[]});await summary;
  assert.equal(f.elements.get('pastText').children[0].children[0].textContent,'新增“深入解释”和“之前做了什么”入口');
 });
 test('provider changes persist before a new automatic explanation can start',async()=>{

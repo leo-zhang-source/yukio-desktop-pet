@@ -51,7 +51,7 @@ A character who sits on your desktop and follows your AI assistants, and a workb
 
 - Name: Yukio / 雪绪. Second skin: 千夏.
 - Approved character art under `sources/approved-animation-rig/` must not be altered or regenerated for interface decoration.
-- The user does not pin a colour. The user finds the existing Codex-authored white-green interface and the blue-white draft ugly; neither is a reference.
+- Palette: white and green, chosen by the user on 2026-10-31 after trying a dark console. Regions must read apart at a glance without turning into a rainbow.
 - The workbench shows no characters. Confirmed by the user on 2026-10-31 after seeing a character-led sketch: "不要人物". It must look professional and put functionality first. The pet stays on the desktop; the workbench is a work tool.
 
 ## Evidence on Hand
