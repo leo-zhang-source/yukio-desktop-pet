@@ -8,6 +8,7 @@ from history_view import CLIENTS, CLIENT, FROM, SOURCE, GENERATION, SESSION, His
 from source_context import SourceContext, clean
 from collector_status import read_status
 from context_view import ContextView,unlinked_summary
+from turn_lifecycle import turn_marker
 from handoff_view import HandoffView
 from task_summary import recap
 from plain_language import plain_words,readable_fragment
@@ -168,7 +169,7 @@ class GlanceView:
             if len(background)==3:break
         goal='；后来补充：'.join(reversed(background)) if background else (user or {}).get('text','尚未读到这段聊天中的具体要求。')
         newest_user=users[0]['sequence'] if users else 0
-        latest_start=next((seq for seq,r in selected if r.get('kind')=='turn_started'),0)
+        latest_start=next((seq for seq,r in selected if turn_marker(r)=='turn_started'),0)
         current_start=max(newest_user,latest_start)
         previous=[x for x in assistants if x['sequence']<current_start]
         checkpoints=[x for x in previous if x.get('phase')=='final'][:2] or previous[:2]
@@ -218,17 +219,18 @@ class GlanceView:
                     fragment=dict(snippets[0],material_kind='tool_output' if output else 'file_read',display=clean(snippets[0]['text'],100),text=reqs[0]['target']+(' 的工具返回短片段：' if output else ' 的读取返回短片段：')+snippets[0]['text']+('（工具实际返回的这小段文字；未单独确认脚本内各步骤，不代表完整文件或任务结果；' if output else '（仅这段返回，不代表完整文件；')+op['status_label']+'）')
         title=readable_title(source['title'] or clean((user or {}).get('text',''),62))
         status='最近的工作';tone='quiet';needs='暂未看到明确需要你处理的请求。'
-        markers=[(seq,r) for seq,r in selected if r.get('kind') in ('turn_started','turn_ended','turn_cancelled')]
-        latest_marker=markers[0][1]['kind'] if markers else None
+        markers=[(seq,r) for seq,r in selected if turn_marker(r)]
+        if client=='claude':markers.sort(key=lambda item:(item[1].get('timestamp_ms',0),item[0]),reverse=True)
+        latest_marker=turn_marker(markers[0][1]) if markers else None
         age=max(0,self.clock()-(latest_stamp or 0)/1000) if latest_stamp is not None else None
         last_marker_sequence=markers[0][0] if markers else 0
-        later_work=any(seq>last_marker_sequence and r.get('kind') in ('tool_requested','tool_result','message_observed','text_record_observed') for seq,r in selected)
+        later_work=any(seq>last_marker_sequence and r.get('kind') in ('tool_requested','tool_result','message_observed','text_record_observed') for seq,r in selected) if client!='claude' else False
         if latest_marker=='turn_ended' and not later_work:status='这一轮已结束'
         elif latest_marker=='turn_cancelled' and not later_work:status='这一轮已取消'
         elif age is not None and age<90:status='刚有新活动';tone='fresh'
         else:status='暂时没有新消息'
         # Do not keep an old waiting signal after a result, reply or closed turn.
-        closed=max((seq for seq,r in selected if r.get('kind') in ('turn_ended','turn_cancelled','context_boundary')),default=0)
+        closed=max((seq for seq,r in selected if turn_marker(r) in ('turn_ended','turn_cancelled') or r.get('kind')=='context_boundary'),default=0)
         attention=waiting_request(context['operations'],current_start,closed)
         if attention:
             status='有一项请求等你处理';tone='attention';needs='这次操作提到需要你回答。请回原聊天确认并处理。'

@@ -506,10 +506,10 @@ final class SettingsPanelController: NSWindowController, NSWindowDelegate, NSMen
         lowerSignButton.toolTip = tr("Lower the current completion sign without opening the chat.", "放下当前完成牌，不打开聊天。")
         lowerSignButton.setAccessibilityLabel(lowerSignButton.title)
         browserChatButton.title = BrowserOpenChat.hasAccessibilityAccess
-            ? tr("Browser auto-lower: enabled…", "浏览器自动放牌：已启用…")
-            : tr("Enable browser auto-lower…", "启用浏览器自动放牌…")
-        browserChatButton.toolTip = tr("Allow Accessibility to recognize the chat you are viewing in a web page or extension.",
-                                      "允许辅助功能访问，以识别网页或扩展中正在查看的聊天。")
+            ? tr("Chat recognition: permission granted…", "聊天识别：已获权限…")
+            : tr("Auto-lower needs Accessibility…", "自动放牌需要辅助功能权限…")
+        browserChatButton.toolTip = tr("Recognize visible chats in supported desktop apps, web pages and extensions. Only a reliably identified chat lowers its own completion sign; permission alone does not guarantee recognition. You can still lower a sign manually.",
+                                      "识别受支持桌面 App、网页和扩展中可见的聊天。只有可靠识别到对应聊天才放下它的完成牌；有权限不代表已经识别成功。仍可手动放牌。")
 
 
         for heading in [followingHeading, displayHeading, interfaceHeading] {

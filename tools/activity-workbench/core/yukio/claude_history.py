@@ -84,6 +84,8 @@ class ClaudeHistoryParser:
             self.calls.clear()
             row['kind'] = 'context_boundary'
             self.tracking_limited = False
+        if kind == 'system' and obj.get('subtype') == 'stop_hook_summary':
+            row['turn_marker'] = 'turn_ended'
         if kind not in ('assistant', 'user'):
             return row
         message = obj.get('message') if isinstance(obj.get('message'), dict) else {}
@@ -98,11 +100,28 @@ class ClaudeHistoryParser:
             row['kind'] = 'context_record_observed'
             return row
         content = message.get('content')
-        if not isinstance(content, list):
-            return row
-        if len(content) > CAPACITY:
+        if isinstance(content, list) and len(content) > CAPACITY:
             self.calls.clear()
             row['kind'] = 'record_limit_exceeded'
+            return row
+        # Preserve message/block kinds used by result correlation. Lifecycle is
+        # separate metadata: reply ended never means the whole task succeeded.
+        if kind == 'assistant' and message.get('model') == '<synthetic>':
+            row['turn_marker'] = 'turn_cancelled'
+        elif kind == 'assistant' and stop in ('end_turn', 'stop_sequence'):
+            if not isinstance(content, list) or not any(isinstance(b, dict) and b.get('type') == 'tool_use' for b in content):
+                row['turn_marker'] = 'turn_ended'
+        elif kind == 'user':
+            blocks = content if isinstance(content, list) else []
+            has_results = any(isinstance(b, dict) and b.get('type') == 'tool_result' for b in blocks)
+            text = content if isinstance(content, str) else '\n'.join(b.get('text', '') for b in blocks if isinstance(b, dict) and b.get('type') == 'text' and isinstance(b.get('text'), str))
+            stripped = text.strip()
+            if not has_results:
+                if stripped.startswith('[Request interrupted by user'):
+                    row['turn_marker'] = 'turn_cancelled'
+                elif not stripped.startswith(('<local-command-', '<command-name>', '<command-message>')) and (stripped or blocks):
+                    row['turn_marker'] = 'turn_started'
+        if not isinstance(content, list):
             return row
         blocks = []
         record_digest = hashlib.sha256(raw).digest()

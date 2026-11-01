@@ -164,6 +164,8 @@ final class SessionModel {
     var lastToolState: PetState?
     var lastToolEndedAt: Double?
     var finalAnswerAt: Double?
+    /// A reply stopping is distinct from the existing task-completion signal.
+    var completionEligible = false
     /// 勾选卡：任务刚结束时举起，举到用户点击为止（见 ActivityRouter.dismissCompletion）。
     var sign: Sign = .none
     /// 牌子举起来的时刻：晾太久（signYieldMs）就先让位给还在干活的聊天。
@@ -198,6 +200,7 @@ final class SessionModel {
         lastToolState = nil
         lastToolEndedAt = nil
         finalAnswerAt = nil
+        completionEligible = false
         failedAt = nil
         failedDetail = nil
         lastDetail.removeAll()
@@ -324,15 +327,19 @@ public final class ActivityRouter {
 
         switch e.kind {
         case .taskStart:
+            guard e.ts >= s.taskStartedTs, e.ts >= s.taskEndedTs else { return }
             if let prompt = e.detail { s.prompt = prompt }
             if s.taskActive && now - s.taskStartedAt < config.duplicateTaskStartMs { return }
             s.beginTask(now: now, ts: e.ts)
 
-        case .taskEnd:
+        case .taskEnd, .turnEnd:
             guard s.taskActive, e.ts >= s.taskStartedTs else { return }
+            s.completionEligible = e.kind == .taskEnd
+            if e.kind == .turnEnd { s.finalAnswerAt = now }
             s.endTask(now: now, ts: e.ts, keepAnswer: true)
 
         case .taskAbort:
+            guard e.ts >= s.taskStartedTs else { return }
             guard s.taskActive || s.finalAnswerAt != nil else { return }
             s.endTask(now: now, ts: e.ts, keepAnswer: false)
             s.taskEndedAt = nil
@@ -444,6 +451,7 @@ public final class ActivityRouter {
             let age = now - end
             // 先递交报告（整理文件那一下），再举勾选卡。
             if age < min(config.respondHoldMs, config.completeArmMs) { return .respond }
+            guard s.completionEligible else { return .idle }
             // 用户点击或让对应聊天显示在屏幕上后，把这一轮记为已读。
             // 举牌只发生在任务刚结束时，所以启动时回放到的旧记录不会举牌。
             // 那条聊天正开在眼前：答完的结果他自己看得见，不举牌；已经举着的也就此放下。
@@ -472,6 +480,7 @@ public final class ActivityRouter {
 
     /// 这条聊天刚答完、正等着举牌或已经举着牌：答完的提示要让人看见。
     func completionPending(_ s: SessionModel, now: Double) -> Bool {
+        guard s.completionEligible else { return false }
         if s.sign == .raised { return true }
         guard s.sign == .none, s.finalAnswerAt != nil, let end = s.taskEndedAt else { return false }
         return now - end < config.completeArmMs
@@ -514,7 +523,7 @@ public final class ActivityRouter {
     /// 仍受 completeArmMs 约束：播放器启动时回放到的旧记录不会举一块过期的牌。
     private func armPendingSigns(now: Double) {
         for s in sessions.values where s.sign == .none {
-            guard s.finalAnswerAt != nil, let end = s.taskEndedAt else { continue }
+            guard s.completionEligible, s.finalAnswerAt != nil, let end = s.taskEndedAt else { continue }
             let age = now - end
             guard age >= config.respondHoldMs, age < config.completeArmMs else { continue }
             // 那条聊天正开在眼前：人已经看见了，这一轮就不举牌（也不进身侧那叠卡）。

@@ -111,6 +111,6 @@ import Testing
         let size = try FileManager.default.attributesOfItem(atPath: inbox.path)[.size] as? Int
         #expect(size == 0)
         try append(inbox, #"{"hook_event_name":"Stop","session_id":"H"}"# + "\n")
-        #expect(source.poll(now: 3).map(\.kind) == [.finalAnswer, .taskEnd])
+        #expect(source.poll(now: 3).map(\.kind) == [.turnEnd])
     }
 }

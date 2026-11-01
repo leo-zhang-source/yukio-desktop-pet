@@ -54,6 +54,8 @@ public struct PetEvent: Codable, Equatable, Sendable {
         case taskStart = "task_start"
         /// 任务正常结束（已给出回答）。
         case taskEnd = "task_end"
+        /// 本轮回复结束；没有整项任务完成的依据，不触发完成牌。
+        case turnEnd = "turn_end"
         /// 任务被中断／取消／会话关闭。
         case taskAbort = "task_abort"
         /// 本轮因错误中止（例如 API 报错）：沮丧一会儿再回空闲。

@@ -6,7 +6,10 @@ public struct VisibleChat: Equatable, Sendable {
     public let id: String
 
     public init?(url text: String) {
-        guard let url = URLComponents(string: text), url.user == nil, url.password == nil,
+        // Claude Desktop can expose its document address without a scheme.
+        // Normalize only the exact observed host; never arbitrary relative URLs.
+        let address = text.hasPrefix("claude.ai/") ? "https://" + text : text
+        guard let url = URLComponents(string: address), url.user == nil, url.password == nil,
               url.port == nil else { return nil }
         let path = url.path.split(separator: "/").map(String.init)
         let host = url.host?.lowercased()

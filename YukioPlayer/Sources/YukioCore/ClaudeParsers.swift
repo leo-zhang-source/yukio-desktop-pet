@@ -89,10 +89,7 @@ public struct ClaudeTranscriptParser: Sendable {
                 case "thinking", "redacted_thinking":
                     out.append(ev(.thinking))
                 case "text":
-                    if stop == "end_turn" || stop == "stop_sequence" {
-                        out.append(ev(.finalAnswer))
-                        out.append(ev(.taskEnd))
-                    } else {
+                    if stop != "end_turn" && stop != "stop_sequence" {
                         // 调用工具前的过程说明不是最终回答。
                         out.append(ev(.thinking))
                     }
@@ -100,11 +97,17 @@ public struct ClaudeTranscriptParser: Sendable {
                     break
                 }
             }
+            // Claude's Stop/end_turn is a reply boundary, not task acceptance.
+            // Emit once even for multiple text blocks. Tool requests still run.
+            if ["end_turn", "stop_sequence"].contains(stop ?? ""),
+               !blocks.contains(where: { $0["type"] as? String == "tool_use" }) {
+                out.append(ev(.turnEnd))
+            }
             return out
 
         case "system":
             // Stop hook 摘要只在一轮结束后出现，可作为结束的补充信号。
-            return obj["subtype"] as? String == "stop_hook_summary" ? [ev(.taskEnd)] : []
+            return obj["subtype"] as? String == "stop_hook_summary" ? [ev(.turnEnd)] : []
 
         default:
             return []
@@ -183,8 +186,8 @@ public struct ClaudeHookParser: Sendable {
             }
             return out
         case "PostToolUse":
-            // Claude Code 只在工具成功后触发 PostToolUse，失败时通常不发这条；
-            // 工具失败与整轮失败由会话转录的 is_error / API 报错条目补上（两个来源按 tool_use_id 去重）。
+            // PostToolUse 报告成功结果；失败另由 PostToolUseFailure 或转录补上。
+            // 两个来源按 tool_use_id 去重。
             // 万一响应里带了错误信息，这里也认出来。
             var out = [ev(Self.isFailure(obj["tool_response"]) ? .activityFailed : .activityEnd,
                           id: obj["tool_use_id"] as? String, tool: obj["tool_name"] as? String)]
@@ -193,7 +196,12 @@ public struct ClaudeHookParser: Sendable {
             }
             return out
         case "Stop":
-            return [ev(.finalAnswer), ev(.taskEnd)]
+            return [ev(.turnEnd)]
+        case "PostToolUseFailure":
+            return [ev(obj["is_interrupt"] as? Bool == true ? .activityEnd : .activityFailed,
+                       id: obj["tool_use_id"] as? String, tool: obj["tool_name"] as? String)]
+        case "StopFailure":
+            return [ev(.taskFailed)]
         case "SessionEnd":
             return [ev(.taskAbort)]
         default:

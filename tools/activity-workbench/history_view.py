@@ -33,7 +33,7 @@ SAFE_FIELDS = {
     'result_flags_conflict', 'request_evidence_id', 'after_gap_evidence_id',
     'gap_evidence_id', 'gap_part', 'gap_start_offset', 'skipped_bytes',
     'total_record_bytes', 'record_complete', 'reason', 'history_scope',
-    'block_index', 'timestamp_ms', 'timestamp_available', 'reported_stop_reason',
+    'block_index', 'timestamp_ms', 'timestamp_available', 'reported_stop_reason', 'turn_marker',
 }
 RELATION_FIELDS = {'kind', 'from_session_id', 'to_session_id', 'basis', 'status', 'evidence_class'}
 
