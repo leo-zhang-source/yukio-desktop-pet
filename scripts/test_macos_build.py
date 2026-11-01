@@ -4,12 +4,37 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from update_channel import load_config, apply_update_settings
 
 spec = importlib.util.spec_from_file_location('macbuild', Path(__file__).with_name('build-macos.py'))
 builder = importlib.util.module_from_spec(spec); spec.loader.exec_module(builder)
 
 
 class BuildBoundaryTests(unittest.TestCase):
+    def test_update_channel_rejects_mixed_repositories_and_bad_public_keys(self):
+        config = load_config()
+        builder.validate(config)
+        for changes in [dict(update_feed='https://github.com/leozhang8654/yukio-desktop-pet/releases/latest/download/appcast.xml'),
+                        dict(release_repository='../invalid'), dict(update_public_key='broken'),
+                        dict(update_public_key='AAAA')]:
+            with self.subTest(changes=changes), self.assertRaises(ValueError):
+                builder.validate(config | changes)
+
+    def test_legacy_packager_uses_shared_channel_without_changing_update_identity(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            import plistlib
+            import subprocess
+            import sys
+            path = Path(temporary)/'Info.plist'
+            original = dict(CFBundleIdentifier='local.yukio.player', CFBundleVersion='36', SUFeedURL='stale')
+            path.write_bytes(plistlib.dumps(original))
+            subprocess.run([sys.executable, str(Path(__file__).with_name('update_channel.py')), str(path)], check=True)
+            updated = plistlib.loads(path.read_bytes())
+            expected = original.copy(); apply_update_settings(expected, load_config())
+            self.assertEqual(updated, expected)
+            self.assertEqual(updated['SUPublicEDKey'], 'UuIYaOS2mImMarKEoskVy22Juxl1pQeAL5s+mPnqHFg=')
+            self.assertEqual(updated['SUFeedURL'], 'https://github.com/leo-zhang-source/yukio-desktop-pet/releases/latest/download/appcast.xml')
+
     def test_downgrade_and_non_numeric_build_are_rejected(self):
         config = json.loads(Path(__file__).with_name('macos-release.json').read_text())
         for build in ('39', '40', '40.0', '41-beta'):

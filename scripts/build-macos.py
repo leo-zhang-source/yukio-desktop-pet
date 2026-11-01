@@ -20,6 +20,7 @@ import sys
 import tarfile
 import time
 import urllib.request
+from update_channel import validate_update_channel
 
 ROOT = Path(__file__).resolve().parents[1]
 PRIVATE_NAMES = {'auth.json', 'credentials.json', 'lan-model.json', 'work-context.json',
@@ -51,6 +52,7 @@ def version(value):
 
 
 def validate(config):
+    validate_update_channel(config)
     version(config['version']); version(config['workbench_version'])
     if version(config['build']) <= version(config['upgrade_baseline_build']):
         raise ValueError('Build must be newer than the selected upgrade baseline')

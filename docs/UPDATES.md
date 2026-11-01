@@ -4,7 +4,11 @@
 
 ## 当前 Mac 状态（2026-10-31）
 
-公开 `releases/latest` 和 `releases/latest/download/appcast.xml` 在本轮匿名检查中均返回 HTTP 404。当前不能承诺用户可通过公开通道下载或更新，也不能据此判断已有安装是最新版。未发现本机可用的 Developer ID Application 签名身份；正式签名、公证与普通浏览器下载后的 Gatekeeper 验收仍未完成。Windows 按用户决定继续暂缓。
+先前的 HTTP 404 结论针对旧仓库 `leozhang8654/yukio-desktop-pet`，不能扩大为所有公开下载都不可用。2026-11-01 04:07 UTC（洛杉矶 10 月 31 日 21:07）匿名复核：新临时仓库 [leo-zhang-source/yukio-desktop-pet](https://github.com/leo-zhang-source/yukio-desktop-pet) 的 v5.3 ZIP 和 [appcast.xml](https://github.com/leo-zhang-source/yukio-desktop-pet/releases/latest/download/appcast.xml) 均返回 200，但恢复的列表内仍指向旧仓库的 404 安装包地址。签名验证通过不代表下载链接可用。
+
+当前 Mac 更新目标使用新仓库。源码中的构建配置、原生打包入口和新列表生成入口已统一；原 Ed25519 公钥及强制签名检查保持不变。构建号 47 预留给此次迁移候选，旧候选 46 不包含迁移。现用旧 App 的地址不会随 Git remote 改变，需要在迁移新版交付后手动安装一次；重新安装恢复原样的 v5.3 不能修复其内置旧地址。详见[更新通道迁移记录](remediation/UPDATE-CHANNEL-20261031.md)。本地修改尚未上传，公开列表尚未重签替换，完整独立升级验收未完成。
+
+未发现本机可用的 Developer ID Application 签名身份；正式签名、公证与普通浏览器下载后的 Gatekeeper 验收仍未完成。Windows 按用户决定继续暂缓。
 
 开发与候选构建使用 [统一 Mac 构建入口](remediation/MAC-BUILD.md) 和 `scripts/macos-release.json`。下面 `build-app.sh`、0.4.7 与旧双架构步骤保留为历史实现，不作为当前完整包入口。日常修复留在本地，只有用户明确要求上传时才执行公开交付。
 

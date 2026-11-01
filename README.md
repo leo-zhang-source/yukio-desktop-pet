@@ -11,7 +11,7 @@
 <img src="docs/readme/desk.gif" width="192" alt="Yukio reads, writes, checks her work and raises a completion card">
 
 <p>
-<a href="https://github.com/leozhang8654/yukio-desktop-pet/releases/latest"><img src="https://img.shields.io/github/v/release/leozhang8654/yukio-desktop-pet?label=Latest%20release&color=426854" alt="Latest public release"></a>
+<a href="https://github.com/leo-zhang-source/yukio-desktop-pet/releases/latest"><img src="https://img.shields.io/github/v/release/leo-zhang-source/yukio-desktop-pet?label=Latest%20release&color=426854" alt="Latest public release"></a>
 <img src="https://img.shields.io/badge/macOS-13%2B-222222?logo=apple&logoColor=white" alt="macOS 13 or newer">
 <img src="https://img.shields.io/badge/Windows-downloads%20paused-lightgrey" alt="Windows downloads temporarily withdrawn">
 <img src="https://img.shields.io/badge/Language-English%20%2F%20中文-426854" alt="English and Chinese interfaces">
@@ -117,15 +117,15 @@ Adjust the character from **50% to 200%**, drag her to a comfortable spot, switc
 
 ## Download
 
-**Mac 5.3 includes verified in-app updates.** Choose **Install Update** when reminded; Yukio downloads, installs and reopens after your click. The current version is 5.3; subsequent releases continue with 5.4 and 5.5, then 6.0 for a major release. 0.4.13 users need to install the complete 5.3 app once. [Update guide](docs/MANUAL-UPDATES.md).
+**Public downloads are restored, unchanged Mac 5.3 packages; in-app updates are not yet restored.** The temporary repository is `leo-zhang-source/yukio-desktop-pet`. Original packages and the restored feed still contain old URLs. The migration fix is local; install the migration release once when available. Reinstalling the restored 5.3 does not fix its old URL. [Update guide](docs/MANUAL-UPDATES.md).
 
 | Platform | Download | Included experience |
 | --- | --- | --- |
-| **Apple silicon Mac · macOS 13+** | **[v5.3 DMG](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v5.3/Yukio-5.3-macOS-arm64.dmg)** · [ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v5.3/Yukio-5.3-macOS-arm64.zip) | Desktop companion + integrated activity workbench |
-| **Intel Mac** | [v0.4.6 DMG](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-macOS.dmg) · [ZIP](https://github.com/leozhang8654/yukio-desktop-pet/releases/download/v0.4.6/Yukio-0.4.6-macOS.zip) | Earlier desktop companion release |
+| **Apple silicon Mac · macOS 13+** | **[v5.3 DMG](https://github.com/leo-zhang-source/yukio-desktop-pet/releases/download/v5.3/Yukio-5.3-macOS-arm64.dmg)** · [ZIP](https://github.com/leo-zhang-source/yukio-desktop-pet/releases/download/v5.3/Yukio-5.3-macOS-arm64.zip) | Desktop companion + integrated activity workbench |
+| **Intel Mac** | Historical v0.4.6; current download availability unverified | Earlier release records retained; not qualified by this work |
 | **Windows** | Temporarily withdrawn | Installers, portable builds and update files are unavailable; source retained |
 
-The integrated workbench is currently available on Apple silicon Mac. Intel downloads remain on v0.4.6. Windows downloads are temporarily withdrawn from GitHub as of October 27, 2026. [Windows availability](docs/WINDOWS-DISTRIBUTION.md). Mac updates check automatically and remind you. Choose **Install Update** to download, install and reopen; nothing is installed without your click. If macOS requests access to the app’s installation folder, confirm it in the system prompt. [Update guide](docs/MANUAL-UPDATES.md). [All releases and checksums](https://github.com/leozhang8654/yukio-desktop-pet/releases).
+The integrated workbench is currently available on Apple silicon Mac. Windows downloads and further work are deferred. [Windows availability](docs/WINDOWS-DISTRIBUTION.md). See the [update guide](docs/MANUAL-UPDATES.md) for the channel migration status. [All releases and checksums](https://github.com/leo-zhang-source/yukio-desktop-pet/releases).
 
 <details>
 <summary><b>First launch on macOS</b></summary>
@@ -149,6 +149,6 @@ Explanations are based on the activity that is available. They can be incomplete
 
 ## Explore the project
 
-[Documentation](docs/README.md) · [macOS source & build guide](YukioPlayer/README.md) · [Windows source & build guide](YukioWin/README.md) · [Release notes](CHANGELOG.md) · [Report an issue](https://github.com/leozhang8654/yukio-desktop-pet/issues)
+[Documentation](docs/README.md) · [macOS source & build guide](YukioPlayer/README.md) · [Windows source & build guide](YukioWin/README.md) · [Release notes](CHANGELOG.md) · [Report an issue](https://github.com/leo-zhang-source/yukio-desktop-pet/issues)
 
 Yukio combines a native **Swift / AppKit** Mac companion, a **Python** Windows companion and a **Python / JavaScript** activity workbench. Character artwork, animation inputs and the player source live in this repository.

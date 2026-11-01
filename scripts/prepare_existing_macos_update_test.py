@@ -16,6 +16,7 @@ import subprocess
 import tempfile
 import uuid
 import xml.etree.ElementTree as ET
+from update_channel import load_config, release_base_url
 
 
 def sha(path):
@@ -122,7 +123,7 @@ try key.publicKey.rawRepresentation.base64EncodedData().write(to: dir.appendingP
         ET.SubElement(channel, 'title').text = 'Yukio existing-user upgrade test'
         item = ET.SubElement(channel, 'item')
         ET.SubElement(item, 'title').text = 'Yukio ' + target_info['CFBundleShortVersionString']
-        ET.SubElement(item, 'link').text = 'https://github.com/leozhang8654/yukio-desktop-pet/releases'
+        ET.SubElement(item, 'link').text = release_base_url(load_config()) + '/releases'
         for language, notes in [('en', a.notes), ('zh', a.notes_zh)]:
             ET.SubElement(item, 'description', {f'{{{ns}}}format': 'markdown',
                 '{http://www.w3.org/XML/1998/namespace}lang': language}).text = notes.read_text()
