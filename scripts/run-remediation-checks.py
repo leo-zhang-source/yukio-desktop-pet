@@ -26,7 +26,7 @@ def write(path, value):
 
 def fingerprint():
     paths = subprocess.check_output(['git', 'ls-files', '--cached', '--others', '--exclude-standard', '-z'], cwd=ROOT).decode().split('\0')
-    prefixes = ('YukioPlayer/Sources/', 'YukioPlayer/Tests/', 'tools/activity-workbench/', 'tests/remediation/')
+    prefixes = ('YukioPlayer/Sources/', 'YukioPlayer/Tests/', 'tools/activity-workbench/', 'tests/remediation/', 'scripts/', 'config/')
     explicit = {'YukioPlayer/Package.swift', 'YukioPlayer/Package.resolved',
                 'scripts/run-remediation-checks.py', '.github/workflows/remediation-checks.yml'}
     h = hashlib.sha256()
@@ -168,7 +168,11 @@ def main():
                 suites['python'] = run([sys.executable, '-m', 'unittest', 'discover', '-s', 'tools/activity-workbench', '-p', 'test_*.py', '-v'],
                                        ROOT, env, directory / 'python.log', 600)
                 suites['python'].update(counts('python', directory / 'python.log'))
-                suites['node'] = run([node, '--test', '--test-reporter=tap', 'tools/activity-workbench/test_glance_ui.cjs', 'tools/activity-workbench/test_language_ui.cjs'],
+                suites['release_python'] = run([sys.executable, '-m', 'unittest', 'discover', '-s', 'scripts', '-p', 'test_*.py', '-v'],
+                                       ROOT, env, directory / 'release-python.log', 300)
+                suites['release_python'].update(counts('python', directory / 'release-python.log'))
+                ui_tests = sorted(str(path.relative_to(ROOT)) for path in (ROOT / 'tools/activity-workbench').glob('test_*.cjs'))
+                suites['node'] = run([node, '--test', '--test-reporter=tap', *ui_tests],
                                      ROOT, env, directory / 'node.log', 120)
                 suites['node'].update(counts('node', directory / 'node.log'))
             shared = run([sys.executable, str(ROOT / 'tests/remediation/check_shared.py'),

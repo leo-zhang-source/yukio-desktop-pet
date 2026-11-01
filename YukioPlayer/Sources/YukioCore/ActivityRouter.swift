@@ -144,8 +144,10 @@ final class SessionModel {
 
     struct OpenCall {
         let id: String
+        let generation = UUID().uuidString
         let state: PetState
         let at: Double
+        let eventTimestamp: Double
         let detail: String?
         /// 问话类调用（AskUserQuestion）抄下来的那道题；别的调用是 nil。
         let question: PetQuestion?
@@ -153,6 +155,8 @@ final class SessionModel {
 
     /// 这条聊天的转录会话 ID，也就是 sessions 字典里的键。判断"这条是不是正开在眼前"要用。
     let id: String
+    /// The client's ID is preserved for links and answer transports.
+    let rawID: String
     let source: String
     var taskActive = false
     var taskStartedAt: Double = -.infinity
@@ -185,8 +189,9 @@ final class SessionModel {
     private var endedIDs: [String] = []
     private var endedSet: Set<String> = []
 
-    init(id: String, source: String, now: Double) {
+    init(id: String, source: String, now: Double, rawID: String? = nil) {
         self.id = id
+        self.rawID = rawID ?? id
         self.source = source
         self.lastEventAt = now
     }
@@ -204,6 +209,8 @@ final class SessionModel {
         failedAt = nil
         failedDetail = nil
         lastDetail.removeAll()
+        endedIDs.removeAll()
+        endedSet.removeAll()
         sign = .none
         signRaisedAt = nil
     }
@@ -294,6 +301,15 @@ public final class ActivityRouter {
     }
 
     var sessions: [String: SessionModel] = [:]
+    private struct SourceSession: Hashable {
+        let family: String
+        let rawID: String
+        init(source: String, session: String) {
+            family = AgentProvider.owner(ofSource: source)?.rawValue ?? source
+            rawID = session
+        }
+    }
+    private var routingIDs: [SourceSession: String] = [:]
     private var anonymousCounter = 0
     /// 被点掉／划掉的卡：会话 → 那一轮的 key，下一轮会重新出现（见 ActivityCards.swift）。
     var dismissedCards: [String: String] = [:]
@@ -316,12 +332,23 @@ public final class ActivityRouter {
             return
         }
 
+        let identity = SourceSession(source: e.source, session: e.session)
+        let id: String
+        if let known = routingIDs[identity] { id = known }
+        else {
+            // Keep existing public IDs where unique. Collisions get an opaque
+            // routing ID; never pass that ID back to the source client.
+            var candidate = e.session
+            while sessions[candidate] != nil { candidate = "yukio-session-" + UUID().uuidString }
+            id = candidate
+            routingIDs[identity] = id
+        }
         let s: SessionModel
-        if let existing = sessions[e.session] {
+        if let existing = sessions[id] {
             s = existing
         } else {
-            s = SessionModel(id: e.session, source: e.source, now: now)
-            sessions[e.session] = s
+            s = SessionModel(id: id, source: e.source, now: now, rawID: e.session)
+            sessions[id] = s
         }
         s.lastEventAt = max(s.lastEventAt, now)
 
@@ -357,15 +384,17 @@ public final class ActivityRouter {
             ensureActive(s, now: now, ts: e.ts)
             let state = e.activity ?? s.lastToolState ?? .default_work
             let id = e.eventID ?? nextAnonymousID()
-            s.open.append(.init(id: id, state: state, at: now, detail: e.detail, question: e.question))
+            s.open.append(.init(id: id, state: state, at: now, eventTimestamp: e.ts, detail: e.detail, question: e.question))
             if let detail = e.detail { s.lastDetail[state] = detail }
             s.finalAnswerAt = nil
             s.failedAt = nil
 
         case .activityEnd, .activityFailed:
+            guard e.ts >= s.taskStartedTs, e.ts >= s.taskEndedTs else { return }
             let failed = e.kind == .activityFailed
             let call: SessionModel.OpenCall?
             if let id = e.eventID {
+                if let open = s.open.first(where: { $0.id == id }), e.ts < open.eventTimestamp { return }
                 call = s.open.firstIndex(where: { $0.id == id }).map { s.open.remove(at: $0) }
                 s.markEnded(id)
             } else {
@@ -622,6 +651,12 @@ public final class ActivityRouter {
     /// 这条聊天是哪一家的（`PetEvent.source`）。点举牌要按家分路：只有 Claude 和 Codex 能跳回聊天。
     public func sourceOfSession(_ id: String) -> String? { sessions[id]?.source }
 
+    public func sourceSessionID(_ id: String) -> String { sessions[id]?.rawID ?? id }
+
+    public func routingSessionID(source: String, session: String) -> String? {
+        routingIDs[SourceSession(source: source, session: session)]
+    }
+
     public func pinSession(_ id: String?, now: Double) -> Bool {
         temporarySession = nil
         if let id {
@@ -674,7 +709,8 @@ public final class ActivityRouter {
         guard displayed == .question_for_user, let f = focusedSession, let s = sessions[f],
               let call = s.open.last(where: { $0.state == .question_for_user }),
               let question = call.question else { return nil }
-        return PendingQuestion(session: f, callID: call.id, question: question)
+        return PendingQuestion(session: f, callID: call.id, question: question,
+                               source: s.source, generation: call.generation, targetSession: s.rawID)
     }
 
     /// 等着你答的一道题：`callID` 是那次工具调用的 ID，换了一道题它就变，
@@ -683,12 +719,30 @@ public final class ActivityRouter {
         public let session: String
         public let callID: String
         public let question: PetQuestion
+        public let source: String
+        public let generation: String
+        public let targetSession: String
 
-        public init(session: String, callID: String, question: PetQuestion) {
+        public init(session: String, callID: String, question: PetQuestion, source: String = "", generation: String = "", targetSession: String? = nil) {
             self.session = session
             self.callID = callID
             self.question = question
+            self.source = source
+            self.generation = generation
+            self.targetSession = targetSession ?? session
         }
+    }
+
+    /// A callback may outlive its chat's turn, a reset, or a reused call ID.
+    public func containsQuestion(_ pending: PendingQuestion) -> Bool {
+        guard let session = sessions[pending.session], session.source == pending.source else { return false }
+        return session.open.contains { $0.id == pending.callID && $0.generation == pending.generation && $0.question == pending.question }
+    }
+
+    @discardableResult
+    public func acknowledgeQuestion(_ pending: PendingQuestion, now: Double) -> Bool {
+        guard containsQuestion(pending) else { return false }
+        return acknowledgeQuestion(session: pending.session, callID: pending.callID, now: now)
     }
 
     /// The provider confirmed this exact answer. Retire its question before
@@ -749,6 +803,7 @@ public final class ActivityRouter {
 
     public func reset(now: Double) {
         sessions.removeAll()
+        routingIDs.removeAll()
         openChatSession = nil
         visibleChatSessions.removeAll()
         focusedSession = nil

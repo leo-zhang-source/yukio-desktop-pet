@@ -1,7 +1,9 @@
 """Exercise the fixture launcher with a fake product and no GUI or real profile."""
 import json
+import platform
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -12,10 +14,10 @@ class TestProfileLauncher(unittest.TestCase):
         cls.temp = tempfile.TemporaryDirectory(prefix='yukio-profile-launcher-')
         cls.root = Path(cls.temp.name)
         cls.binary = cls.root / 'YukioTestLauncher'
-        subprocess.run(['clang', '-target', 'arm64-apple-macos13.0', '-O2', '-Wall', '-Werror',
+        subprocess.run(['clang', '-target', platform.machine() + '-apple-macos13.0', '-O2', '-Wall', '-Werror',
                         str(Path(__file__).with_name('macos_test_launcher.c')), '-o', str(cls.binary)], check=True)
         product = cls.root / 'YukioPlayer'
-        product.write_text('#!/usr/bin/python3\nimport os,sys,json\nprint(json.dumps([os.environ["HOME"],sys.argv[1:]]))\n')
+        product.write_text('#!' + sys.executable + '\nimport os,sys,json\nprint(json.dumps([os.environ["HOME"],sys.argv[1:]]))\n')
         product.chmod(0o755)
         cls.profile = cls.root / 'private profile'; cls.profile.mkdir()
 

@@ -119,11 +119,50 @@ public extension PetEvent {
     /// 解析 ISO-8601 时间戳（带或不带小数秒），返回毫秒。
     static func parseTimestamp(_ s: String?) -> Double? {
         guard let s else { return nil }
-        let withFraction = ISO8601DateFormatter()
-        withFraction.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        if let d = withFraction.date(from: s) { return d.timeIntervalSince1970 * 1000 }
-        let plain = ISO8601DateFormatter()
-        if let d = plain.date(from: s) { return d.timeIntervalSince1970 * 1000 }
-        return nil
+        return TimestampParser.shared.parse(s)
+    }
+}
+
+/// Creating Foundation's ISO parsers for every log record stalls burst reads.
+/// Keep the same accepted formats, and serialize access to the mutable formatters.
+private final class TimestampParser {
+    static let shared = TimestampParser()
+    private let lock = NSLock()
+    private let fractional: ISO8601DateFormatter
+    private let plain = ISO8601DateFormatter()
+    private let plainStyle = Date.ISO8601FormatStyle()
+    private let fractionalStyle = Date.ISO8601FormatStyle(includingFractionalSeconds: true)
+
+    private init() {
+        fractional = ISO8601DateFormatter()
+        fractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+    }
+
+    func parse(_ value: String) -> Double? {
+        // The source clients normally write UTC with zero or three fractional
+        // digits. Foundation's value-type parser avoids ICU setup/locking here.
+        // Other legacy forms retain the original formatter and precision rules.
+        let bytes = Array(value.utf8)
+        if (bytes.count == 20 || bytes.count == 24), bytes.last == 90,
+           bytes[4] == 45, bytes[7] == 45, bytes[10] == 84,
+           bytes[13] == 58, bytes[16] == 58,
+           (bytes.count == 20 || bytes[19] == 46),
+           bytes.enumerated().allSatisfy({ index, byte in
+               [4, 7, 10, 13, 16, 19, bytes.count - 1].contains(index) || (48...57).contains(byte)
+           }),
+           (1...12).contains(Int(bytes[5] - 48) * 10 + Int(bytes[6] - 48)),
+           (1...31).contains(Int(bytes[8] - 48) * 10 + Int(bytes[9] - 48)),
+           bytes[0...3].contains(where: { $0 != 48 }),
+           bytes[11] < 50 || (bytes[11] == 50 && bytes[12] <= 51),
+           bytes[14] <= 53, bytes[17] <= 53,
+           let date = try? (bytes.count == 20 ? plainStyle : fractionalStyle).parse(value) {
+            // These two shapes have exact millisecond precision. Normalize
+            // binary floating-point noise so identical timestamps still tie.
+            return (date.timeIntervalSince1970 * 1000).rounded()
+        }
+        lock.lock()
+        defer { lock.unlock() }
+        return (fractional.date(from: value) ?? plain.date(from: value))
+            .map { $0.timeIntervalSince1970 * 1000 }
     }
 }

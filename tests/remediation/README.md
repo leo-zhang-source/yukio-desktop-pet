@@ -10,7 +10,7 @@ python3 scripts/run-remediation-checks.py --repeat 2 --out /tmp/yukio-checks-uni
 
 `--out` 必须是新的目录。解释器、操作系统、源码指纹、数量、耗时和退出码记在 `summary.json`。每遍使用分开的子进程用户目录及临时目录，不继承模型密钥、端点、代理或客户端登录目录。工具查找路径只有指定测试工具及系统工具。系统组件、网络仍共用，不能算独立用户验收。
 
-程序依次运行 Swift、工作台 Python、网页 Node 和共同输入检查，再验证两个故意错误能被识别。每一步有超时；缺报告、数量为零、意外失败、源码途中改变均会使检查失败。首次构建可从项目锁定的公开依赖地址取得 Sparkle。
+程序依次运行 Swift、工作台 Python、发布／构建脚本 Python、所有 `test_*.cjs` 网页 Node 和共同输入检查，再验证两个故意错误能被识别。每一步有超时；缺报告、数量为零、意外失败、源码途中改变均会使检查失败。首次构建可从项目锁定的公开依赖地址取得 Sparkle。
 
 原生检查串行执行，避免多个 AppKit 测试同时占用主线程，影响启动超时的实际计时；超时断言未放宽。
 
@@ -22,4 +22,6 @@ python3 scripts/run-remediation-checks.py --repeat 2 --out /tmp/yukio-checks-uni
 
 `activity_end` 只表示结束，不证明成功。`gate_passed: true` 只表示检查基准稳定；已知错误仍然显示为失败，不能称为产品验收通过。真实窗口焦点、中文输入法、安装、更新和用户账号须分别实测。
 
-完整操作与边界见[场景表](../../docs/remediation/ACCEPTANCE-SCENARIOS.md)。GitHub 工作流准备使用 macOS 15 / Xcode 16.4、Python 3.13、Node 22，依据[官方运行器清单](https://github.com/actions/runner-images/blob/main/images/macos/macos-15-arm64-Readme.md)。当前账号暂停阻止云端实测；合并门槛还需按[分支保护说明](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)实际配置和验证。
+完整操作与边界见[场景表](../../docs/remediation/ACCEPTANCE-SCENARIOS.md)。GitHub 工作流准备使用 macOS 15 / Xcode 16.4、Python 3.13、Node 22，依据[官方运行器清单](https://github.com/actions/runner-images/blob/main/images/macos/macos-15-arm64-Readme.md)。2026-11-01 只读复查：新仓库已可访问，工作流存在，main 尚无分支保护；本轮未经上传授权没有触发远端写入。合并门槛仍需按[分支保护说明](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)实际配置和验证。
+
+人工日志性能复测：`python3 scripts/run-source-benchmark.py --out <新的性能证据目录>`。空闲、普通、突发各三遍；数量、身份、顺序和事前耗时标准都必须通过。它测真实读取器的主线程调用耗时，不测 GUI 输入延迟。见 [性能记录](../../docs/remediation/PERFORMANCE-20261101.md)。

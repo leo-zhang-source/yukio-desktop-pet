@@ -4,6 +4,30 @@ import YukioCore
 @testable import YukioPlayer
 
 @Suite @MainActor struct QuestionDraftTests {
+    @Test func startupUsesInjectedSettingsAndKeepsLegacyKeys() throws {
+        let previousLanguage = L10n.language
+        defer { L10n.language = previousLanguage }
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Resources/Assets")
+        let catalog = try AnimationCatalog.load(assetsRoot: root)
+        let library = try SpriteLibrary(catalog: catalog, assetsRoot: root)
+        for (code, source, following, cards) in [("zh", "codex", false, true), ("en", "claude-code", true, false)] {
+            let suite = "local.yukio.settings-tests." + UUID().uuidString
+            let defaults = try #require(UserDefaults(suiteName: suite))
+            defer { defaults.removePersistentDomain(forName: suite) }
+            defaults.set(code, forKey: "language"); defaults.set(source, forKey: "source")
+            defaults.set(following, forKey: "followClaude"); defaults.set(cards, forKey: "showCards")
+            defaults.set("existing data", forKey: "unrelatedKey")
+            let before = defaults.persistentDomain(forName: suite)! as NSDictionary
+            let controller = AppController(catalog: catalog, library: library, defaults: defaults)
+            let settings = controller.initialSettingsForCheck()
+            #expect(settings.language == UILanguage(code: code))
+            #expect(settings.provider == AgentProvider(code: source))
+            #expect(settings.following == following && settings.cards == cards)
+            #expect(before == defaults.persistentDomain(forName: suite)! as NSDictionary)
+        }
+    }
+
     @Test func escapeKeepsActiveDraftAndDoesNotSend() throws {
         _ = NSApplication.shared
         let panel = QuestionPanel()
