@@ -31,7 +31,7 @@ test('all translated home UI literals have an English entry',()=>{
  assert.doesNotMatch(source,/ref\.label\+' · '\+ref\.id/);
 });
 test('history, explanation and handoff controls all have English translations',()=>{
- for(const name of ['app.js','context.js','explanation.js']){
+ for(const name of ['app.js','context.js','explanation.js','agent-setup.js']){
   const source=fs.readFileSync(path.join(root,name),'utf8');
   const labels=[...source.matchAll(/tr\((['"])((?:\\.|(?!\1)[^\n])*?)\1\)/g)].map(m=>m[2]);
   assert.deepEqual(labels.filter(s=>/[\u3400-\u9fff]/.test(s)&&!words[s]),[],name);

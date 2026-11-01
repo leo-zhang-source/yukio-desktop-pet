@@ -128,5 +128,10 @@ import YukioCore
         for address in ["https://example.com", "file:///etc/passwd", "http://127.0.0.1:9999/", "http://user@127.0.0.1:8767/"] {
             #expect(!WorkbenchPanelController.isLocal(URL(string: address)!))
         }
+        #expect(WorkbenchPanelController.isSetupDocumentation(URL(string: "https://learn.chatgpt.com/docs/cli")!))
+        #expect(WorkbenchPanelController.isSetupDocumentation(URL(string: "https://code.claude.com/docs/en/setup")!))
+        for address in ["https://learn.chatgpt.com.evil.test/docs/cli", "https://user@learn.chatgpt.com/docs/cli", "https://code.claude.com/docs/en/setup?redirect=https://evil.test"] {
+            #expect(!WorkbenchPanelController.isSetupDocumentation(URL(string: address)!))
+        }
     }
 }

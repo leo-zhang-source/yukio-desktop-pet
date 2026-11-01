@@ -141,8 +141,10 @@ def probe_agent(provider, command):
                         if status.get('authMethod') == 'third_party':
                             return dict(state='unknown')
                         return dict(state='unavailable', reason='agent_login_required')
+                    if not isinstance(status, dict) or status.get('loggedIn') is not True:
+                        return dict(state='unknown')
                 except (ValueError, TypeError):
-                    pass
+                    return dict(state='unknown')
             if code:
                 reason = failure(out, err)
                 if reason == 'agent_incompatible':

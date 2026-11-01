@@ -95,6 +95,7 @@ async function api(route,data){
  if(!response.ok)throw Object.assign(Error(value.error||tr('暂时没读到新消息，原来的记录仍然保留。')),{reason:value.reason});return value;
 }
 function note(text){$('alert').textContent=text;$('alert').hidden=!text;}
+const agentSetup=window.YukioAgentSetup?.mount({root:$('agentSetup'),api,tr,onState:result=>{const option=[...$('explanationProvider').options].find(o=>o.value===result.provider);if(option&&result.state!=='checking'){option.disabled=result.state==='not_found';option.textContent=(result.provider==='claude'?'Claude Code':names[result.provider])+(option.disabled?tr('（未找到）'):'');}}});
 function connection(text,down=false){$('connection').textContent=text;$('connection').className='connection'+(down?' down':'');}
 function emptyHelp(clients){$('emptyClients').replaceChildren();for(const c of clients){const state=c.recorder?.state;const text=state==='source_unavailable'?tr('暂时没读到客户端留下的聊天'):state==='waiting'||state==='starting'?tr('正在等新聊天'):state==='active'?tr('已发现活动，正在整理'):state==='partial_history'||state==='degraded'?tr('有些记录暂时读不到'):tr('还没有可显示的新记录');$('emptyClients').append(make('p',names[c.id]+'：'+text+'。'));}}
 function clock(stamp){
@@ -235,7 +236,10 @@ async function setExplanationProvider(enabled){
  if(enabled&&(autoRun||readingBusy)){$('providerNote').textContent=tr('正在生成一段说明，请等它结束后再更改。');return;}
  const enable=$('providerEnable'),disable=$('providerDisable');enable.disabled=true;disable.disabled=true;
  try{
-  const updated=await api('explanation-settings',{provider:enabled?$('explanationProvider').value:model.provider,automatic_on_open:enabled});
+  const provider=enabled?$('explanationProvider').value:model.provider;
+  if(enabled&&agentSetup&&!await agentSetup.available(provider,selected?.client)){$('providerNote').textContent=tr('助手尚未准备好，请按下方提示完成安装或登录，再开启解释。');return;}
+  if(enabled&&provider!==$('explanationProvider').value)return;
+  const updated=await api('explanation-settings',{provider,automatic_on_open:enabled});
   epoch++;resetReading();model=updated;grant=null;autoRun=null;modelAnswer=null;modelPending=false;attemptMessage='';nextRetry=0;
   renderProviderSettings();if(current)render(current);void automatic();
  }catch(error){$('providerNote').textContent=error.message;}

@@ -4,7 +4,7 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#1f5a46">
   <title>雪绪 · 当前工作</title>
-  <link rel="stylesheet" href="/glance.css"><script src="/i18n.js" defer></script><script src="/glance.js" defer></script>
+  <link rel="stylesheet" href="/glance.css"><script src="/i18n.js" defer></script><script src="/agent-setup.js" defer></script><script src="/glance.js" defer></script>
 </head>
 <body>
 <a class="skip-link" href="#main">跳到主要内容</a>
@@ -97,6 +97,7 @@
       <div class="set-actions"><button id="providerEnable" class="btn primary" type="button">开启解释</button><button id="providerDisable" class="btn" type="button" hidden>停止自动解释</button></div>
       <p id="providerNote" class="set-note" role="status">默认使用你自己的 Codex 或 Claude Code。开启后只发送所选聊天的短摘录，会使用该 Agent 的账号额度。</p>
     </section>
+    <section class="set-group" aria-labelledby="agentSetupHeading"><h3 id="agentSetupHeading">连接你的解释助手</h3><p class="set-note">任选一家即可，使用你自己的账号。先安装、登录，再检查并开启解释；需要账号具备相应的使用权限。检查只读取本机版本与登录状态，不发送聊天，也不生成模型回答。密码只在官方页面输入。</p><div id="agentSetup"></div></section>
     <section class="set-group" aria-labelledby="followHeading"><h3 id="followHeading">更新方式</h3><p id="refreshNote" class="set-state">自动跟进新消息</p></section>
     <section id="petSettings" class="set-group" aria-labelledby="petHeading" hidden><h3 id="petHeading">雪绪桌宠</h3><p class="set-note">外观、动作、助手和通知在雪绪设置里调整。</p><div class="set-actions"><button id="openSettings" class="btn" type="button">打开雪绪设置</button></div></section>
     <details class="set-group privacy"><summary>说明与隐私</summary>

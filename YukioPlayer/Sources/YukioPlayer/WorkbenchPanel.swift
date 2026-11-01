@@ -181,9 +181,12 @@ final class WorkbenchPanelController: NSWindowController, NSWindowDelegate, WKNa
     }
 
     fileprivate func handle(_ message: WKScriptMessage) {
-        guard message.frameInfo.isMainFrame, message.body as? String == "settings",
+        guard message.frameInfo.isMainFrame, let action = message.body as? String,
               let url = message.frameInfo.request.url, Self.isLocal(url, port: serviceURL?.port ?? 8767) else { return }
-        showSettings()
+        if action == "settings" { showSettings() }
+        else if action == "terminal", let terminal = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.Terminal") {
+            NSWorkspace.shared.open(terminal)
+        }
     }
 
     private func releasePage() {
@@ -284,7 +287,7 @@ final class WorkbenchPanelController: NSWindowController, NSWindowDelegate, WKNa
         return target.url ?? service
     }
     static func isSetupDocumentation(_ url: URL) -> Bool {
-        ["https://developers.openai.com/codex/cli", "https://code.claude.com/docs/en/setup"].contains(url.absoluteString)
+        ["https://developers.openai.com/codex/cli", "https://learn.chatgpt.com/docs/cli", "https://code.claude.com/docs/en/setup"].contains(url.absoluteString)
     }
 
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction,

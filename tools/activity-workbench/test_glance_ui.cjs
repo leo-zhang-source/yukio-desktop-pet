@@ -11,15 +11,28 @@ class Element{
  querySelector(tag){return this.children.find(c=>c.tag===tag);}
  focus(){this.focused=true;}
 }
-function setup(){
+function setup(assistant){
  const elements=new Map(),pending=[],listeners={},timers=[];const document={activeElement:null,hidden:false,createElement:tag=>new Element(tag),getElementById:id=>{const live=[...elements.values()].flatMap(e=>[e,...e.querySelectorAll('*')]).find(e=>e.id===id);if(live)return live;if(!elements.has(id))elements.set(id,new Element('div'));return elements.get(id);}};
- const context=vm.createContext({document,location:{search:''},URLSearchParams,AbortSignal,atob,setInterval(){},setTimeout(fn){timers.push(fn);},window:{addEventListener(name,fn){listeners[name]=fn;}},fetch:async (url,options)=>{
+ const context=vm.createContext({document,location:{search:''},URLSearchParams,AbortSignal,atob,setInterval(){},setTimeout(fn){timers.push(fn);},window:{YukioAgentSetup:assistant,addEventListener(name,fn){listeners[name]=fn;}},fetch:async (url,options)=>{
   if(url==='/api/clients')return new Promise(()=>{}); // Leave page startup out of the focused polling test.
   return new Promise(resolve=>pending.push({url,options,resolve:(value,status=200)=>resolve({ok:status<400,json:async()=>value})}));
  }});
  vm.runInContext(fs.readFileSync(path.join(__dirname,'dist/glance.js'),'utf8'),context);
  return {context,document,elements,pending,listeners,timers,run:code=>vm.runInContext(code,context)};
 }
+test('a failed setup check cannot enable explanation or send any excerpt',async()=>{
+ const f=setup({mount:()=>({available:async()=>false})});
+ f.run('model={provider:"auto",automatic_on_open:false};$("explanationProvider").value="claude"');
+ await f.run('setExplanationProvider(true)');
+ assert.equal(f.pending.length,0);assert.equal(f.run('model.automatic_on_open'),false);
+ assert.match(f.elements.get('providerNote').textContent,/助手尚未准备好/);assert.equal(f.elements.get('providerEnable').disabled,false);
+});
+test('changing recipient while its setup check runs cannot enable the previous choice',async()=>{
+ let done;const f=setup({mount:()=>({available:()=>new Promise(resolve=>done=resolve)})});
+ f.run('model={provider:"auto",automatic_on_open:false};$("explanationProvider").value="codex"');
+ const pending=f.run('setExplanationProvider(true)');f.run('$("explanationProvider").value="claude"');done(true);await pending;
+ assert.equal(f.pending.length,0);assert.equal(f.run('model.provider'),'auto');
+});
 test('unchanged polling retains the same evidence subtree and focus',()=>{
  const f=setup(),box=new Element('div'),proof=new Element('details');proof.dataset.detailKey='goal';proof.open=true;box.append(proof);
  let draws=0;Object.assign(f.context,{box,draw:()=>{draws++;box.append(proof);}});
