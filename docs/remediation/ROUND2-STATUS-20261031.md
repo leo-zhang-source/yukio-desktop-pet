@@ -34,3 +34,38 @@
 4. 全部多来源／多 Agent 并发矩阵、同名会话、父子任务和旧轮次回执隔离未全部验收；本轮只验证所列 A／B 与迟到开始场景。Cowork 的远端或无法读取本地转录的入口不自动视为支持。
 5. 本轮没有新增 Claude 整体目标验收协议，故不会仅凭 Stop 恢复完成牌；真正完成的有效通知仍是 YK-14 的未完部分。YK-15 不能因为误完成牌减少就被关闭。
 6. 正式签名／公证、首次下载、原偶发输入问题等保留原状态；此候选不视为公开发行版。
+
+
+## 固定源码候选和虚拟机中的实际包检查
+
+最终产品源码：`6084d03b8a6e061f478cfe8a352f186838c42134`（前一实现提交 `c3f9f2ff`，打包清单修正后重新完整构建）。版本 **5.4（44）**，工作台 **0.5.2**。产物：`/Users/leozhang/.codex/backups/yukio-round2/20261101T002251Z/candidate-44-verified/`。初次 `candidate-44/` 已标记拒绝交付，不能混用两个目录。
+
+| 产物 | 字节 | SHA-256 |
+| --- | ---: | --- |
+| Yukio-5.4-candidate-44-macOS-arm64.dmg | 77195892 | `6034057be6c197fb487d7e3cca8dcceac49384b6f464975932ba7db87d32e7f6` |
+| Yukio-5.4-candidate-44-macOS-arm64.zip | 76777395 | `8e03b348de0990baf15922b70ae2b0035ac596610bafdd51bd1622d49663a18f` |
+
+构建完成原始资源逐项校验、原生依赖检查、临时签名深度校验、包内素材读取和包内工作台 `--check`。没有依赖作者安装的 App；工作台包含运行环境，检查不要求用户自行安装 Python。仍为临时签名、未经公证的候选，`public_release_ready=false`。
+
+环境为既有独立 Tart 虚拟机 `yukio-fresh-macos`，macOS **26.6.2（25G83）arm64**；有先前验收资料，不能称为本轮首次干净安装。复用原隔离配置，无共享目录／剪贴板；与宿主共用硬件和网络。没有复制作者凭据；虚拟机 Claude Code **2.1.308，未登录**。
+
+从实际 DMG 只读挂载并提取至 `/Users/admin/yukio-round2-20261031/Yukio.app`，未覆盖虚拟机原 Applications App。包的 SHA-256、486 个文件的哈希／执行权限／符号链接全部一致，严格签名校验通过。此处为安装包提取与组件检查，没有完成拖拽安装、首次 GUI、Gatekeeper 或真实聊天操作。
+
+包内记录器与工作台使用专用 `sources/` 和 `data/`，`/api/health` 的数据库范围哈希确认匹配该目录，自动模型解释关闭。逐步追加人工记录，并确认对应记录已经入库后检查列表与详情：
+
+| 人工记录步骤 | A | B |
+| --- | --- | --- |
+| 两条用户请求 | 正在工作 | 正在工作 |
+| A 工具请求及返回 | 正在工作 | 正在工作 |
+| A 回复结束 | 不在运行 | 正在工作 |
+| A 的迟到旧开始、B 中断 | 不在运行 | 不在运行 |
+| A 续跑 | 正在工作 | 不在运行 |
+| A 再次结束 | 不在运行 | 不在运行 |
+
+原生可执行文件使用同一份两行 Claude 人工转录做无界面回放：旧 5.4（43）为 `thinking → respond → task_complete`；新 5.4（44）为 `thinking → respond → idle`。这证明包内解析与路由的修复前后差异，不是实际 Claude 对话或动画目视验收。
+
+测试完成只停止本次创建的后端，专用 Claude 记录器确认 `stopped`，记录与旧包保留。结果分别见证据目录中的 `vm-package-compare.json`、`vm-lifecycle-results.json`、`vm-native-replay-before43.txt`、`vm-native-replay.txt` 和 `vm-recorder-after-stop.json`。
+
+源码归档已校验：`nas:/volume1/leo/yukio/remediation/2026-10-31/round2-20261101T002251Z/source-6084d03b.tar.gz`，SHA-256 `23cb0d30ac0a7d5f22c90826c96f40d66da44363c9e239f98e93ef9b389e15f0`。候选和证据归档使用同目录的 `candidate-and-evidence.tar.gz`，完成与远端校验状态以本地 `nas-candidate-evidence.json` 及 NAS 的 `CANDIDATE-EVIDENCE-VERIFIED.json` 回执为准。
+
+本轮未向 GitHub 推送，未创建 PR／Release，未替换宿主桌面 App。其他聊天的未提交文档保持原状；仅提交本轮产品与专属问题记录。YK-14／15／16 仍按上面的真实客户端关闭条件保留待验。
