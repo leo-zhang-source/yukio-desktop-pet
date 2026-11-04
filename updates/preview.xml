@@ -5,17 +5,17 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
     <title>Yukio updates</title>
     <item>
       <title>Yukio 5.4</title>
-      <link>https://github.com/leo-zhang-source/yukio-desktop-pet/releases/tag/v5.4-preview.1</link>
-      <description sparkle:format="markdown" xml:lang="en">Mac 5.4 Preview 1 (build 55): improved Codex discovery, your own Codex/Claude explanations, bilingual quick guides included in DMG and ZIP, and a separate signed preview update feed. Preserves the current workbench layout. Apple silicon; ad-hoc signed, not notarized. Windows remains deferred.
+      <link>https://github.com/leo-zhang-source/yukio-desktop-pet/releases/tag/v5.4-preview.2</link>
+      <description sparkle:format="markdown" xml:lang="en">Mac 5.4 Preview 2 (build 56): fixes first-launch access, assistant installation/sign-in checks, empty-chat status and the Tahoe installer. Includes updated bilingual guides. Full first-run acceptance is incomplete; revised-package and signed-in real-task checks remain pending. Apple silicon; ad-hoc signed, not notarized. Windows and cloud Cowork deferred.
 </description>
-      <description sparkle:format="markdown" xml:lang="zh">Mac 5.4 预览版 1（构建 55）：改进 Codex 发现，使用自己的 Codex／Claude 解释工作，DMG 和 ZIP 附带中英文简明指南，启用独立签名预览更新源。保留现用工作台布局。仅 Apple silicon；临时签名、未公证。Windows 暂缓。
+      <description sparkle:format="markdown" xml:lang="zh">Mac 5.4 预览版 2（构建 56）：修复首次入口、助手安装与登录检查、空白聊天状态及 Tahoe 安装窗口，更新中英文指南。完整首次使用验收未完成；修复包独立复验及登录后的真实任务仍待验。仅 Apple silicon；临时签名、未公证。Windows 与云端 Cowork 暂缓。
 </description>
       <sparkle:minimumSystemVersion>13.0.0</sparkle:minimumSystemVersion>
       <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
-      <enclosure url="https://github.com/leo-zhang-source/yukio-desktop-pet/releases/download/v5.4-preview.1/Yukio-5.4-preview.1-macOS-arm64.zip" length="76818979" type="application/octet-stream" sparkle:version="55" sparkle:shortVersionString="5.4" sparkle:edSignature="QsGIxybGoecwluA/rj7nQAkf2232H/ZLXZqzmU6GxZT84QfpMEhFqIwV1RazSDaECzCaNyKeNsq2Y5S9XBB8Aw=="></enclosure>
+      <enclosure url="https://github.com/leo-zhang-source/yukio-desktop-pet/releases/download/v5.4-preview.2/Yukio-5.4-preview.2-macOS-arm64.zip" length="76818152" type="application/octet-stream" sparkle:version="56" sparkle:shortVersionString="5.4" sparkle:edSignature="1CAzDUxh00Uda2+BvOEqAEA/u0wnapTrX2yVnKAAEaF9pTT0U2CfVSibul6Mrokkjn8gkSo7UxhITeVceBFQBg=="></enclosure>
     </item>
   </channel>
 </rss><!-- sparkle-signatures:
-edSignature: lbVbjxMItkqWt139QGHtaWjHUELWWdrze6Ur8TyiaKUgoxFfxP9Sp7SwzjzvX3W6xprR+6jGpv2F1qb0NOz1BA==
-length: 1839
+edSignature: jnh7qaMhhGY+0ZLXV86j5AmJUYw13HPEl83PrdykbyBCuhvI4LSg6Xgvby4ts+xAFUcQcUCjwWHQeqeSU3v0BA==
+length: 1958
 -->
