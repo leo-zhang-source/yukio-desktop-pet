@@ -4,7 +4,7 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#f6f8fa">
   <title>雪绪 · 当前工作</title>
-  <link rel="stylesheet" href="/glance.css"><script src="/i18n.js" defer></script><script src="/glance.js" defer></script>
+  <link rel="stylesheet" href="/glance.css"><script src="/i18n.js" defer></script><script src="/glance.js" defer></script><script src="/history-review.js" defer></script>
 </head>
 <body>
 <a class="skip-link" href="#main">跳到主要内容</a>
@@ -68,25 +68,40 @@
       </section>
       </div>
       <aside class="history-reading" aria-labelledby="historyHeading">
-        <header class="understanding-header"><div><p class="card-eyebrow">把前后的工作接起来</p><h2 id="historyHeading">历史回顾</h2></div><button id="pastRead" aria-expanded="false" aria-controls="pastPanel">展开历史回顾</button></header>
-          <div class="activity-context">
-            <details id="taskSummaryBox" class="more"><summary>任务与交接小结</summary><div id="taskSummary"></div></details>
-            <details id="detailsBox" class="more"><summary>查看过程和依据</summary>
+        <header class="understanding-header"><h2 id="historyHeading">历史回顾</h2></header>
+        <p id="historyScope" class="understanding-title"></p>
+        <details id="taskSummaryBox" class="review-group">
+          <summary><strong>整体进展</strong><span>目标、此前进展、眼前工作与下一步</span></summary>
+          <div class="review-body">
+            <p id="overviewNote" class="review-note" role="status"></p>
+            <button id="overviewGenerate" type="button">生成整体进展</button>
+            <div id="taskSummary"></div>
+            <div class="review-earlier"><button id="pastRead" aria-expanded="false" aria-controls="pastPanel">按以前的要求回看</button>
+              <section id="pastPanel" class="reading-panel" hidden aria-labelledby="pastHeading"><h3 id="pastHeading">之前做了什么</h3><p id="pastNote" role="status"></p><div id="pastText"></div><div class="reading-actions"><button id="pastNewer" hidden>回到最近</button><button id="pastOlder" hidden>再往前看</button><button id="pastRetry" hidden>重新读取这一页</button></div></section>
+            </div>
+          </div>
+        </details>
+        <details id="detailsBox" class="review-group">
+          <summary><strong>操作与交接</strong><span>逐步概括、使用的工具与已知结果</span></summary>
+          <div class="review-body">
+            <p id="stepsNote" class="review-note" role="status"></p>
+            <button id="stepsGenerate" type="button">生成步骤概括</button>
+            <div id="reviewSteps" class="review-steps"></div>
+            <div class="reading-actions"><button id="stepsNewer" hidden>回到最近步骤</button><button id="stepsOlder" hidden>查看更早步骤</button></div>
+            <details class="review-sources"><summary>更多过程与交接依据</summary>
               <div id="latestStep" class="latest-step" hidden><span>最近一步</span><p id="stepAction"></p><small id="stepResult"></small></div>
               <details id="projectBox" class="goal" hidden><summary>整个项目与前后步骤</summary><p id="projectText"></p></details>
               <details id="handoffBox" class="more"><summary>助手之间怎么交接</summary><div id="handoffs"></div></details>
               <details class="more"><summary>最近做了什么</summary><div id="recent"></div></details>
               <details class="more"><summary>查看这段说明的依据</summary><div id="evidence"></div></details>
             </details>
-            <details id="previousModel" class="more previous-model" hidden><summary>上一段的模型说明</summary><div id="previousText"></div></details>
           </div>
-        <p id="historyScope" class="understanding-title"></p><p class="understanding-note">按当时的要求分段，查看目标、公开做法和结果。每段都能深入解释，也可以继续往前翻。</p>
-        <section id="pastPanel" class="reading-panel" hidden aria-labelledby="pastHeading"><h3 id="pastHeading">之前做了什么</h3><p id="pastNote" role="status"></p><div id="pastText"></div><div class="reading-actions"><button id="pastNewer" hidden>回到最近</button><button id="pastOlder" hidden>再往前看</button><button id="pastRetry" hidden>重新读取这一页</button></div></section>
+        </details>
         <div class="history-footer"><span>需要查找更早的聊天或具体记录？</span><a id="historyRecords" href="/history">打开记录详情 ↗</a></div>
       </aside>
     </article>
     <div id="empty" class="empty" hidden><div class="empty-mark" aria-hidden="true">雪</div><h2>等你开始一段工作。</h2><p>在 Codex、Claude 或 Deep Code 开始一个小任务，<br>雪绪读到新活动后会自动显示。</p><details><summary>已经在工作，却没有显示？</summary><p>先确认客户端已经留下本机聊天记录，再重新打开桌面上的“雪绪活动工作台”。没有显示不代表 AI 没有工作，也可能是记录暂时读不到。</p><div id="emptyClients"></div></details></div>
-    <footer><span class="refresh-note"><span class="local-dot" aria-hidden="true"></span><span id="refreshNote">自动跟进新消息</span></span><details><summary>说明与隐私</summary><p>按你的设置，打开页面后会将当前所选聊天的名称、近期要求、公开说明、项目背景和可对应的操作结果短摘录，交给你选择的本机 Agent 或内网模型生成说明。Agent 会按自己的账号与服务设置处理摘录并使用相应额度。不会发送完整聊天、整份文件或内部思考。常见凭据会过滤；原始短片段可能包含少量代码。技术依据折叠保存，说明用普通语言描述。</p><p>点“详细解释正在发生的事”会展开点击时的工作片段；点“展开历史回顾”才读取较早的记录，每次三段、每段最多四条短摘录。没有开启模型时也能查看本机记录；开启后按需总结。历史每段都能深入解释；不会一次发送全部历史。目标、方法和有效性各有详细解释，可展开本机说明，再按需请模型进一步解释。工作解读默认在本机整理；点“解读这次聊天”才发送该聊天的目标、方法与结果短摘录。选择“整个项目”后，点“解读整个项目”会发送下方列出的同项目聊天短摘录，每次最多六段聊天，不读取整个项目目录。项目解读不会自动发送。首页、工作解读、回顾和深入解释共用每小时次数上限。</p><p>页面打开期间持续跟进，至少间隔三分钟，有变化才更新。切换聊天后只跟进新选择的聊天；关闭页面停止后续发送。已经发出的本次请求可能返回。浏览器异常退出时，旧设置会在两分钟内失效。没有页面在运行，就没有后台解释任务。模型可能出错，操作成功不代表整项任务验收。</p><p id="modelDetails"></p></details></footer>
+    <footer><span class="refresh-note"><span class="local-dot" aria-hidden="true"></span><span id="refreshNote">自动跟进新消息</span></span><details><summary>说明与隐私</summary><p>按你的设置，打开页面后会将当前所选聊天的名称、近期要求、公开说明、项目背景和可对应的操作结果短摘录，交给你选择的本机 Agent 或内网模型生成说明。Agent 会按自己的账号与服务设置处理摘录并使用相应额度。不会发送完整聊天、整份文件或内部思考。常见凭据会过滤；原始短片段可能包含少量代码。技术依据折叠保存，说明用普通语言描述。</p><p>点“详细解释正在发生的事”会展开点击时的工作片段；展开“整体进展”时读取早期要求与后续公开记录，每次最多抽取 160 条短摘录，记录较长时会标明抽样范围。展开“操作与交接”时读取最近步骤及对应结果，支持继续往前翻。每段都可以现场生成更详细的解释。点“按以前的要求回看”可按要求继续分页，每次三段。没有开启模型时也能查看本机记录；开启后按需总结。历史每段都能深入解释；不会一次发送全部历史。目标、方法和有效性各有详细解释，可展开本机说明，再按需请模型进一步解释。工作解读默认在本机整理；点“解读这次聊天”才发送该聊天的目标、方法与结果短摘录。选择“整个项目”后，点“解读整个项目”会发送下方列出的同项目聊天短摘录，每次最多六段聊天，不读取整个项目目录。项目解读不会自动发送。首页、工作解读、回顾和深入解释共用每小时次数上限。</p><p>页面打开期间持续跟进，至少间隔三分钟，有变化才更新。切换聊天后只跟进新选择的聊天；关闭页面停止后续发送。已经发出的本次请求可能返回。浏览器异常退出时，旧设置会在两分钟内失效。没有页面在运行，就没有后台解释任务。模型可能出错，操作成功不代表整项任务验收。</p><p id="modelDetails"></p></details></footer>
   </main>
 </div>
 </body></html>

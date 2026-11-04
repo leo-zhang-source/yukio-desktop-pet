@@ -240,6 +240,9 @@ def reading_limit(payload):
 
 def output_system(payload):
     scope=payload.get('scope',{})
+    if scope.get('history_review'):
+        from history_review import writing_instructions
+        return writing_instructions(scope.get('language','zh'),scope.get('review_detail',False))
     if scope.get('reading')=='work':
         from work_understanding import writing_instructions
         return writing_instructions(scope.get('language','zh'),scope.get('work_part'))
@@ -384,6 +387,9 @@ def validate_output(content,payload):
             part=item['part'];text=item['text'];ids=item['evidence_ids']
             if not isinstance(part,str) or part not in parts or part in seen:raise ExplanationError('invalid_response')
             if not isinstance(text,str) or not text.strip() or len(text)>limit or any(ord(c)<32 for c in text):raise ExplanationError('invalid_response')
+            if payload['scope'].get('history_review'):
+                from history_review import validate_prose
+                if not validate_prose(text,payload['facts']):raise ExplanationError('invalid_response')
             if item['basis'] not in ('inference','unknown') or not isinstance(ids,list) or not 1<=len(ids)<=8 or any(not isinstance(e,str) or e not in parts[part]['allowed'] for e in ids):raise ExplanationError('invalid_references')
             if not all(e in ids for e in parts[part]['required']):raise ExplanationError('invalid_references')
             if re.search(r'卡住|偏题|死循环|保证.{0,10}(?:正确|可靠)|确保.{0,10}(?:可信|正确)',text):raise ExplanationError('unsupported_diagnosis')
