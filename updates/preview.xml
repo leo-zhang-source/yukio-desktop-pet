@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><!-- sparkle-sign-warning:
+IMPORTANT: This file was signed by Sparkle. Any modifications to this file requires re-signing this file with generate_appcast or sign_update! The signed signature will be embedded at the end of this file.
+--><rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+  <channel>
+    <title>Yukio updates</title>
+    <item>
+      <title>Yukio 5.4</title>
+      <link>https://github.com/leo-zhang-source/yukio-desktop-pet/releases/tag/v5.4-preview.1</link>
+      <description sparkle:format="markdown" xml:lang="en">Mac 5.4 Preview 1 (build 55): improved Codex discovery, your own Codex/Claude explanations, bilingual quick guides included in DMG and ZIP, and a separate signed preview update feed. Preserves the current workbench layout. Apple silicon; ad-hoc signed, not notarized. Windows remains deferred.
+</description>
+      <description sparkle:format="markdown" xml:lang="zh">Mac 5.4 预览版 1（构建 55）：改进 Codex 发现，使用自己的 Codex／Claude 解释工作，DMG 和 ZIP 附带中英文简明指南，启用独立签名预览更新源。保留现用工作台布局。仅 Apple silicon；临时签名、未公证。Windows 暂缓。
+</description>
+      <sparkle:minimumSystemVersion>13.0.0</sparkle:minimumSystemVersion>
+      <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
+      <enclosure url="https://github.com/leo-zhang-source/yukio-desktop-pet/releases/download/v5.4-preview.1/Yukio-5.4-preview.1-macOS-arm64.zip" length="76818979" type="application/octet-stream" sparkle:version="55" sparkle:shortVersionString="5.4" sparkle:edSignature="QsGIxybGoecwluA/rj7nQAkf2232H/ZLXZqzmU6GxZT84QfpMEhFqIwV1RazSDaECzCaNyKeNsq2Y5S9XBB8Aw=="></enclosure>
+    </item>
+  </channel>
+</rss><!-- sparkle-signatures:
+edSignature: lbVbjxMItkqWt139QGHtaWjHUELWWdrze6Ur8TyiaKUgoxFfxP9Sp7SwzjzvX3W6xprR+6jGpv2F1qb0NOz1BA==
+length: 1839
+-->

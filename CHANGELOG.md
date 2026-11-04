@@ -1,3 +1,15 @@
+# Changelog / 更新记录
+
+## Mac 5.4 Preview 1 · build 55 — 2026-11-03
+
+- 保留现用工作台与角色外观，改进 Codex 发现及用户自有助手解释。
+- 中英文简明指南进入 GitHub 首页、DMG 与 ZIP；更新源迁至独立签名预览通道。
+- Preserves the current workbench and characters; improves Codex discovery and user-owned assistant explanations.
+- Includes bilingual quick guides and a separate signed preview update feed.
+- [Release notes / 发布说明](docs/releases/5.4-preview.1.md) · [Validation / 验证记录](docs/remediation/RELEASE-54-PREVIEW1.md).
+
+Older entries below record their own historical branches and packages; they are not a cumulative feature list for this preview. 以下旧记录按各自分支与包理解，不代表全部功能均合入本预览版。
+
 ## 0.4.13 — Update reminders and manual downloads
 
 - Replace the stalled in-app installation interaction with an official download-page notice. Later keeps the current App running; no automatic download, exit, replacement or restart.
@@ -21,8 +33,6 @@
 - Arrange chat selection as Projects then Recent chats; work status remains a per-chat label.
 - Prevent concrete writing examples from becoming project facts and avoid repeating a local outcome in the model action excerpt.
 - Retain system-language Chinese/English, readable background explanations and existing updater protections. Windows remains optional.
-
-# Changelog / 更新记录
 
 ## 0.4.8 · Mac language and context
 
