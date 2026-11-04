@@ -31,5 +31,14 @@ The App is ad-hoc signed and not notarized. Clean first-run acceptance, Gatekeep
 
 ## Publication and installed copy / 发布与实际运行版本
 
-公开附件回读与桌面替换结果在发布后追加；当前检查不预先代替这些结果。
-Public-download readback and installed-copy results will be appended after publication.
+[GitHub Release](https://github.com/leo-zhang-source/yukio-desktop-pet/releases/tag/v5.4-preview.1) 已公开，标记为预览版。匿名回读 DMG、ZIP、校验文件、预览源与 HTML；包哈希与上表一致。公开更新列表与 Release 附件逐字节一致，列表及 ZIP 签名验证通过。稳定版 `v5.3` 仍为 GitHub latest。
+
+桌面入口指向的实际 App 已替换为公开下载 ZIP 中的 5.4（55），启动后健康接口正常。491 个文件与构建记录一致，291 个界面／角色资源文件与原 41.6 相同；原有 149,324 条 Codex、12,917 条 Claude 历史记录逐条哈希核对保留，配置及全局 Codex 配置未变，原有辅助功能读取权限可用。旧 App 和数据备份保留在本机私有备份目录。
+
+Public assets were downloaded without authentication and matched the build hashes and signatures. The actual desktop App now runs build 55 from that downloaded ZIP, with all 491 files matching the build manifest. Existing history and settings were preserved; the previous App and private data backups remain local. Stable v5.3 remains the default latest release.
+
+发布后主线只增加更新列表、CHANGELOG 与本记录；产品源码、下载包、标签和实际安装版本均指向上面的产品提交。整改候选源码已同步至独立分支，未将其不同界面覆盖到桌面。
+
+源码快照、DMG、ZIP、签名更新源与构建记录已归档至私有 NAS；归档文件 SHA-256 全部通过，ZIP 另行完整回读核对。公开 README 与中英文入口共 8 个文件已回读一致，当前主要文档 91 个本地链接有效。私有凭据与聊天数据库不随发布上传。
+
+Source, packages and build records were archived to private NAS storage with checksum and ZIP readback verification. Eight public bilingual entry documents match the prepared copies; 91 local documentation links resolve. Private credentials and chat databases are excluded from publication.
