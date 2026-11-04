@@ -2,7 +2,7 @@
 import shlex
 import threading
 
-from agent_explanation import find_agent, probe_agent
+import agent_explanation as agent
 
 
 class AgentSetup:
@@ -11,7 +11,7 @@ class AgentSetup:
 
     def inventory(self):
         # Opening settings does not start either client or inspect credentials.
-        return {'agents': [dict(provider=name, state='not_checked' if find_agent(name)
+        return {'agents': [dict(provider=name, state='not_checked' if agent.find_agent(name)
                                 else 'not_found') for name in self._locks]}
 
     def check(self, provider):
@@ -21,10 +21,9 @@ class AgentSetup:
         if not lock.acquire(blocking=False):
             return dict(provider=provider, state='checking')
         try:
-            command = find_agent(provider)
+            command, result = agent.check_agent(provider)
             if not command:
                 return dict(provider=provider, state='not_found')
-            result = probe_agent(provider, command)
             if result['state'] == 'ready':
                 state = 'ready'
             elif result['state'] == 'unknown':

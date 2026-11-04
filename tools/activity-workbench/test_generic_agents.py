@@ -98,7 +98,7 @@ class GenericSelectionTests(unittest.TestCase):
                 self.assertEqual(agent.configuration(data)['agent'], 'auto')
                 agent.save_preferences(data, provider, True)
                 with patch('shutil.which', return_value=None):
-                    command = agent.find_agent(provider, environ={'PATH':''}, home=user)
+                    command = agent.find_agent(provider, environ={'PATH':''}, home=user, application_roots=[])
                 self.assertEqual(command, [str(exe)])
                 self.assertEqual(agent.configuration(data)['agent'], provider)
                 self.assertNotIn(str(root), json.dumps(agent.preferences(data)))

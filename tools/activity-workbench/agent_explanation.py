@@ -85,13 +85,52 @@ def save_preferences(directory, provider, automatic_on_open):
             os.unlink(name)
 
 
-def find_agent(provider, *, environ=None, home=None, windows=None):
+def codex_desktop_candidates(home, application_roots=None):
+    """Discover the versioned desktop layout without launching a client.
+
+    Prefer the user's own Applications folder, then the system installation.
+    Accept only the known package entrypoint; metadata cannot supply commands.
+    Legacy single-binary bundles retain their existing fallback priority.
+    """
+    roots = application_roots if application_roots is not None else (home / 'Applications', Path('/Applications'))
+    candidates = []
+    for root in roots:
+        for name in ('ChatGPT.app', 'Codex.app'):
+            package = Path(root) / name / 'Contents/Resources/codex-cli'
+            manifest = package / 'codex-package.json'
+            executable = package / 'bin/codex'
+            try:
+                if not manifest.resolve().is_relative_to(package.resolve()):
+                    continue
+                with manifest.open('rb') as stream:
+                    raw = stream.read(8193)
+                if len(raw) > 8192:
+                    continue
+                value = json.loads(raw)
+                if (not isinstance(value, dict) or type(value.get('layoutVersion')) is not int
+                        or value['layoutVersion'] != 1 or value.get('entrypoint') != 'bin/codex'
+                        or value.get('variant') != 'codex'
+                        or not isinstance(value.get('target'), str)
+                        or not value['target'].endswith('-apple-darwin')
+                        or not executable.resolve().is_relative_to(package.resolve())
+                        or not executable.is_file() or not os.access(executable, os.X_OK)):
+                    continue
+                candidates.append(executable)
+            except (OSError, ValueError, TypeError, RuntimeError):
+                continue
+    return candidates
+
+
+def find_agent(provider, *, environ=None, home=None, windows=None, application_roots=None,
+               prefer_desktop=True):
     env = os.environ if environ is None else environ
     home = Path.home() if home is None else Path(home)
     windows = os.name == 'nt' if windows is None else windows
     override = env.get('YUKIO_' + provider.upper() + '_PATH')
     candidates = [Path(override).expanduser()] if override else []
     if not override:
+        if provider == 'codex' and not windows and prefer_desktop:
+            candidates += codex_desktop_candidates(home, application_roots)
         found = shutil.which(provider, path=env.get('PATH', ''))
         if found:
             candidates.append(Path(found))
@@ -180,15 +219,33 @@ def probe_agent(provider, command):
         return dict(state='unavailable', reason=('agent_compatibility_timeout' if phase == 'compatibility' else 'agent_login_check_timeout') if exc.code == 'agent_timeout' else exc.code)
 
 
+def check_agent(provider):
+    """Resolve and inspect the same entrypoint for setup and explanation."""
+    command = find_agent(provider)
+    if not command:
+        return None, dict(state='unavailable', reason='agent_not_found')
+    readiness = probe_agent(provider, command)
+    if (readiness['state'] == 'unavailable' and provider == 'codex'
+            and len(command) == 1
+            and command[0].endswith('/Contents/Resources/codex-cli/bin/codex')
+            and not os.environ.get('YUKIO_CODEX_PATH')
+            and readiness.get('reason') in ('agent_incompatible', 'agent_start_failed',
+                                           'agent_compatibility_timeout')):
+        alternative = find_agent(provider, prefer_desktop=False)
+        if alternative and alternative != command:
+            command = alternative
+            readiness = probe_agent(provider, command)
+    return command, readiness
+
+
 def select_agent(config, client=None):
     choice = config.get('agent', 'auto')
     order = ([client, 'claude' if client == 'codex' else 'codex'] if client in ('codex', 'claude')
              else ['codex', 'claude']) if choice == 'auto' else [choice]
     failures = []
     for provider in order:
-        command = find_agent(provider)
+        command, readiness = check_agent(provider)
         if command:
-            readiness = probe_agent(provider, command)
             if readiness['state'] in ('ready', 'unknown'):
                 return dict(config, agent=provider, model=LABELS[provider], command=command)
             failures.append(readiness['reason'])
