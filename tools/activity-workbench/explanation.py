@@ -529,7 +529,7 @@ def call_model(config,payload):
 MESSAGES={
     'agent_not_found':'没有找到可用的本机 Agent。请安装并登录 Codex 或 Claude Code，再重新开启解释。',
     'agent_start_failed':'本机 Agent 未能启动。请在终端确认 Codex 或 Claude Code 能正常打开。',
-    'agent_login_required':'Agent 登录已失效或尚未登录，请先在对应客户端登录，再重试。',
+    'agent_login_required':'雪绪调用的终端解释入口尚未获得授权。请在相应的 Codex 或 Claude Code 终端入口登录后重试；Claude 桌面应用可保持原来的登录。',
     'agent_rate_limited':'Agent 的用量或额度已到上限，请稍后重试。',
     'agent_incompatible':'当前 Agent 版本不支持独立解释，请升级对应客户端后重试。',
     'agent_timeout':'Agent 解释超时，本次解释进程已停止，原聊天仍可使用。',

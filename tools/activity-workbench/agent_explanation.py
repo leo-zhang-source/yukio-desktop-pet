@@ -15,8 +15,8 @@ from explanation import (ExplanationError, MAX_RESPONSE_BYTES, encode,
                          READING_SYSTEM, SYSTEM, load_config)
 
 PROVIDERS = ('auto', 'codex', 'claude', 'lan')
-LABELS = {'auto': '本机 Agent（跟随聊天）', 'codex': 'Codex',
-          'claude': 'Claude Code', 'lan': '自选内网模型'}
+LABELS = {'auto': '本机 Agent（跟随聊天）', 'codex': 'Codex（终端入口）',
+          'claude': 'Claude Code（终端入口）', 'lan': '自选内网模型'}
 SETTINGS = 'explanation-provider.json'
 
 

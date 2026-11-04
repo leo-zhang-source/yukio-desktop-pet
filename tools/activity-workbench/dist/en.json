@@ -858,5 +858,8 @@
   "本次按前后时间抽取片段，不代表完整步骤。": "Excerpts are sampled across the chronology and do not cover every step.",
   "查看依据": "View evidence",
   " 记录较长，本次按前后时间抽取片段，不代表完整步骤。": " This is a long history. Excerpts are sampled across the chronology, so some steps are not covered.",
-  " 部分原文暂时读不到。": " Some original text is unavailable."
+  " 部分原文暂时读不到。": " Some original text is unavailable.",
+  "Codex（终端入口）": "Codex (CLI)",
+  "Claude Code（终端入口）": "Claude Code (CLI)",
+  "雪绪调用的终端解释入口尚未获得授权。请在相应的 Codex 或 Claude Code 终端入口登录后重试；Claude 桌面应用可保持原来的登录。": "The CLI used by Yukio is not authorized. Sign in to the corresponding Codex or Claude Code CLI and retry. Keep your existing Claude Desktop sign-in."
 }
