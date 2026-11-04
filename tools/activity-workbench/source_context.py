@@ -14,6 +14,7 @@ import stat
 from contextlib import closing
 import threading
 import time
+from core.yukio.file_identity import persistent_file_identity
 
 MAX_LINE = 256 * 1024
 MAX_READ = 2 * 1024 * 1024
@@ -329,6 +330,35 @@ class SourceContext:
             return not p.is_symlink() and p.resolve().is_relative_to(root) and hashlib.sha256(str(p.resolve()).encode()).hexdigest()==source
         except (OSError,ValueError):return False
 
+    def open_saved_source(self,path,client,source,state):
+        """Verify the opened file without changing its saved checkpoint.
+
+        A Mac device number is boot-local. A saved volume/inode/birth identity
+        can establish continuity across boots; without it, retain the strict
+        legacy check. Neither an unchanged path nor inode alone is sufficient.
+        """
+        if not self.permitted(path,client,source):return None
+        descriptor=os.open(path,os.O_RDONLY|getattr(os,'O_NOFOLLOW',0)|getattr(os,'O_NONBLOCK',0))
+        try:
+            info=os.fstat(descriptor)
+            if not stat.S_ISREG(info.st_mode):return None
+            saved=state.get('persistent_file_identity')
+            current=persistent_file_identity(descriptor,info)
+            same=(saved==current if saved and current
+                  else state.get('file_identity')=='%s:%s'%(info.st_dev,info.st_ino))
+            if not same:return None
+            stream=os.fdopen(descriptor,'rb');descriptor=None
+            return stream
+        finally:
+            if descriptor is not None:os.close(descriptor)
+
+    def source_available(self,path,client,source,state):
+        try:
+            stream=self.open_saved_source(path,client,source,state)
+            if stream is None:return False
+            with stream:return True
+        except OSError:return False
+
     def title_and_path(self,client,session,source):
         title='';path=None;root=self.roots.get(client)
         if root is None:return title,path
@@ -377,13 +407,11 @@ class SourceContext:
         title,path=self.title_and_path(client,parts[2],parts[0]);out=[];missing=0;used=0;requests=[];receipts=[];handoffs=[];workspace=''
         if not path or not self.permitted(path,client,parts[0]):return dict(title=title,items=[],unavailable=True,missing=0)
         if state.get('generation')!=parts[1]:return dict(title=title,items=[],unavailable=True,missing=0)
-        descriptor=None
         try:
-            descriptor=os.open(path,os.O_RDONLY|getattr(os,'O_NOFOLLOW',0)|getattr(os,'O_NONBLOCK',0))
-            with os.fdopen(descriptor,'rb') as stream:
-                descriptor=None;info=os.fstat(stream.fileno())
-                if not stat.S_ISREG(info.st_mode) or state.get('file_identity')!='%s:%s'%(info.st_dev,info.st_ino):
-                    return dict(title=title,items=[],unavailable=True,missing=0)
+            stream=self.open_saved_source(path,client,parts[0],state)
+            if stream is None:return dict(title=title,items=[],unavailable=True,missing=0)
+            with stream:
+                info=os.fstat(stream.fileno())
                 for seq,row in rows:
                     start,end=row.get('source_offset'),row.get('next_offset');expected=row.get('source_record_sha256')
                     if type(start) is not int or type(end) is not int or not expected or not 0<=start<end<=info.st_size:continue
@@ -409,8 +437,6 @@ class SourceContext:
                         if phase=='final_answer':phase='final'
                         out.append(dict(kind=kind,text=text,phase=phase if phase in ('commentary','final') else None,sequence=seq,event_id=row['event_id'],timestamp_ms=row.get('timestamp_ms'),turn_id=row.get('context_turn_id') or row.get('turn_id')))
         except OSError:return dict(title=title,items=[],unavailable=True,missing=missing)
-        finally:
-            if descriptor is not None:os.close(descriptor)
         from chat_catalog import project_label
         project=project_label(workspace,client=client) if workspace else None
         return dict(title=title,items=out,requests=requests,receipts=receipts,handoffs=handoffs,project=project,unavailable=False,missing=missing)

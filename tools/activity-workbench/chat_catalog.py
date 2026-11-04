@@ -29,10 +29,7 @@ def catalog_card(history, reader, client, group, clock):
     title,path=reader.title_and_path(client,parts[2],parts[0])
     has_client_title=bool(title)
     available=False
-    if path and reader.permitted(path,client,parts[0]):
-        try:
-            info=path.stat();available=state.get('file_identity')=='%s:%s'%(info.st_dev,info.st_ino)
-        except OSError:pass
+    if path:available=reader.source_available(path,client,parts[0],state)
     material=reader.read(client,parts,state,[(seq,json.loads(raw)) for seq,raw in speech]) if available and (not title or client!='codex') else {}
     if not title:
         opening=next((item['text'] for item in material.get('items',[]) if item['kind']=='user'),'')
