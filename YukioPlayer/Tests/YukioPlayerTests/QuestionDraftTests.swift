@@ -3,6 +3,23 @@ import Testing
 import YukioCore
 @testable import YukioPlayer
 
+/// Exercises the view's focus policy with real AppKit field editors and a
+/// controlled key-window input. WindowServer focus acquisition is tested in the
+/// installed App; a test runner cannot assume it owns the user's keyboard.
+@MainActor private final class QuestionFocusFixture: NSPanel {
+    let cardView = QuestionCardView(frame: .zero)
+    var testIsKey = true
+    override var isKeyWindow: Bool { testIsKey }
+    override var canBecomeKey: Bool { true }
+
+    init(size: NSSize) {
+        super.init(contentRect: NSRect(origin: .zero, size: size),
+                   styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
+        isReleasedWhenClosed = false
+        contentView = cardView
+    }
+}
+
 @Suite @MainActor struct QuestionDraftTests {
     @Test func startupUsesInjectedSettingsAndKeepsLegacyKeys() throws {
         let previousLanguage = L10n.language
@@ -98,11 +115,13 @@ import YukioCore
     }
     @Test func failureRestoresOwnedEditorAndSelectionWithoutAnotherClick() throws {
         _ = NSApplication.shared
-        let panel = QuestionPanel()
-        defer { panel.makeFirstResponder(nil); panel.close() }
         let question = PetQuestion(text: "Synthetic question", options: [])
-        panel.cardView.card = QuestionCardLayout(question, canOpenChat: false)
-        panel.makeKeyAndOrderFront(nil)
+        let normal = QuestionCardLayout(question, canOpenChat: false)
+        let panel = QuestionFocusFixture(size: normal.size)
+        defer { panel.makeFirstResponder(nil); panel.close() }
+        panel.cardView.card = normal
+        panel.orderFront(nil)
+        try #require(panel.isVisible && panel.isKeyWindow)
         #expect(panel.makeFirstResponder(panel.cardView.field))
         let editor = try #require(panel.cardView.field.currentEditor() as? NSTextView)
         editor.insertText("Yukio 你好123", replacementRange: NSRange(location: NSNotFound, length: 0))
@@ -118,12 +137,13 @@ import YukioCore
 
     @Test func failureDoesNotStealFocusFromAnotherEditorOrNewQuestion() throws {
         _ = NSApplication.shared
-        let panel = QuestionPanel()
-        defer { panel.makeFirstResponder(nil); panel.close() }
         let question = PetQuestion(text: "Synthetic question", options: [])
         let normal = QuestionCardLayout(question, canOpenChat: false)
+        let panel = QuestionFocusFixture(size: normal.size)
+        defer { panel.makeFirstResponder(nil); panel.close() }
         panel.cardView.card = normal
-        panel.makeKeyAndOrderFront(nil)
+        panel.orderFront(nil)
+        try #require(panel.isVisible && panel.isKeyWindow)
         #expect(panel.makeFirstResponder(panel.cardView.field))
         panel.cardView.card = QuestionCardLayout(question, canOpenChat: false, isSending: true)
         let other = NSTextField(frame: NSRect(x: 0, y: 0, width: 60, height: 20))
@@ -143,13 +163,16 @@ import YukioCore
 
     @Test func failureInBackgroundDoesNotActivateTheQuestionWindow() throws {
         _ = NSApplication.shared
-        let panel = QuestionPanel()
-        defer { panel.makeFirstResponder(nil); panel.close() }
         let question = PetQuestion(text: "Synthetic question", options: [])
-        panel.cardView.card = QuestionCardLayout(question, canOpenChat: false)
-        panel.makeKeyAndOrderFront(nil)
+        let normal = QuestionCardLayout(question, canOpenChat: false)
+        let panel = QuestionFocusFixture(size: normal.size)
+        defer { panel.makeFirstResponder(nil); panel.close() }
+        panel.cardView.card = normal
+        panel.orderFront(nil)
+        try #require(panel.isVisible && panel.isKeyWindow)
         #expect(panel.makeFirstResponder(panel.cardView.field))
         panel.cardView.card = QuestionCardLayout(question, canOpenChat: false, isSending: true)
+        panel.testIsKey = false
         panel.resignKey()
         panel.cardView.card = QuestionCardLayout(question, canOpenChat: false, sentNotice: "Failed")
         #expect(!panel.isKeyWindow)

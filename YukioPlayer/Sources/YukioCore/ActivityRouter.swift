@@ -459,6 +459,9 @@ public final class ActivityRouter {
 
     func isLive(_ s: SessionModel, now: Double) -> Bool {
         guard s.taskActive else { return false }
+        // A recorded question waits for its result, cancellation or source loss.
+        // Silence while the user decides is not a stalled running tool.
+        if s.open.contains(where: { $0.state == .question_for_user && $0.question != nil }) { return true }
         let quiet = now - s.lastEventAt
         return quiet <= (s.open.isEmpty ? config.staleNoToolMs : config.staleOpenToolMs)
     }

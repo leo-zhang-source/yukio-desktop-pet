@@ -265,6 +265,7 @@ public struct JSONObjectStream: Sendable {
     private var inString = false
     private var escape = false
     private var objectStart: Int?
+    var hasIncompleteObject: Bool { objectStart != nil }
     public var maxBufferBytes = 16 * 1024 * 1024
 
     public init() {}

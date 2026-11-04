@@ -6,6 +6,7 @@ final class TailedFile {
     private(set) var offset: UInt64
     private var stream = JSONObjectStream()
     private var skipPartialLine: Bool
+    var hasIncompleteObject: Bool { skipPartialLine || stream.hasIncompleteObject }
 
     /// skipPartialLine：从文件中间（而非行首或文件末尾）开始读时为 true，丢弃到第一个换行为止。
     init(url: URL, offset: UInt64, skipPartialLine: Bool = false) {
@@ -128,11 +129,19 @@ public final class ClaudeTranscriptSource {
                 // 启动时只回放最近活跃的会话；运行中新发现的文件（新会话或恢复的旧会话）
                 // 也只回放末尾，历史事件带旧时间戳，不会被当成实时活动。
                 let recent = !started ? age <= bootstrapWindowMs : true
-                let tail = recent ? (size > bootstrapTailBytes ? size - bootstrapTailBytes : 0) : size
-                let file = TailedFile(url: url, offset: tail, skipPartialLine: recent && tail > 0)
+                let tail = size > bootstrapTailBytes ? size - bootstrapTailBytes : 0
+                let file = TailedFile(url: url, offset: tail, skipPartialLine: tail > 0)
                 files[url.path] = file
-                if recent, let objects = file.readNew() {
-                    for obj in objects { out += parser.events(fromLine: obj) }
+                if let objects = file.readNew(maxBytes: Int(bootstrapTailBytes)) {
+                    if recent {
+                        for obj in objects { out += parser.events(fromLine: obj) }
+                    } else if file.offset >= size, !file.hasIncompleteObject {
+                        // Old activity must not look newly live. Recover only an
+                        // explicit, unresolved question with its turn boundary in
+                        // the bounded tail; retain the original timestamps.
+                        out += ClaudeQuestionRecovery.events(objects: objects,
+                            session: url.deletingPathExtension().lastPathComponent)
+                    }
                 }
             }
         }
