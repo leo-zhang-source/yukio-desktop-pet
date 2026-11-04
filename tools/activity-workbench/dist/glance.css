@@ -150,7 +150,11 @@ main{max-width:1680px;padding:24px}
 .history-reading .past-card{padding:16px 0;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent;box-shadow:none}
 .history-reading .past-card:last-child{border-bottom:0}
 .history-reading .history-footer{padding:16px 20px}
-@media(min-width:851px) and (max-width:1199px){
+@media(min-width:1050px) and (max-width:1399px){
+ :root{--sidebar-width:228px}
+ .work{grid-template-columns:minmax(0,1fr) minmax(260px,280px)}
+}
+@media(min-width:851px) and (max-width:1049px){
  :root{--sidebar-width:228px}
  .work{grid-template-columns:minmax(0,1fr)}
  .history-reading{position:static;max-height:none;overflow:visible}
