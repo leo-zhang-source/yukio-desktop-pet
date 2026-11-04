@@ -118,3 +118,53 @@ footer{font-size:10px;color:#788795;padding:19px 2px 0;display:flex;gap:28px;jus
 .history-footer a{color:#386a50}
 @media(max-width:700px){.history-reading .reading-panel{margin:16px 20px}.history-footer{padding:15px 20px}.work-detail-body{padding:8px 13px 14px}}
 @media(max-width:700px){.understanding-header{padding:22px 20px 0;align-items:flex-start;flex-direction:column;gap:13px}.understanding-header h2{font-size:20px}.understanding-parts{padding:0 20px}.understanding-title,.understanding-note{padding:0 20px}.understanding-part>p{font-size:14px}.understanding-footer{padding:16px 20px;flex-wrap:wrap;gap:12px}.understanding-sources{padding:15px 20px}.activity-context{padding:18px 20px 5px}.activity-scope{padding:12px 20px}.activity-details>summary{padding:14px 20px}.current-activity .reading-panel{margin:12px 20px}.supporting-story section{grid-template-columns:65px minmax(0,1fr)}}
+
+/* Reading structure follows the VM: chat navigation, current work, history.
+   Existing colors, typography, controls and data behavior stay unchanged. */
+.app-bar{min-height:40px;padding-top:8px;padding-bottom:8px}
+main{max-width:1680px;padding:24px}
+.page-heading{margin-bottom:16px}
+.current-chat-bar{margin-bottom:16px}
+.explanation-settings{margin-bottom:20px}
+.work{grid-template-columns:minmax(0,1fr) minmax(280px,320px);gap:24px;align-items:start}
+.work-main{display:grid;gap:20px;min-width:0}
+.work-request{padding:20px 24px;background:var(--paper);border:1px solid var(--line);border-radius:12px}
+.work-request .purpose p{margin-bottom:12px}
+.work-request .goal{margin-top:12px}
+.current-activity .supporting-story{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;padding-bottom:20px}
+.current-activity .supporting-story section{display:flex;flex-direction:column;gap:8px;padding:20px 0 0;border-bottom:0;min-width:0}
+.current-activity .supporting-story .part-label{display:flex;flex-direction:column;gap:4px}
+.current-activity .supporting-story .basis-button{margin:0}
+.work-main .understanding-header{align-items:flex-start;flex-wrap:wrap;gap:12px;padding:24px 24px 0}
+.work-main .understanding-parts{padding:0 24px}
+.work-main .understanding-title,.work-main .understanding-note{padding-left:24px;padding-right:24px}
+.work-main .understanding-footer{flex-wrap:wrap;gap:12px;padding:20px 24px}
+.work-main .understanding-sources{padding:16px 24px}
+.history-reading{min-width:0;position:sticky;top:20px;max-height:calc(100dvh - 40px);overflow-y:auto;scrollbar-width:thin}
+.history-reading .understanding-header{flex-direction:column;align-items:flex-start;gap:12px;padding:20px 20px 0}
+.history-reading .activity-context{padding:16px 20px 0}
+.history-reading .activity-context>.more:first-child{margin-top:0}
+.history-reading .understanding-title,.history-reading .understanding-note{padding-left:20px;padding-right:20px}
+.history-reading .reading-panel{margin:16px 20px;padding:16px 0;border:0;border-radius:0;background:transparent}
+.history-reading .reading-actions{padding:12px 0;gap:8px;background:transparent}
+.history-reading .past-card{padding:16px 0;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent;box-shadow:none}
+.history-reading .past-card:last-child{border-bottom:0}
+.history-reading .history-footer{padding:16px 20px}
+@media(min-width:851px) and (max-width:1199px){
+ :root{--sidebar-width:228px}
+ .work{grid-template-columns:minmax(0,1fr)}
+ .history-reading{position:static;max-height:none;overflow:visible}
+}
+@media(max-width:850px){
+ .work{grid-template-columns:minmax(0,1fr);gap:20px}
+ .history-reading{position:static;max-height:none;overflow:visible}
+}
+@media(max-width:700px){
+ main{padding:20px 16px}
+ .work-request{padding:20px}
+ .current-activity .supporting-story{grid-template-columns:minmax(0,1fr);gap:0}
+ .work-main .understanding-header{padding:20px 20px 0}
+ .work-main .understanding-parts{padding:0 20px}
+ .work-main .understanding-title,.work-main .understanding-note{padding-left:20px;padding-right:20px}
+ .work-main .understanding-footer,.work-main .understanding-sources{padding:16px 20px}
+}
