@@ -144,7 +144,8 @@ final class SessionModel {
 
     struct OpenCall {
         let id: String
-        let generation = UUID().uuidString
+        let generation: String
+        let questionCallID: String
         let state: PetState
         let at: Double
         let eventTimestamp: Double
@@ -384,7 +385,23 @@ public final class ActivityRouter {
             ensureActive(s, now: now, ts: e.ts)
             let state = e.activity ?? s.lastToolState ?? .default_work
             let id = e.eventID ?? nextAnonymousID()
-            s.open.append(.init(id: id, state: state, at: now, eventTimestamp: e.ts, detail: e.detail, question: e.question))
+            // Only a verified hook relation can alias a transcript question.
+            // Sharing a title/text/time is insufficient, and approvals never alias.
+            var questionCallID = id
+            if s.source == ClaudeTranscriptParser.source, state == .question_for_user,
+               e.question?.isApproval == false, id.hasPrefix("yukio-claude:"),
+               let related = e.questionCallID, !related.isEmpty, related.utf8.count < 1024,
+               !related.hasPrefix("yukio-") {
+                questionCallID = related
+            }
+            let matching = s.open.first { call in
+                s.source == ClaudeTranscriptParser.source && state == .question_for_user &&
+                e.question?.isApproval == false && call.state == .question_for_user &&
+                call.questionCallID == questionCallID && call.question == e.question
+            }
+            s.open.append(.init(id: id, generation: matching?.generation ?? UUID().uuidString,
+                                questionCallID: questionCallID, state: state, at: now,
+                                eventTimestamp: e.ts, detail: e.detail, question: e.question))
             if let detail = e.detail { s.lastDetail[state] = detail }
             s.finalAnswerAt = nil
             s.failedAt = nil
@@ -713,7 +730,8 @@ public final class ActivityRouter {
               let call = s.open.last(where: { $0.state == .question_for_user }),
               let question = call.question else { return nil }
         return PendingQuestion(session: f, callID: call.id, question: question,
-                               source: s.source, generation: call.generation, targetSession: s.rawID)
+                               source: s.source, generation: call.generation, targetSession: s.rawID,
+                               presentationCallID: call.questionCallID)
     }
 
     /// 等着你答的一道题：`callID` 是那次工具调用的 ID，换了一道题它就变，
@@ -725,14 +743,16 @@ public final class ActivityRouter {
         public let source: String
         public let generation: String
         public let targetSession: String
+        public let presentationCallID: String
 
-        public init(session: String, callID: String, question: PetQuestion, source: String = "", generation: String = "", targetSession: String? = nil) {
+        public init(session: String, callID: String, question: PetQuestion, source: String = "", generation: String = "", targetSession: String? = nil, presentationCallID: String? = nil) {
             self.session = session
             self.callID = callID
             self.question = question
             self.source = source
             self.generation = generation
             self.targetSession = targetSession ?? session
+            self.presentationCallID = presentationCallID ?? callID
         }
     }
 

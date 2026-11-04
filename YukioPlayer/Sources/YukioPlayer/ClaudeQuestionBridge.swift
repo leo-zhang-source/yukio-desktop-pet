@@ -64,7 +64,8 @@ final class ClaudeQuestionBridge {
                 if shown[id] == nil {
                     events.append(PetEvent(ts: now, source: source(r), session: r.session,
                         kind: .activityStart, eventID: id, activity: .question_for_user,
-                        tool: r.questions[index].isApproval ? "PermissionRequest" : "AskUserQuestion", detail: r.questions[index].shortLabel, question: r.questions[index]))
+                        tool: r.questions[index].isApproval ? "PermissionRequest" : "AskUserQuestion", detail: r.questions[index].shortLabel, question: r.questions[index],
+                        questionCallID: (r.provider ?? "claude") == "claude" && !r.questions[index].isApproval ? r.callID : nil))
                 }
             }
         }

@@ -98,10 +98,14 @@ public struct PetEvent: Codable, Equatable, Sendable {
     public var todos: [TodoItem]?
     /// AskUserQuestion 抄下来的那道题：举牌时原样显示在她身边，选项可以直接点。
     public var question: PetQuestion?
+    /// Explicit Claude hook → transcript tool identity, used only for draft continuity.
+    /// Transport IDs and their result/approval lifetimes remain independent.
+    public var questionCallID: String?
 
     public init(ts: Double, source: String, session: String, kind: Kind,
                 eventID: String? = nil, activity: PetState? = nil, tool: String? = nil,
-                detail: String? = nil, todos: [TodoItem]? = nil, question: PetQuestion? = nil) {
+                detail: String? = nil, todos: [TodoItem]? = nil, question: PetQuestion? = nil,
+                questionCallID: String? = nil) {
         self.ts = ts
         self.source = source
         self.session = session
@@ -112,6 +116,7 @@ public struct PetEvent: Codable, Equatable, Sendable {
         self.detail = detail
         self.todos = todos
         self.question = question
+        self.questionCallID = questionCallID
     }
 }
 

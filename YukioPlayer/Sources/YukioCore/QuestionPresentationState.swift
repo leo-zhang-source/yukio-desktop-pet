@@ -10,7 +10,7 @@ public struct QuestionPresentationState {
         public let generation: String
         public init(_ pending: ActivityRouter.PendingQuestion) {
             session = pending.session
-            callID = pending.callID
+            callID = pending.presentationCallID
             source = pending.source
             generation = pending.generation
         }

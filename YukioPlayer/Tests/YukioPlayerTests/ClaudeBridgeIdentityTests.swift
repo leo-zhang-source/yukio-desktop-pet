@@ -37,7 +37,7 @@ import YukioCore
                 if event != nil { break }
                 try await Task.sleep(nanoseconds: 25_000_000)
             }
-            _ = try #require(event)
+            #expect(try #require(event).questionCallID == callID)
             // Answer in reverse order to prove the full question selects its index.
             try bridge.send(session: "s", callID: callID, answer: callID + " D", question: second)
             try bridge.send(session: "s", callID: callID, answer: callID + " A", question: first)
