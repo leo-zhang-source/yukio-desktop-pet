@@ -8,7 +8,7 @@
 
 需要 Apple Silicon Mac、Xcode Command Line Tools、Python 3.12 或更新版本作为启动工具、互联网连接，以及至少 3 GiB 可用空间。普通使用者运行构建好的 App，无需另装 Python、Swift 或这些打包工具。大体积输出应选择足够容量的磁盘，不能把某位作者的 NAS 当成其他用户的运行条件。
 
-版本和依赖集中在 [macos-release.json](../../scripts/macos-release.json)、[Mac 构建依赖](../../scripts/macos-build-requirements.txt) 和 [Swift 依赖锁](../../YukioPlayer/Package.resolved)。当前构建配置是 5.4（56）本地候选，工作台 0.4.8；公开版本仍为 5.4 Preview 1（55）。本地首次使用修复见[验收记录](FIRST-RUN-20261104.md)。
+版本和依赖集中在 [macos-release.json](../../scripts/macos-release.json)、[Mac 构建依赖](../../scripts/macos-build-requirements.txt) 和 [Swift 依赖锁](../../YukioPlayer/Package.resolved)。当前构建配置是 5.4 Preview 2（56），工作台 0.4.8。首次使用修复与未完成验收见[验收记录](FIRST-RUN-20261104.md)。
 
 构建会从 [Astral 的公开 Python 发行](https://github.com/astral-sh/python-build-standalone/releases/tag/20260901) 取得固定的 Python 3.12.14，并校验归档哈希。每轮重新展开运行环境、建立独立依赖环境；Python 构建依赖固定版本与 wheel 哈希，Sparkle 固定为 2.10.0。不会从 Applications、Desktop 或作者已安装的 App 提取二进制，也不读取用户聊天、模型配置和账号。
 

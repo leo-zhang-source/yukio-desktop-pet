@@ -14,5 +14,6 @@
     "sha256": "3ee3ee547cedfeb7c2b16b2b7156039f7b470bb8f857e226fd3d2eb11db83c76"
   },
   "release_repository": "leo-zhang-source/yukio-desktop-pet",
-  "release_channel": "preview"
+  "release_channel": "preview",
+  "release_tag": "v5.4-preview.2"
 }

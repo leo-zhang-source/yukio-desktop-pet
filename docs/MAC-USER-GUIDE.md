@@ -1,6 +1,6 @@
 # Yukio · See your AI at work
 
-[简体中文](MAC-USER-GUIDE.zh-CN.md) · [Download](https://github.com/leo-zhang-source/yukio-desktop-pet/releases/tag/v5.4-preview.1)
+[简体中文](MAC-USER-GUIDE.zh-CN.md) · [Download](https://github.com/leo-zhang-source/yukio-desktop-pet/releases/tag/v5.4-preview.2)
 
 Yukio is a Mac desktop companion. It turns coding-agent activity into character animations, explains progress in a workbench, and alerts you when your input is needed.
 
@@ -44,6 +44,6 @@ Explanations send short chat excerpts and use the selected assistant's account a
 <a id="verification"></a>
 ---
 
-For Apple silicon Macs. This guide covers 5.4 Preview 1 (55), which is still being tested. Windows and cloud Cowork are outside this walkthrough's scope.
+For Apple silicon Macs. This guide covers 5.4 Preview 2 (56), which is still being tested. Windows and cloud Cowork are outside this walkthrough's scope.
 
 [Setup and troubleshooting](MAC-HELP.md) · [Updating](MANUAL-UPDATES.md#en) · [Development and validation](../DEVELOPMENT.md)

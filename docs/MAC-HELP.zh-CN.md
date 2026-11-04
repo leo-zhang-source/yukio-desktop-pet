@@ -3,12 +3,12 @@
 [返回快速体验](MAC-USER-GUIDE.zh-CN.md) · [English](MAC-HELP.md)
 
 <a id="version"></a>
-适用于 Apple 芯片 Mac，macOS 13+。下方步骤对应 5.4 Preview 1（55）；旧版按钮和布局可能不同。
+适用于 Apple 芯片 Mac，macOS 13+。下方步骤对应 5.4 Preview 2（56）；旧版按钮和布局可能不同。
 
 <a id="install"></a>
 ## 1. 安装
 
-1. 从[下载页](https://github.com/leo-zhang-source/yukio-desktop-pet/releases/tag/v5.4-preview.1)获取 Mac DMG。
+1. 从[下载页](https://github.com/leo-zhang-source/yukio-desktop-pet/releases/tag/v5.4-preview.2)获取 Mac DMG。
 2. 打开 DMG，把 **Yukio.app** 拖到“应用程序”，再从那里启动。
 3. 若提示无法验证开发者，确认下载来源可信后，到“系统设置 → 隐私与安全性 → 仍要打开”。当前包尚未公证。
 

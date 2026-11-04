@@ -3,12 +3,12 @@
 [Back to quick start](MAC-USER-GUIDE.md) · [简体中文](MAC-HELP.zh-CN.md)
 
 <a id="version"></a>
-For Apple silicon Macs running macOS 13+. These steps cover 5.4 Preview 1 (55); older versions may use different controls.
+For Apple silicon Macs running macOS 13+. These steps cover 5.4 Preview 2 (56); older versions may use different controls.
 
 <a id="install"></a>
 ## 1. Install
 
-1. Get the Mac DMG from the [download page](https://github.com/leo-zhang-source/yukio-desktop-pet/releases/tag/v5.4-preview.1).
+1. Get the Mac DMG from the [download page](https://github.com/leo-zhang-source/yukio-desktop-pet/releases/tag/v5.4-preview.2).
 2. Open it, drag **Yukio.app** to Applications, then launch it from there.
 3. If macOS cannot verify the developer, and you trust the download, use System Settings → Privacy & Security → Open Anyway. The current package is not notarized.
 

@@ -1,6 +1,6 @@
 # Yukio · 让 AI 的工作看得见
 
-[English](MAC-USER-GUIDE.md) · [下载](https://github.com/leo-zhang-source/yukio-desktop-pet/releases/tag/v5.4-preview.1)
+[English](MAC-USER-GUIDE.md) · [下载](https://github.com/leo-zhang-source/yukio-desktop-pet/releases/tag/v5.4-preview.2)
 
 Yukio 是一款 Mac 桌面伙伴。它把 AI 编程助手的工作变成角色动作，用工作台解释进展，并在需要你回答时提醒你。
 
@@ -44,6 +44,6 @@ Yukio 是一款 Mac 桌面伙伴。它把 AI 编程助手的工作变成角色�
 <a id="verification"></a>
 ---
 
-适用于 Apple 芯片 Mac。本指南对应 5.4 Preview 1（55），仍在测试。Windows 与云端 Cowork 暂不在本次体验范围。
+适用于 Apple 芯片 Mac。本指南对应 5.4 Preview 2（56），仍在测试。Windows 与云端 Cowork 暂不在本次体验范围。
 
 [安装与排错](MAC-HELP.zh-CN.md) · [更新方法](MANUAL-UPDATES.md#zh) · [开发与验证记录](../DEVELOPMENT.md)

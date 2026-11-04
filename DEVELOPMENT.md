@@ -1,10 +1,10 @@
 # 当前开发与发布入口
 
-5.4 Preview 1（构建 55）使用 `codex/host-agent-integration` 的现用工作台产品线，保留界面与历史功能；本次发布整理在 `codex/mac-54-preview-release`，向 GitHub `main` 集成。包、更新源与实际运行核对见[交付记录](docs/remediation/RELEASE-54-PREVIEW1.md)。
+当前发布准备为 **5.4 Preview 2（构建 56）**：修复首次入口、助手就绪检查、空白页状态与安装窗口，保留现用工作台布局。[发布说明](docs/releases/5.4-preview.2.md)。整理分支为 `codex/mac-54-preview-release`，向 GitHub `main` 集成。
 
 [快速上手](docs/MAC-USER-GUIDE.zh-CN.md) · [English](docs/MAC-USER-GUIDE.md) · [完整 Mac 构建](docs/remediation/MAC-BUILD.md) · [开发约定](AGENTS.md)
 
-首次使用验收进行中：[干净 Mac 记录与本地修复](docs/remediation/FIRST-RUN-20261104.md)。已完成公开下载、安装、系统放行和基础界面操作；助手登录与真实任务仍待验。当前修复构建为本地候选 56，尚未上传。
+首次使用验收按用户要求暂停：[干净 Mac 记录](docs/remediation/FIRST-RUN-20261104.md)。原公开包已完成下载、安装、系统放行和基础界面操作；修复包独立复验、助手登录与真实任务仍待验。本次仅按明确授权整理上传，不将待验项标为通过。
 
 整改线候选 54 与现用工作台布局不同，未整体覆盖到本次发布；见[候选记录](docs/remediation/CANDIDATE54-INDEPENDENT-20261103.md)。Windows 与云端 Cowork 按用户要求暂缓。后续没有新的明确上传要求时继续只保存在本地。
 

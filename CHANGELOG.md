@@ -1,5 +1,12 @@
 # Changelog / 更新记录
 
+## Mac 5.4 Preview 2 · build 56 — 2026-11-04
+
+- 修复首次入口、助手就绪检查、空白聊天状态，以及 Tahoe 安装窗口；同步双语首页与包内指南。
+- Fix first-launch access, assistant readiness checks, empty-chat status and the Tahoe installer; update bilingual homepage and bundled guides.
+- 完整首次使用验收仍未完成 / Full first-run acceptance remains incomplete.
+- [Release notes / 发布说明](docs/releases/5.4-preview.2.md) · [Validation / 验证记录](docs/remediation/FIRST-RUN-20261104.md).
+
 ## Mac 5.4 Preview 1 · build 55 — 2026-11-03
 
 - 保留现用工作台与角色外观，改进 Codex 发现及用户自有助手解释。

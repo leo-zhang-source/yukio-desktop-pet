@@ -10,7 +10,7 @@ A Mac desktop companion that animates coding activity, explains progress and ale
 
 **English** · [简体中文](README.zh-CN.md)
 
-**[Download Mac preview](https://github.com/leo-zhang-source/yukio-desktop-pet/releases/tag/v5.4-preview.1)** · [Quick start](docs/MAC-USER-GUIDE.md) · [Online animation demo](https://is.gd/yukioapp)
+**[Download Mac preview](https://github.com/leo-zhang-source/yukio-desktop-pet/releases/tag/v5.4-preview.2)** · [Quick start](docs/MAC-USER-GUIDE.md) · [Online animation demo](https://is.gd/yukioapp)
 
 </div>
 
@@ -41,7 +41,7 @@ To try explanations or answer delivery, connect your own assistant using the [qu
 
 ## Downloads and scope
 
-For **Apple silicon Macs, macOS 13+**, with English and Chinese interfaces. **5.4 Preview 1 (55)** preserves the current desktop workbench layout and updates Agent explanations, Codex client discovery and bilingual help. This is a preview under testing. Windows and cloud Cowork are deferred.
+For **Apple silicon Macs, macOS 13+**, with English and Chinese interfaces. **5.4 Preview 2 (56)** fixes first-launch access, assistant setup checks and the installer. Full first-run acceptance is still incomplete. Windows and cloud Cowork are deferred.
 
 The package is not notarized; see [first-launch instructions](docs/MAC-HELP.md#install). Older versions need one manual installation; see the [current update instructions](docs/MANUAL-UPDATES.md#en).
 
@@ -51,4 +51,4 @@ Activity records and search stay local. Enabling AI explanations sends relevant 
 
 A native **Swift / AppKit** companion with a **Python / JavaScript** activity workbench. Animations use transparent layers, localized motion and independent blinking.
 
-[What changed](docs/releases/5.4-preview.1.md) · [Usage and troubleshooting](docs/MAC-HELP.md) · [Documentation](docs/README.md) · [Source and build](docs/remediation/MAC-BUILD.md) · [Development and validation](DEVELOPMENT.md) · [Report an issue](https://github.com/leo-zhang-source/yukio-desktop-pet/issues)
+[What changed](docs/releases/5.4-preview.2.md) · [Usage and troubleshooting](docs/MAC-HELP.md) · [Documentation](docs/README.md) · [Source and build](docs/remediation/MAC-BUILD.md) · [Development and validation](DEVELOPMENT.md) · [Report an issue](https://github.com/leo-zhang-source/yukio-desktop-pet/issues)
