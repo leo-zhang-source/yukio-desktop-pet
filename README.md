@@ -34,7 +34,7 @@ Follows local **Codex, Claude Code and Deep Code** activity. AI explanations use
 ## Try it
 
 1. **Install:** open the DMG, drag `Yukio.app` to Applications and launch it.
-2. **Explore the animations:** right-click the companion, open Yukio settings and choose Play demo. Try dragging, resizing or switching characters.
+2. **Explore the animations:** menu-bar avatar → Activity workbench → Settings → Play demo. Try dragging, resizing or switching characters. The companion hides while idle by default.
 3. **Follow real work:** stop the demo, enable Follow activity, start a small task in your local coding assistant, then select that chat in the workbench.
 
 To try explanations or answer delivery, connect your own assistant using the [quick start](docs/MAC-USER-GUIDE.md).

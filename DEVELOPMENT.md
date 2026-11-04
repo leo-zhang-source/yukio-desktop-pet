@@ -4,7 +4,7 @@
 
 [快速上手](docs/MAC-USER-GUIDE.zh-CN.md) · [English](docs/MAC-USER-GUIDE.md) · [完整 Mac 构建](docs/remediation/MAC-BUILD.md) · [开发约定](AGENTS.md)
 
-首次使用验收进行中：[干净 Mac 记录与本地安装包修复](docs/remediation/FIRST-RUN-20261104.md)。已完成公开下载与拖入安装，系统放行后的配置和使用仍待验；修复尚未上传。
+首次使用验收进行中：[干净 Mac 记录与本地修复](docs/remediation/FIRST-RUN-20261104.md)。已完成公开下载、安装、系统放行和基础界面操作；助手登录与真实任务仍待验。当前修复构建为本地候选 56，尚未上传。
 
 整改线候选 54 与现用工作台布局不同，未整体覆盖到本次发布；见[候选记录](docs/remediation/CANDIDATE54-INDEPENDENT-20261103.md)。Windows 与云端 Cowork 按用户要求暂缓。后续没有新的明确上传要求时继续只保存在本地。
 
