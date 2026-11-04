@@ -1,10 +1,12 @@
 # 开发从这里开始
 
+2026-11-03 最新范围：云端 Claude/Cowork 已按用户决定移至[后期可选待办](docs/remediation/CLOUD-DEFERRED.md)，本地 Code 与 Agent 解释继续推进。[候选 53](docs/remediation/CANDIDATE53-INDEPENDENT-20261103.md)恢复旧待答问题；[候选 54](docs/remediation/CANDIDATE54-INDEPENDENT-20261103.md)已验证两聊天中文草稿、10 次切换、10 次关闭重开、自然超时接续及 10 次失败后继续输入。本机界面来源为 262a10a6 / 41.4，和虚拟机不同；整包 54 曾临时安装后已撤回，原包 488 项完整恢复且新增数据保留。按用户要求，已在独立 host-agent-integration 分支仅接入解释后台，主机为 41.5.1，禁止用 VM 布局覆盖本机，见[本机专项记录](docs/remediation/HOST-AGENT-INTEGRATION-20261103.md)。下面旧记录按当时范围理解。
+
 **GitHub 上传要求（2026-10-31）：只有用户明确说“更新上传”或要求上传 GitHub 时才执行；其余工作默认只保存在本地，阶段完成也不自动上传。上传前告知目标与范围，结束后报告结果和链接；已明确授权的当次范围不重复询问确认。** 具体约定见 [AGENTS.md](AGENTS.md)。
 
 ## 2026-11-01 阶段 1–5 联合整改
 
-2026-11-03 续测：修复实际 VM 重启后旧聊天不可读，产品提交 `0ff54f2e`、候选 5.4（50）、工作台 0.5.5。完整自动回归一轮及独立实际包、系统重启、原聊天续跑、退出只清理自有进程检查通过；候选 49／50 固定集合已在 NAS 回读恢复。Claude 桌面首次启动仍受 VM 系统策略限制，全部阶段尚未关闭。详见[候选 50 实测](docs/remediation/CANDIDATE50-INDEPENDENT-20261103.md)。
+2026-11-03 续测：候选 50 修复并实际验证系统重启后旧聊天不可读；用户已登录可用的 Claude 桌面账号，完成真实 Code 双聊天活动、未完成任务不误举完成牌、手动切换聊天精确识别及发送失败后继续输入检查。候选 51（`0f745d84`）进一步修复长时间等待回答误显示无活动，实际 DMG 中两个真实聊天的列表／详情均已验证。候选 52（`28e4e3c9`）修复 transcript 提问与回答 hook 的精确关联，完整自动回归及实际 DMG 的连续两轮后台回答通过，查看 B 时回答 C 不串号。仍仅本地，未上传、未替换主机 App；桌面 Cowork 与全部阶段尚未关闭。详见[候选 50](docs/remediation/CANDIDATE50-INDEPENDENT-20261103.md)及[候选 51／52](docs/remediation/CANDIDATE51-52-INDEPENDENT-20261103.md)。
 
 统一集成入口仍为 `codex/remediation-baseline`。本轮在 `codex/stages-1-5-validation` 隔离检查，合入助手设置提交 `096e479b` 与普通用户隐藏千问选项的 `3808757b`；产品提交 `731ae1aa` 已安全快进回统一入口，原有未提交资料保留。候选 5.4（49）已完成独立 VM 的四聊天并发、两家真实解释和单来源停顿检查，尚未完成全部验收。当前进度见[阶段总记录](docs/remediation/STAGES-1-5-20261101.md)和[实际包验收](docs/remediation/CANDIDATE49-INDEPENDENT-20261101.md)。
 

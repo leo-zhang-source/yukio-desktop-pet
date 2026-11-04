@@ -34,7 +34,27 @@ Tart 原生控制仍报告无窗口；通过 VM 已有 Screen Sharing 与仅绑�
 
 候选 50 使用新的临时签名，旧条目未自动适用。通过普通系统设置重新选择 `yukio-qa-50/Yukio.app` 后，UTC 02:27:12 的运行诊断为 `accessAllowed=true`，窗口扫描有效。首次路径输入仍选中旧包的失败记录保留，最终以精确文件夹选择和当前进程诊断为准。未编辑权限数据库或关闭系统保护。该现象属于临时签名候选的测试限制，正式签名升级后的权限延续仍待验。
 
-通过 VM Safari 官方下载页取得 Claude 桌面 4.16336.0；签名为 Anthropic PBC（Q6L2SF6YDW），附带公证票据，严格签名验证通过。VM 的“仅 App Store”策略阻止启动；已请求仅为该 App 添加“Open Anyway”例外的当次确认，尚未执行。不能用已登录的 Claude Code CLI 替代桌面 Code／Cowork。
+通过 VM Safari 官方下载页取得 Claude 桌面 4.16336.0；签名为 Anthropic PBC（Q6L2SF6YDW），附带公证票据，严格签名验证通过。用户随后明确允许仅放行这个 Claude App，已从系统设置执行“Open Anyway”。全局“仅 App Store”策略保持不变，未移除 quarantine 或修改权限数据库。Claude 正常启动，运行位置为系统 AppTranslocation；主程序 SHA-256 与安装文件一致，不能因进程路径不是 `/Applications/Claude.app` 就判定未运行。
+
+桌面端通过 VM 现有 Google 登录完成首次登录，没有复制宿主凭据。该账号界面显示 Free，Code 入口显示升级页面，没有购买方案。官方[桌面开始指南](https://code.claude.com/docs/en/desktop-quickstart)也说明该入口的方案要求；不能将 CLI 或 Console API 的可用性推定为桌面入口已可用。用户随后自行切换到已有可用账号并完成邮箱验证；登录期间停止界面操作。恢复后 Code 入口可用，实际测试如下。
+
+UTC 02:49 的只读检查仍为 Codex 244、Claude 82、Deep Code 0 条，8 张旧卡保留。此时 Claude Code CLI 2.1.308 的 `auth status` 返回未登录；前轮成功调用的历史证据仍有效，但不能沿用为当前登录状态。桌面登录完成后须分别重检两种入口。相关证据：`vm50-claude-desktop-runtime-verified.json`、`vm50-claude-desktop-opened.png`、`vm50-claude-code-plan-gate.png`、`vm50-desktop-login-preflight.json`。早期按固定路径查进程得到空列表的记录保留，以 AppTranslocation 运行文件核验记录为准。
+
+## Claude 桌面 Code 的真实双聊天
+
+使用桌面 4.16336.0，在 VM 的 `desktop-code-A`、`desktop-code-B` 两个新目录分别放入无私人内容的 `QA.txt`。两个 Code 聊天在 This computer 运行；A 使用 Manual 模式，只批准一次 `/bin/sleep 60`，B 沿用新聊天的 Auto 默认，任务均明确禁止修改文件与访问其他目录或网站。A、B 均读取自己的标记并调用真实 AskUserQuestion；没有通过伪造转录制造状态。
+
+- **YK-16 的活动接入：** 实际工作台出现两张独立 Claude 卡，并显示 Working 2；角色先跟随 A 的等待命令，随后显示 B 的问号牌。A 与 B 的本地会话编号、桌面 `local_` 编号能够分别关联。
+- **YK-14 的误完成：** A 等待 ALPHA／BETA、B 等待 GAMMA／DELTA 时均未制造完成牌。直接在 Claude 回答 A 后，B 的问题与草稿仍保留。随后要求 A 只用一句普通回复询问 RED／BLUE 并停下，A 确实结束回复且仍待决定；工作台显示本轮结束，角色没有给 A 增加完成牌。原有 Codex 完成牌仍在，未被其他聊天清除。这是本次场景的通过，不代表已建立 Claude 整项任务完成协议。
+- **YK-15 的身份识别：** 实际手动切换 A／B 后，原生诊断 `visibleSessions` 分别对应正确的本地会话编号；不是按标题猜测。系统通知出现时扫描暂不认定聊天可见，关闭通知后恢复。没有 Claude 完成牌产生，因此本轮不能据此宣布 Claude 的“看到完成聊天即放牌”全部通过；多屏与不同遮挡组合也未关闭。
+- **真实问题卡失败路径：** 首次未配置回答通道，在 B 的 Yukio 问题卡发送测试草稿后明确提示需要连接通道。原稿保留，不重新点击输入框直接继续输入 `_AFTER_FAILURE` 成功；当时主窗口正在显示 A，草稿与错误仍属于 B。未将这次失败写成回答已送达。
+- **公开配置入口：** 从 Yukio 菜单执行连接 Claude 后台回答，成功安装两个 hook；辅助程序哈希与候选 50 主程序一致，设置原先不存在。界面要求重启 Claude Code，旧问题不能因此被认为已接通。新连接后的真实发送结果与新发现列于下段。
+
+新建 C 聊天实际调用 hook 后，第一次后台回答确实送达，但快速连发远程点击和键盘时，预期文本 `C_ONLY_REPLY_51` 的前四字进入 Claude 草稿，Yukio 实际提交并收到回执的是 `LY_REPLY_51`。保留焦点切换现场，不把完整预期输入判为通过；后续将点击聚焦与键盘输入分开核对。第二轮完整 `C_SECOND_EXACT` 已确认出现在 Yukio 输入框，发送仍误报需连接；同一时刻实际 hook 请求存在，未写入答案或回执。原因是 transcript 原始工具编号与 bridge 编号两路到达顺序不同，发送入口只接受后者。该真实缺陷进入候选 52，不将单次成功扩展为连续回答通过。候选 50 退出后 hook 正常回退到 Claude 自己的问题界面。
+
+这轮同时发现需继续修复的状态问题：B 的 AskUserQuestion 已明确等待回答，原生角色正确，但工作台起初仍显示 working，超过新活动时限后变为 unknown；详情也相同。已保存修前原始元数据、接口和界面证据，作为 YK-16 的补充项进入候选 51。应从准确问题请求及其回执判断等待，不靠延长活动时限。
+
+私有证据增加 `vm50-desktop-A-live-samples.jsonl`、`vm50-desktop-code-workbench-working2.png`、`vm50-desktop-code-A-manual-switch-native.json`、`vm50-desktop-code-B-after-notification-close.json`、`vm50-desktop-reply-ended-task-incomplete.png`、`vm50-desktop-question-failed-send-continued-typing.png`、`vm50-claude-answer-setup.json`、`vm50-desktop-plain-question-and-waiting-mismatch.json`。候选 51 前快照为 `vm50-before-candidate51.json`：Codex 244、Claude 227、Deep Code 0 条。Code 的新账号登录没有让独立 Claude CLI 自动登录，`vm50-new-account-cli-status.json` 仍报告未登录。
 
 ## 归档恢复
 
