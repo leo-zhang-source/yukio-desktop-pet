@@ -66,7 +66,11 @@ class HistoryReview:
             # Spread the selection across the whole chronology, retaining both
             # endpoints. Do not mistake a recent tail for the whole history.
             offsets=sorted({round(i*(count-1)/159) for i in range(160)}) if count>160 else range(count)
-            rows=[db.execute('SELECT e.sequence,e.record,s.state'+where+' ORDER BY e.sequence LIMIT 1 OFFSET ?',values+[offset]).fetchone() for offset in offsets]
+            # One ordered scan, not 160 repeated OFFSET scans. Repeated scans
+            # exhaust the shared read budget on real, long-lived databases.
+            offsets=list(offsets)
+            ranked='SELECT e.sequence,e.record,s.state,row_number() OVER (ORDER BY e.sequence)-1 AS position'+where
+            rows=db.execute('SELECT sequence,record,state FROM ('+ranked+') WHERE position IN ('+','.join('?' for _ in offsets)+') ORDER BY sequence',values+offsets).fetchall() if offsets else []
         items,missing=self.read_rows(client,parts,rows)
         return items,dict(total=count,selected=len(rows),read=len(items),sampled=count>len(rows),missing=missing),snapshot
 

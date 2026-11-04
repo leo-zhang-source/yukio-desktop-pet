@@ -2,6 +2,7 @@ import json
 import http.client
 import threading
 import unittest
+from contextlib import contextmanager
 from urllib.parse import urlencode
 
 import test_glance
@@ -45,6 +46,21 @@ class HistoryReviewTests(unittest.TestCase):
         self.assertTrue(data['coverage']['sampled']);self.assertEqual(data['coverage']['selected'],160)
         self.assertIn('不代表完整步骤',data['note'])
         self.assertIn('让我一眼看懂',encode(payload));self.assertIn('进展片段 189',encode(payload))
+
+    def test_whole_chat_read_uses_bounded_database_work(self):
+        self.append(*[speech('较长历史的公开进展 '+str(i)) for i in range(200)])
+        connect=self.fx.history.connect;queries=[]
+        @contextmanager
+        def traced(client):
+            with connect(client) as db:
+                db.set_trace_callback(queries.append)
+                yield db
+        self.fx.history.connect=traced
+        items,coverage,_=self.view.public_history('codex',self.fx.key)
+        self.assertEqual(coverage['selected'],160);self.assertTrue(items)
+        # The read budget must be independent of the number of excerpts, rather
+        # than restarting a database scan for each selected historical message.
+        self.assertLessEqual(len([q for q in queries if q.startswith('SELECT')]),4)
 
     def test_steps_keep_matching_tool_receipt_and_public_report_separate(self):
         self.append(dict(type='response_item',payload=dict(type='function_call_output',call_id='other',output='FOREIGN_RESULT')),
