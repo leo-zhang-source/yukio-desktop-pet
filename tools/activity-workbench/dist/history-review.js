@@ -10,7 +10,7 @@ function resetHistoryReview(){
 }
 function reviewProof(refs){
  const detail=make('details');detail.className='review-proof';detail.append(make('summary',tr('查看依据')));
- for(const ref of refs)detail.append(make('blockquote',ref.title+'：'+ref.quote));
+ for(const ref of refs)detail.append(make('blockquote',ref.title+tr('：')+ref.quote));
  if(!refs.length)detail.append(make('p',tr('没有足够的可读依据。')));return detail;
 }
 function reviewHint(){return model?.automatic_on_open?tr('点击生成，用所选解释来源讲清这段工作。'):tr('请先开启上方的解释来源，再生成通俗解读。');}

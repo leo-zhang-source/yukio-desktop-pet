@@ -14,7 +14,7 @@ function proof(value,label=tr('查看这条说明的依据')){
  const d=el('details');d.append(el('summary',label));
  d.append(el('p',tr('已保留这条活动的来源和对应关系，原始记录不在这里直接展示。')));
  for(const key of ['reported_is_error','reported_ok','reported_interrupted','reported_await_user_response','conflicting_results'])
-  if(typeof value[key]==='boolean')d.append(el('p',labels[key]+'：'+(value[key]?tr('是'):tr('否'))));
+  if(typeof value[key]==='boolean')d.append(el('p',labels[key]+tr('：')+(value[key]?tr('是'):tr('否'))));
  return d;
 }
 function sub(item){const box=el('div',undefined,'sub');box.append(el('h4',item.title),el('p',item.note),el('small',item.evidence_label),proof(item.evidence));return box;}

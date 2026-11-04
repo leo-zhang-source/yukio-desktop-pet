@@ -49,7 +49,11 @@ def localize(value):
             if key in ('quote','excerpt'):
                 return plain_words(item,'zh' if re.search(r'[\u3400-\u9fff]',item) else 'en')
             translated=english_text(item) if words and key not in ('quote','excerpt') else item
-            return plain_words(translated,current_language()) if key in prose else translated
+            # Unknown source wording stays in its original language. Applying
+            # English object aliases to an untranslated Chinese sentence would
+            # create fragments such as “保存了一条the activity history”.
+            prose_language='zh' if re.search(r'[\u3400-\u9fff]',translated) else current_language()
+            return plain_words(translated,prose_language) if key in prose else translated
         if isinstance(item,list):return [walk(x,key) for x in item]
         if isinstance(item,dict):
             original_title='title_source' in item or ('client' in item and 'key' in item)
