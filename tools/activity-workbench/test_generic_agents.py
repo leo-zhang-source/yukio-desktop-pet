@@ -51,14 +51,15 @@ class GenericSelectionTests(unittest.TestCase):
     def test_preflight_does_not_spend_generation_budget_or_cache_a_login_failure(self):
         sent = []
         service = ExplanationService(agent.configuration(None, 'claude'), sender=lambda c,p: sent.append(c) or answer(p))
-        preview = service.preview(dict(client='claude'), item(), [])
         with patch.object(agent, 'find_agent', return_value=['test-client']), \
              patch.object(agent, 'probe_agent', return_value=dict(state='unavailable', reason='agent_login_required')):
-            self.assertEqual(service.generate(preview['token'], True)['reason'], 'agent_login_required')
+            with self.assertRaisesRegex(ExplanationError, 'agent_login_required'):
+                service.preview(dict(client='claude'), item(), [])
         self.assertFalse(sent)
         self.assertFalse(service.calls)
         with patch.object(agent, 'find_agent', return_value=['test-client']), \
              patch.object(agent, 'probe_agent', return_value=dict(state='ready')):
+            preview = service.preview(dict(client='claude'), item(), [])
             self.assertEqual(service.generate(preview['token'], True)['mode'], 'model')
         self.assertEqual(len(sent), 1)
         self.assertEqual(len(service.calls), 1)
@@ -68,6 +69,11 @@ class GenericSelectionTests(unittest.TestCase):
         fx = test_reading.ReadingTests(); fx.setUp()
         try:
             fx.service.config = agent.configuration(None, 'claude')
+            with patch.object(agent, 'find_agent', return_value=['test-client']), \
+                 patch.object(agent, 'probe_agent', return_value=dict(state='ready')):
+                _, payload, refs = fx.fx.glance.prepared('codex', fx.fx.key)
+                preview = fx.service.preview_prepared(dict(client='codex', key=fx.fx.key), payload, refs)
+                fx.grant = fx.auto.authorize(preview['token'], True, page_owned=True)['grant']
             def probe(*_):
                 fx.auto.revoke(fx.grant)
                 return dict(state='ready')
@@ -92,7 +98,7 @@ class GenericSelectionTests(unittest.TestCase):
                 self.assertEqual(agent.configuration(data)['agent'], 'auto')
                 agent.save_preferences(data, provider, True)
                 with patch('shutil.which', return_value=None):
-                    command = agent.find_agent(provider, environ={'PATH':''}, home=user)
+                    command = agent.find_agent(provider, environ={'PATH':''}, home=user, application_roots=[])
                 self.assertEqual(command, [str(exe)])
                 self.assertEqual(agent.configuration(data)['agent'], provider)
                 self.assertNotIn(str(root), json.dumps(agent.preferences(data)))
@@ -163,7 +169,7 @@ class ProbeTests(unittest.TestCase):
 
     def test_probe_failures_do_not_trigger_a_generation_or_another_subcommand(self):
         with patch.object(agent, 'run_bounded', side_effect=ExplanationError('agent_timeout')) as run:
-            self.assertEqual(agent.probe_agent('codex',['client'])['reason'],'agent_probe_timeout')
+            self.assertEqual(agent.probe_agent('codex',['client'])['reason'],'agent_compatibility_timeout')
         self.assertEqual(run.call_count,1)
 
     def test_probes_work_through_real_unicode_path_subprocesses(self):

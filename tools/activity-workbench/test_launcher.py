@@ -128,12 +128,13 @@ class LauncherTests(unittest.TestCase):
             finally:p.terminate();p.communicate(timeout=5)
         self.assertEqual(before,{k:v.read_bytes() for k,v in dbs.items()})
     def test_invalid_private_config_does_not_start_or_modify_history(self):
+        self.root.joinpath('local-explanation-options.json').write_text(json.dumps(dict(lan=True)))
         self.root.joinpath('lan-model.json').write_text(json.dumps(dict(api_key='PRIVATE')))
         self.root.joinpath('explanation-provider.json').write_text(json.dumps(dict(provider='lan',automatic_on_open=False)))
         result=subprocess.run([sys.executable,str(ROOT/'launcher.py'),'--no-browser','--collect','--data-dir',str(self.root)],capture_output=True,timeout=4)
         self.assertNotEqual(result.returncode,0);self.assertNotIn(b'PRIVATE',result.stderr)
         self.assertIn(b'"code": "invalid_configuration"',result.stderr)
-        self.assertEqual({p.name for p in self.root.iterdir()},{'lan-model.json','explanation-provider.json'})
+        self.assertEqual({p.name for p in self.root.iterdir()},{'lan-model.json','explanation-provider.json','local-explanation-options.json'})
 
     def test_existing_page_without_collectors_starts_missing_recorders(self):
         data=self.root/'reuse-data';sources=self.root/'reuse-sources';data.mkdir()

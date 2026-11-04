@@ -15,12 +15,14 @@ from handoff_view import HandoffView
 from glance_automation import GlanceAutomation
 from reading_view import ReadingView
 from work_understanding import WorkUnderstanding
+from history_review import HistoryReview
 from project_context import ProjectContext
 from runtime_identity import identity
 from collector_status import read_status
 from explanation import ExplanationService, ExplanationError, MESSAGES, load_config
 from page_explanation_policy import enabled as page_policy_enabled
 from agent_explanation import configuration, save_preferences, provider_options
+from agent_setup import AgentSetup
 from localization import language_context,localize,catalog
 
 ROOT = Path(__file__).resolve().parent
@@ -32,6 +34,7 @@ ASSETS = {'/': ('index.html', 'text/html; charset=utf-8'),
           '/explanation.js': ('explanation.js', 'text/javascript; charset=utf-8'),
           '/context.js': ('context.js', 'text/javascript; charset=utf-8'),
           '/style.css': ('style.css', 'text/css; charset=utf-8')}
+ASSETS['/history-review.js']=('history-review.js','text/javascript; charset=utf-8')
 ASSETS['/i18n.js']=('i18n.js','text/javascript; charset=utf-8')
 
 
@@ -59,6 +62,8 @@ def create_server(port, databases, *, synthetic=False, model_config=None, explan
     automation = GlanceAutomation(glance,explainer,page_allowed=page_allowed) if explainer else None
     reading = ReadingView(glance,explainer,automation) if explainer else None
 
+    agent_setup = AgentSetup()
+
     def explanation_info():
         return dict(explainer.info(), automatic_on_open=bool(page_allowed()),
                     providers=provider_options(directory))
@@ -84,11 +89,12 @@ def create_server(port, databases, *, synthetic=False, model_config=None, explan
                 raw=(ROOT/'dist'/name).read_bytes()
                 if name=='i18n.js':raw=('globalThis.YukioEnglish='+json.dumps(catalog(),ensure_ascii=False)+';\n').encode()+raw
                 return self.reply(200,raw,mime)
-            routes = {'/api/health': set(), '/api/clients': set(), '/api/groups': {'client','archive','offset','snapshot'},
+            routes = {'/api/agent-status': set(), '/api/health': set(), '/api/clients': set(), '/api/groups': {'client','archive','offset','snapshot'},
                       '/api/timeline': {'client','key','before','snapshot'}, '/api/blocks': {'client','key','sequence','offset'},
                       '/api/handoffs': {'client','key','snapshot'}, '/api/context': {'client','key','snapshot','offset','filter'}, '/api/relations': {'client','key','snapshot'},
                       '/api/current':set(), '/api/glance':{'client','key'}, '/api/task-summary':{'client','key'},
                       '/api/work-understanding':{'client','key','scope'},
+                      '/api/history-review':{'client','key','section','snapshot','before'},
                       '/api/reading-history':{'client','key','snapshot','before'}}
             if url.path not in routes:
                 return self.reply(404, b'Not found', 'text/plain')
@@ -109,10 +115,12 @@ def create_server(port, databases, *, synthetic=False, model_config=None, explan
                 if 'archive' in p:
                     if p['archive'] not in ('0','1'): raise ValueError('Invalid archive')
                     p['archive'] = p['archive']=='1'
-                if url.path=='/api/current':result=glance.cards()
+                if url.path=='/api/agent-status':result=agent_setup.inventory()
+                elif url.path=='/api/current':result=glance.cards()
                 elif url.path=='/api/glance':result=glance.detail(**p)
                 elif url.path=='/api/task-summary':result=glance.summary(**p)
                 elif url.path=='/api/work-understanding':result=WorkUnderstanding(glance).detail(**p)
+                elif url.path=='/api/history-review':result=HistoryReview(glance).prepared(**p)[0]
                 elif url.path=='/api/reading-history':result=reading.history_local(**p)
                 elif url.path=='/api/handoffs':result=HandoffView(view,glance.reader).detail(**p)
                 else:result = identity(databases,active_config) if url.path=='/api/health' else getattr(context if url.path in ('/api/context','/api/relations') else view, url.path.rsplit('/',1)[1])(**p)
@@ -138,7 +146,7 @@ def create_server(port, databases, *, synthetic=False, model_config=None, explan
             if (host not in allowed or self.headers.get('Sec-Fetch-Site')=='cross-site' or
                     self.headers.get('Origin','http://'+host)!='http://'+host or self.headers.get('X-Yukio-Workbench')!='1'):
                 return self.reply(403,b'Local access only','text/plain')
-            if self.path not in ('/api/explanation-settings','/api/explanation-preview','/api/explanation-generate','/api/context-preview','/api/glance-preview','/api/glance-authorize','/api/glance-refresh','/api/glance-stop','/api/glance-heartbeat','/api/reading-current','/api/reading-history','/api/reading-explain','/api/reading-work'):
+            if self.path not in ('/api/agent-check','/api/explanation-settings','/api/explanation-preview','/api/explanation-generate','/api/context-preview','/api/glance-preview','/api/glance-authorize','/api/glance-refresh','/api/glance-stop','/api/glance-heartbeat','/api/reading-current','/api/reading-history','/api/reading-explain','/api/reading-work','/api/reading-review'):
                 return self.reply(404,b'Not found','text/plain')
             if explainer is None:
                 return self.json_reply(503,dict(error='尚未配置模型，本机记录仍可查看。'))
@@ -150,7 +158,10 @@ def create_server(port, databases, *, synthetic=False, model_config=None, explan
                 self.connection.settimeout(5)
                 data=json.loads(self.rfile.read(int(length)))
                 if not isinstance(data,dict):raise ValueError('Invalid request')
-                if self.path=='/api/explanation-settings':
+                if self.path=='/api/agent-check':
+                    if set(data)!={'provider'}:raise ValueError('Invalid assistant check')
+                    result=agent_setup.check(data['provider'])
+                elif self.path=='/api/explanation-settings':
                     if set(data)!={'provider','automatic_on_open'} or not isinstance(data['provider'],str) or type(data['automatic_on_open']) is not bool:
                         raise ValueError('Invalid explanation settings')
                     replacement=configuration(directory,data['provider'])
@@ -173,13 +184,14 @@ def create_server(port, databases, *, synthetic=False, model_config=None, explan
                     result=explanation_info()
                 elif self.path.startswith('/api/reading-'):
 
-                    fields={'grant','token'} if self.path=='/api/reading-explain' else {'grant','snapshot','before'} if self.path=='/api/reading-history' else {'grant','scope','part'} if self.path=='/api/reading-work' else {'grant'}
+                    fields={'grant','token'} if self.path=='/api/reading-explain' else {'grant','section','snapshot','before','part'} if self.path=='/api/reading-review' else {'grant','snapshot','before'} if self.path=='/api/reading-history' else {'grant','scope','part'} if self.path=='/api/reading-work' else {'grant'}
                     if 'grant' not in data or set(data)-fields or not isinstance(data['grant'],str) or len(data['grant'])>100:raise ValueError('Invalid reading selection')
                     if self.path=='/api/reading-explain':
                         if set(data)!=fields or not isinstance(data['token'],str) or len(data['token'])>100:raise ValueError('Invalid reading token')
                         result=reading.explain(**data)
                     elif self.path=='/api/reading-history':result=reading.history_page(**data)
                     elif self.path=='/api/reading-work':result=reading.work(**data)
+                    elif self.path=='/api/reading-review':result=reading.review(**data)
                     else:result=reading.current(**data)
                 elif self.path=='/api/glance-preview':
                     if set(data)!={'client','key'} or not all(isinstance(v,str) for v in data.values()):raise ValueError('Invalid selection')

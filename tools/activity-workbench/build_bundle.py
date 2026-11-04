@@ -12,7 +12,7 @@ import sys
 import zipfile
 
 ROOT=Path(__file__).resolve().parent
-RUNTIME=('agent_explanation.py','chat_catalog.py','work_understanding.py','reading_view.py','page_explanation_policy.py','plain_language.py','task_summary.py','project_context.py','handoff_view.py','source_context.py','glance_view.py','glance_automation.py','server.py','history_view.py','context_view.py','explanation.py','runtime_identity.py','localization.py','collector_status.py','launcher.py','start-macos.command','start-windows.cmd')
+RUNTIME=('agent_setup.py','agent_explanation.py','chat_catalog.py','work_understanding.py','history_review.py','reading_view.py','page_explanation_policy.py','plain_language.py','task_summary.py','project_context.py','handoff_view.py','source_context.py','glance_view.py','glance_automation.py','server.py','history_view.py','context_view.py','explanation.py','runtime_identity.py','localization.py','collector_status.py','launcher.py','start-macos.command','start-windows.cmd')
 
 def build(destination,macos=False):
     if destination.exists():raise ValueError('Use a new output directory')
@@ -27,7 +27,7 @@ def build(destination,macos=False):
 本目录是供源码检查使用的候选，不包含完整的 Mac 安装包或独立用户验收结论。start-macos.command 供已安装 Python 的人运行。Windows 按用户决定暂缓；保留相关入口不代表已构建或验证 Windows 版本。
 也可运行 python3 launcher.py --collect，随后打开 http://127.0.0.1:8767/ 。
 
-首页选择聊天名称，先看合并后的“正在发生”。下方“这项工作如何推进”按聊天或项目展示目标、方法与策略、有效性；每部分都能点击展开详细解释与对应依据，并可按需请模型进一步解释。先在本机整理记录，点击解读按钮后才发送对应短摘录。项目每次最多六段聊天，显示实际采用的来源和未覆盖范围；不会自动发送项目解读。操作成功和助手汇报不等于方法有效。当前活动有直接可见的详细解释入口。“历史回顾”单独展示，每页三段，可继续往前翻、回到最近，并逐段深入查看要求、公开做法、结果与依据。不启用模型也能查看本机详情和历史。模型说明共用次数上限。点“任务与交接小结”可看整体目标、之前进展、当前结果、后续安排和各助手回复；缺失与采用未知分别保留。需要查旧聊天与具体记录时点“打开记录详情”。
+首页选择聊天名称，先看合并后的“正在发生”。下方“这项工作如何推进”按聊天或项目展示目标、方法与策略、有效性；每部分都能点击展开详细解释与对应依据，并可按需请模型进一步解释。先在本机整理记录，点击解读按钮后才发送对应短摘录。项目每次最多六段聊天，显示实际采用的来源和未覆盖范围；不会自动发送项目解读。操作成功和助手汇报不等于方法有效。当前活动有直接可见的详细解释入口。“历史回顾”单独展示，每页三段，可继续往前翻、回到最近，并逐段深入查看要求、公开做法、结果与依据。不启用模型也能查看本机详情和历史。模型说明共用次数上限。历史分为独立折叠的“整体进展”和“操作与交接”：整体进展由所选模型解释目标、此前进展、眼前工作与下一步，每段可现场生成详细解释；操作列表按步骤显示简短说明、工具、结果与交接。模型未能生成时明确提示，原文仅保存在折叠依据中。较长聊天最多抽取 160 条公开短片段，并标明覆盖限制。需要查旧聊天与具体记录时点“打开记录详情”。
 打开工作台会检查并接续缺少的记录器，只保存必要元数据。聊天原文和能明确配对的读取返回短片段只在本机临时读取，不复制进历史库。
 
 默认由你本机已登录的 Codex 或 Claude Code 解释，无需开发者的内网接口。首页选择解释来源并点“开启解释”；自动模式跟随所选聊天的 Agent，未安装、未登录或版本不支持时，在发送前尝试另一个可调用的 Agent。调用失败时保留本机说明，不切换服务。使用你自己的账号额度。也可选择已配置的内网模型。

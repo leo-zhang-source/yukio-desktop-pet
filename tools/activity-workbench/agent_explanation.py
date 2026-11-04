@@ -15,9 +15,27 @@ from explanation import (ExplanationError, MAX_RESPONSE_BYTES, encode,
                          READING_SYSTEM, SYSTEM, load_config)
 
 PROVIDERS = ('auto', 'codex', 'claude', 'lan')
-LABELS = {'auto': '本机 Agent（跟随聊天）', 'codex': 'Codex',
-          'claude': 'Claude Code', 'lan': '自选内网模型'}
+LABELS = {'auto': '本机 Agent（跟随聊天）', 'codex': 'Codex（终端入口）',
+          'claude': 'Claude Code（终端入口）', 'lan': '自选内网模型'}
 SETTINGS = 'explanation-provider.json'
+LOCAL_OPTIONS = 'local-explanation-options.json'
+
+
+def local_lan_enabled(directory):
+    """Private opt-in on the owner's installation; never shipped with the App."""
+    if not directory:
+        return False
+    try:
+        path = Path(directory) / LOCAL_OPTIONS
+        with path.open('rb') as stream:
+            raw = stream.read(513)
+        if len(raw) > 512:
+            return False
+        value = json.loads(raw)
+        return (isinstance(value, dict) and set(value) == {'lan'}
+                and type(value['lan']) is bool and value['lan'])
+    except (OSError, ValueError, TypeError):
+        return False
 
 
 def preferences(directory):
@@ -31,12 +49,17 @@ def preferences(directory):
     if (not isinstance(value, dict) or set(value) != {'provider', 'automatic_on_open'}
             or value['provider'] not in PROVIDERS or type(value['automatic_on_open']) is not bool):
         raise ValueError('Invalid explanation settings')
+    if value['provider'] == 'lan' and not local_lan_enabled(directory):
+        # A copied/old LAN preference must not enable or reveal a private model.
+        return dict(provider='auto', automatic_on_open=False)
     return value
 
 
 def configuration(directory, choice=None):
     choice = choice or preferences(directory)['provider']
     if choice == 'lan':
+        if not local_lan_enabled(directory):
+            raise ValueError('Local explanation option is disabled')
         return load_config(Path(directory) / 'lan-model.json')
     if choice not in PROVIDERS:
         raise ValueError('Invalid explanation provider')
@@ -47,6 +70,8 @@ def configuration(directory, choice=None):
 def save_preferences(directory, provider, automatic_on_open):
     if not directory or provider not in PROVIDERS or type(automatic_on_open) is not bool:
         raise ValueError('Invalid explanation settings')
+    if provider == 'lan' and not local_lan_enabled(directory):
+        raise ValueError('Local explanation option is disabled')
     directory = Path(directory)
     directory.mkdir(parents=True, exist_ok=True, mode=0o700)
     # Atomic, private, and contains no credentials, executable paths or excerpts.
@@ -60,13 +85,52 @@ def save_preferences(directory, provider, automatic_on_open):
             os.unlink(name)
 
 
-def find_agent(provider, *, environ=None, home=None, windows=None):
+def codex_desktop_candidates(home, application_roots=None):
+    """Discover the versioned desktop layout without launching a client.
+
+    Prefer the user's own Applications folder, then the system installation.
+    Accept only the known package entrypoint; metadata cannot supply commands.
+    Legacy single-binary bundles retain their existing fallback priority.
+    """
+    roots = application_roots if application_roots is not None else (home / 'Applications', Path('/Applications'))
+    candidates = []
+    for root in roots:
+        for name in ('ChatGPT.app', 'Codex.app'):
+            package = Path(root) / name / 'Contents/Resources/codex-cli'
+            manifest = package / 'codex-package.json'
+            executable = package / 'bin/codex'
+            try:
+                if not manifest.resolve().is_relative_to(package.resolve()):
+                    continue
+                with manifest.open('rb') as stream:
+                    raw = stream.read(8193)
+                if len(raw) > 8192:
+                    continue
+                value = json.loads(raw)
+                if (not isinstance(value, dict) or type(value.get('layoutVersion')) is not int
+                        or value['layoutVersion'] != 1 or value.get('entrypoint') != 'bin/codex'
+                        or value.get('variant') != 'codex'
+                        or not isinstance(value.get('target'), str)
+                        or not value['target'].endswith('-apple-darwin')
+                        or not executable.resolve().is_relative_to(package.resolve())
+                        or not executable.is_file() or not os.access(executable, os.X_OK)):
+                    continue
+                candidates.append(executable)
+            except (OSError, ValueError, TypeError, RuntimeError):
+                continue
+    return candidates
+
+
+def find_agent(provider, *, environ=None, home=None, windows=None, application_roots=None,
+               prefer_desktop=True):
     env = os.environ if environ is None else environ
     home = Path.home() if home is None else Path(home)
     windows = os.name == 'nt' if windows is None else windows
     override = env.get('YUKIO_' + provider.upper() + '_PATH')
     candidates = [Path(override).expanduser()] if override else []
     if not override:
+        if provider == 'codex' and not windows and prefer_desktop:
+            candidates += codex_desktop_candidates(home, application_roots)
         found = shutil.which(provider, path=env.get('PATH', ''))
         if found:
             candidates.append(Path(found))
@@ -119,6 +183,7 @@ def probe_agent(provider, command):
                 {'--print', '--safe-mode', '--output-format', '--no-session-persistence',
                  '--tools', '--disable-slash-commands', '--strict-mcp-config',
                  '--mcp-config', '--system-prompt', '--json-schema'})
+    phase = 'compatibility'
     try:
         with tempfile.TemporaryDirectory(prefix='yukio-agent-check-') as folder:
             root = Path(folder)
@@ -131,6 +196,7 @@ def probe_agent(provider, command):
                 # Never guess a subcommand: an old CLI may treat it as a prompt.
                 return dict(state='unknown')
             args = ['login', 'status'] if provider == 'codex' else ['auth', 'status', '--json']
+            phase = 'login'
             code, out, err = run_bounded(command + args, '', root, 5)
             if provider == 'claude':
                 try:
@@ -139,8 +205,10 @@ def probe_agent(provider, command):
                         if status.get('authMethod') == 'third_party':
                             return dict(state='unknown')
                         return dict(state='unavailable', reason='agent_login_required')
+                    if not isinstance(status, dict) or status.get('loggedIn') is not True:
+                        return dict(state='unknown')
                 except (ValueError, TypeError):
-                    pass
+                    return dict(state='unknown')
             if code:
                 reason = failure(out, err)
                 if reason == 'agent_incompatible':
@@ -148,7 +216,26 @@ def probe_agent(provider, command):
                 return dict(state='unavailable', reason=reason)
             return dict(state='ready')
     except ExplanationError as exc:
-        return dict(state='unavailable', reason='agent_probe_timeout' if exc.code == 'agent_timeout' else exc.code)
+        return dict(state='unavailable', reason=('agent_compatibility_timeout' if phase == 'compatibility' else 'agent_login_check_timeout') if exc.code == 'agent_timeout' else exc.code)
+
+
+def check_agent(provider):
+    """Resolve and inspect the same entrypoint for setup and explanation."""
+    command = find_agent(provider)
+    if not command:
+        return None, dict(state='unavailable', reason='agent_not_found')
+    readiness = probe_agent(provider, command)
+    if (readiness['state'] == 'unavailable' and provider == 'codex'
+            and len(command) == 1
+            and command[0].endswith('/Contents/Resources/codex-cli/bin/codex')
+            and not os.environ.get('YUKIO_CODEX_PATH')
+            and readiness.get('reason') in ('agent_incompatible', 'agent_start_failed',
+                                           'agent_compatibility_timeout')):
+        alternative = find_agent(provider, prefer_desktop=False)
+        if alternative and alternative != command:
+            command = alternative
+            readiness = probe_agent(provider, command)
+    return command, readiness
 
 
 def select_agent(config, client=None):
@@ -157,9 +244,8 @@ def select_agent(config, client=None):
              else ['codex', 'claude']) if choice == 'auto' else [choice]
     failures = []
     for provider in order:
-        command = find_agent(provider)
+        command, readiness = check_agent(provider)
         if command:
-            readiness = probe_agent(provider, command)
             if readiness['state'] in ('ready', 'unknown'):
                 return dict(config, agent=provider, model=LABELS[provider], command=command)
             failures.append(readiness['reason'])
@@ -405,5 +491,6 @@ def call_agent(config, payload):
 
 def provider_options(directory):
     return [dict(id='auto', label=LABELS['auto'], available=True)] + [
-        dict(id=p, label=LABELS[p], available=bool(find_agent(p))) for p in ('codex', 'claude')] + [
-        dict(id='lan', label=LABELS['lan'], available=bool(directory and (Path(directory) / 'lan-model.json').is_file()))]
+        dict(id=p, label=LABELS[p], available=bool(find_agent(p))) for p in ('codex', 'claude')] + ([
+        dict(id='lan', label=LABELS['lan'], available=(Path(directory) / 'lan-model.json').is_file())]
+        if local_lan_enabled(directory) else [])

@@ -21,7 +21,8 @@ class ReadingView:
 
     def freeze(self,grant,payload,refs):
         selection=self.automation.selection(grant)
-        return self.explainer.preview_prepared(dict(selection,reading_grant=grant),payload,refs)['token']
+        return self.explainer.preview_prepared(dict(selection,reading_grant=grant),payload,refs,
+            request_config=self.automation.recipient_config(grant))['token']
 
     @staticmethod
     def payload(facts,parts,*,kind='detail',historical=False,state='unknown',naming=None):
@@ -57,6 +58,12 @@ class ReadingView:
             ids={f['evidence_id'] for f in payload['facts']}
             refs=[r for r in refs if r['evidence_id'] in ids]
         return dict(data,token=self.freeze(grant,payload,refs))
+
+    def review(self,grant,section='overview',snapshot=0,before=0,part=None):
+        from history_review import HistoryReview
+        selection=self.automation.selection(grant)
+        data,payload,refs=HistoryReview(self.glance).prepared(**selection,section=section,snapshot=snapshot,before=before,part=part)
+        return dict(data,token=self.freeze(grant,payload,refs) if data['parts'] else None)
 
     def history_page(self,grant,snapshot=0,before=0):
         return self._history_page(self.automation.selection(grant),snapshot,before,grant)

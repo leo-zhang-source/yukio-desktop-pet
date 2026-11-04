@@ -45,18 +45,23 @@ def localize(value):
            'before','now','next','benefit','display','name','label','note','sent','status_label','use_note'}
     def walk(item,key=None):
         if isinstance(item,str):
-            if key in {'id','key','client','session_id','source_id','agent_id','event_id','evidence_id','evidence_ids','call_id','target_id','token','grant','revision','source_fingerprint','content_fingerprint','required','allowed'}:return item
+            if key in {'login_command','id','key','client','session_id','source_id','agent_id','event_id','evidence_id','evidence_ids','call_id','target_id','token','grant','revision','source_fingerprint','content_fingerprint','required','allowed'}:return item
             if key in ('quote','excerpt'):
                 return plain_words(item,'zh' if re.search(r'[\u3400-\u9fff]',item) else 'en')
             translated=english_text(item) if words and key not in ('quote','excerpt') else item
-            return plain_words(translated,current_language()) if key in prose else translated
+            # Unknown source wording stays in its original language. Applying
+            # English object aliases to an untranslated Chinese sentence would
+            # create fragments such as “保存了一条the activity history”.
+            prose_language='zh' if re.search(r'[\u3400-\u9fff]',translated) else current_language()
+            return plain_words(translated,prose_language) if key in prose else translated
         if isinstance(item,list):return [walk(x,key) for x in item]
         if isinstance(item,dict):
             original_title='title_source' in item or ('client' in item and 'key' in item)
             quoted=item.get('kind') in ('user','assistant','operation_note')
             result={}
             for k,v in item.items():
-                if isinstance(v,str) and (k=='name' or (k=='title' and original_title)):result[k]=v
+                if k=='reason' and isinstance(v,str) and re.fullmatch(r'[a-z]+(?:_[a-z]+)+',v):result[k]=v
+                elif isinstance(v,str) and (k=='name' or (k=='title' and original_title)):result[k]=v
                 elif isinstance(v,str) and k=='text' and quoted:result[k]=plain_words(v,'zh' if re.search(r'[\u3400-\u9fff]',v) else 'en')
                 else:result[k]=walk(v,k)
             if words and not quoted and item.get('basis') in ('inference','unknown') and isinstance(result.get('text'),str) and re.search(r'[\u3400-\u9fff]',result['text']):

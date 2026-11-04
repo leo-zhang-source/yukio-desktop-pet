@@ -150,3 +150,9 @@ Explanations are based on the activity that is available. They can be incomplete
 [Documentation](docs/README.md) · [macOS source & build guide](YukioPlayer/README.md) · [Windows source & build guide](YukioWin/README.md) · [Release notes](CHANGELOG.md) · [Report an issue](https://github.com/leo-zhang-source/yukio-desktop-pet/issues)
 
 Yukio combines a native **Swift / AppKit** Mac companion, a **Python** Windows companion and a **Python / JavaScript** activity workbench. Character artwork, animation inputs and the player source live in this repository.
+
+<!-- LOCAL-HISTORY-REVIEW-41.3 -->
+
+本机候选 5.4（41.4）补齐工作台英文系统文字，修复中英混排；中英文继续由同一 App 的语言设置控制，保持现有布局与风格。范围和验证见 [界面语言修复记录](docs/remediation/WORKBENCH-LOCALIZATION-20261103.md)。
+
+历史回顾本机候选 5.4（41.3）：保持绿白风格，分成可分别折叠的“整体进展”和“操作与交接”。整体进展由页面现有解释来源生成目标、此前进展、当前工作与下一步；每段可现场生成详细解释。操作列表以简短说明、工具和已知结果连续展示，保留助手交接、原始依据、较早步骤与按要求回看的入口。模型不可用时明确提示，不把原文冒充模型解释。长聊天最多选取 160 条公开短片段并标明覆盖限制；不读取内部思考。此候选仅本机验证与安装，不是公开发行，独立环境验收尚未完成。详见 [验收记录](docs/remediation/HISTORY-REVIEW-20261103.md)。

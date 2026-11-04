@@ -3,6 +3,7 @@ import hashlib
 import secrets
 import threading
 import time
+from copy import deepcopy
 from explanation import ExplanationError,encode
 
 
@@ -21,11 +22,12 @@ class GlanceAutomation:
             selection=entry['selection']
             if set(selection)!={'client','key'}:raise ExplanationError('consent_required')
             fingerprint=hashlib.sha256(encode(entry['payload']).encode()).hexdigest()
+            request_config=deepcopy(entry['request_config'])
         with self.lock:
             now=self.clock();self.grants={k:v for k,v in self.grants.items() if v['expires']>now and v.get('lease_until',float('inf'))>now}
             if len(self.grants)>=8:raise ExplanationError('busy')
             grant=secrets.token_urlsafe(32)
-            self.grants[grant]=dict(selection=dict(selection),expires=now+7200,checked=now,fingerprint=fingerprint,busy=False,page_owned=page_owned)
+            self.grants[grant]=dict(selection=dict(selection),request_config=request_config,expires=now+7200,checked=now,fingerprint=fingerprint,busy=False,page_owned=page_owned)
             if page_owned:self.grants[grant]['lease_until']=now+120
         return dict(grant=grant,interval_seconds=180,expires_in_seconds=7200)
 
@@ -53,6 +55,13 @@ class GlanceAutomation:
                 raise ExplanationError('preview_expired')
             return dict(entry['selection'])
 
+    def recipient_config(self,grant):
+        self.selection(grant)
+        with self.lock:
+            entry=self.grants.get(grant)
+            if not entry:raise ExplanationError('preview_expired')
+            return deepcopy(entry['request_config'])
+
     def refresh(self,grant,force=False):
         if type(force) is not bool:raise ValueError('Invalid refresh')
         with self.lock:
@@ -69,7 +78,7 @@ class GlanceAutomation:
             with self.lock:
                 if self.grants.get(grant) is not entry:raise ExplanationError('consent_required')
                 if not force and fingerprint==entry['fingerprint']:return dict(mode='unchanged')
-            preview=self.explainer.preview_prepared(selection,payload,refs)
+            preview=self.explainer.preview_prepared(selection,payload,refs,request_config=entry['request_config'])
             with self.lock:
                 if self.grants.get(grant) is not entry:raise ExplanationError('consent_required')
             def can_send():

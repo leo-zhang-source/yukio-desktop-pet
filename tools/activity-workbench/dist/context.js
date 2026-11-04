@@ -18,7 +18,7 @@ window.YukioContext = (() => {
       const metrics=node('div',undefined,'context-metrics');
       for(const [key,label] of [['succeeded',tr('收到成功回执')],['failed',tr('收到失败回执')],['cancelled',tr('收到取消回执')],['no_receipt',tr('尚无可配对回执')],['conflict',tr('回执有冲突')],['unresolved',tr('对应有疑问')],['unknown',tr('结果不明确')]])metrics.append(node('div',label+' '+(data.status_counts[key]||0)));
       panel.append(metrics);
-      if(data.latest_marker)panel.append(node('p',tr('最后观察到的阶段标记：')+data.latest_marker.title+'。'+data.latest_marker.note),proof(data.latest_marker.evidence));
+      if(data.latest_marker)panel.append(node('p',tr('最后观察到的阶段标记：')+data.latest_marker.title+tr('。')+data.latest_marker.note),proof(data.latest_marker.evidence));
       if(data.source_warning_count||data.unlinked_receipt_count)panel.append(node('p',tr('本次范围有 ')+data.source_warning_count+tr(' 条来源提醒、')+data.unlinked_receipt_count+tr(' 条无法配对的回执。请保留这些不确定。'),'notice'));
       if(data.earlier_gap_reported)panel.append(node('p',tr('记录报告前方存在缺口，即使缺口不在本次范围内，也不能把经过当作完整。'),'notice'));
       panel.append(window.YukioExplanation.controls(selection,true));
