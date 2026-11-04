@@ -4,6 +4,8 @@
 
 ## 2026-11-01 阶段 1–5 联合整改
 
+2026-11-03 续测：修复实际 VM 重启后旧聊天不可读，产品提交 `0ff54f2e`、候选 5.4（50）、工作台 0.5.5。完整自动回归一轮及独立实际包、系统重启、原聊天续跑、退出只清理自有进程检查通过；候选 49／50 固定集合已在 NAS 回读恢复。Claude 桌面首次启动仍受 VM 系统策略限制，全部阶段尚未关闭。详见[候选 50 实测](docs/remediation/CANDIDATE50-INDEPENDENT-20261103.md)。
+
 统一集成入口仍为 `codex/remediation-baseline`。本轮在 `codex/stages-1-5-validation` 隔离检查，合入助手设置提交 `096e479b` 与普通用户隐藏千问选项的 `3808757b`；产品提交 `731ae1aa` 已安全快进回统一入口，原有未提交资料保留。候选 5.4（49）已完成独立 VM 的四聊天并发、两家真实解释和单来源停顿检查，尚未完成全部验收。当前进度见[阶段总记录](docs/remediation/STAGES-1-5-20261101.md)和[实际包验收](docs/remediation/CANDIDATE49-INDEPENDENT-20261101.md)。
 
 完整自动检查从仓库根目录执行 `python3 scripts/run-remediation-checks.py --repeat 2 --out <新的证据目录>`，需要 Mac、Swift 6.1+、Python 3.12+、Node 22+。原生 UI 测试必须串行。正式构建只用 [Mac 构建入口](docs/remediation/MAC-BUILD.md)；模块与依赖见 [依赖记录](docs/remediation/DEPENDENCIES.md)，小任务使用 [任务卡](docs/remediation/TASK-TEMPLATE.md)。历史测试数量不能当作本轮结果。
