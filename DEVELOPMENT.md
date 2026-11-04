@@ -1,6 +1,6 @@
 # 当前开发与发布入口
 
-当前发布准备为 **5.4 Preview 2（构建 56）**：修复首次入口、助手就绪检查、空白页状态与安装窗口，保留现用工作台布局。[发布说明](docs/releases/5.4-preview.2.md)。整理分支为 `codex/mac-54-preview-release`，向 GitHub `main` 集成。
+当前已发布 **5.4 Preview 2（构建 56）**：修复首次入口、助手就绪检查、空白页状态与安装窗口，保留现用工作台布局。[发布说明](docs/releases/5.4-preview.2.md) · [下载与实际运行核对](docs/remediation/RELEASE-54-PREVIEW2.md)。已集成至 GitHub `main`；整理分支为 `codex/mac-54-preview-release`。
 
 [快速上手](docs/MAC-USER-GUIDE.zh-CN.md) · [English](docs/MAC-USER-GUIDE.md) · [完整 Mac 构建](docs/remediation/MAC-BUILD.md) · [开发约定](AGENTS.md)
 
