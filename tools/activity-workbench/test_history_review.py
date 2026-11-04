@@ -4,6 +4,7 @@ import threading
 import unittest
 from contextlib import contextmanager
 from urllib.parse import urlencode
+from unittest.mock import patch
 
 import test_glance
 from explanation import ExplanationError, ExplanationService, encode, validate_output, output_system
@@ -89,6 +90,13 @@ class HistoryReviewTests(unittest.TestCase):
         detail,_,_=self.prepare('steps',snapshot=first['snapshot'],part=op['part'])
         self.assertEqual(detail['parts'][0]['part'],op['part'])
         with self.assertRaises(ValueError):self.prepare('steps',snapshot=first['snapshot'],part=report['part'])
+
+    def test_multiple_handoffs_in_one_saved_message_keep_distinct_details(self):
+        cards=[dict(sequence=5,title='交给协助助手',sent='检查第'+str(i)+'项',status='未知',targets=[],returns=[],use_note='采用未知',evidence=[dict(id='block-'+str(i))]) for i in range(2)]
+        with patch('history_review.HandoffView.detail',return_value=dict(items=cards)):
+            data,_,_=self.prepare('steps')
+        handoffs=[i for i in data['items'] if i['kind']=='handoff']
+        self.assertEqual(len(handoffs),2);self.assertEqual(len({i['part'] for i in handoffs}),2)
 
     def test_missing_source_yields_no_fake_recaps(self):
         self.fx.path.unlink()

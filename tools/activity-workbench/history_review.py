@@ -145,7 +145,7 @@ class HistoryReview:
             candidates.append(dict(id='operation-'+str(seq)+'-'+evidence_id(request),sequence=seq,kind='operation',title=op['title'],tool=tool,status=op['status_label'],material='；'.join([op['title'],op['status_label'],op['note']]+excerpts)))
         for h in handoffs['items']:
             seq=h.get('sequence') or next((o['request']['sequence'] for o in ctx['operations'] if evidence_id(o['request']) in {r['id'] for r in h['evidence']}),ctx['window_end'])
-            candidates.append(dict(id='handoff-'+str(seq),sequence=seq,kind='handoff',title=h['title'],tool=h.get('action','Task / Agent'),status=h['status'],material='；'.join([h['sent'],h['status']]+[t['label']+'：'+t.get('input_note','') for t in h['targets']]+[r['who']+'汇报：'+r['text'] for r in h['returns']]+[h['use_note']])) )
+            candidates.append(dict(id='handoff-'+str(seq)+'-'+h['evidence'][0]['id'],sequence=seq,kind='handoff',title=h['title'],tool=h.get('action','Task / Agent'),status=h['status'],material='；'.join([h['sent'],h['status']]+[t['label']+'：'+t.get('input_note','') for t in h['targets']]+[r['who']+'汇报：'+r['text'] for r in h['returns']]+[h['use_note']])) )
         candidates.sort(key=lambda i:(i['sequence'],i['id']))
         # Keep all atoms sharing the sixth item's sequence so pagination never
         # drops a second tool from the same client message.
