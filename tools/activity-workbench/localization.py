@@ -45,7 +45,7 @@ def localize(value):
            'before','now','next','benefit','display','name','label','note','sent','status_label','use_note'}
     def walk(item,key=None):
         if isinstance(item,str):
-            if key in {'id','key','client','session_id','source_id','agent_id','event_id','evidence_id','evidence_ids','call_id','target_id','token','grant','revision','source_fingerprint','content_fingerprint','required','allowed'}:return item
+            if key in {'login_command','id','key','client','session_id','source_id','agent_id','event_id','evidence_id','evidence_ids','call_id','target_id','token','grant','revision','source_fingerprint','content_fingerprint','required','allowed'}:return item
             if key in ('quote','excerpt'):
                 return plain_words(item,'zh' if re.search(r'[\u3400-\u9fff]',item) else 'en')
             translated=english_text(item) if words and key not in ('quote','excerpt') else item

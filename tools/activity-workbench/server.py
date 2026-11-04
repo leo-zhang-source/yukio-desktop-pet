@@ -22,6 +22,7 @@ from collector_status import read_status
 from explanation import ExplanationService, ExplanationError, MESSAGES, load_config
 from page_explanation_policy import enabled as page_policy_enabled
 from agent_explanation import configuration, save_preferences, provider_options
+from agent_setup import AgentSetup
 from localization import language_context,localize,catalog
 
 ROOT = Path(__file__).resolve().parent
@@ -61,6 +62,8 @@ def create_server(port, databases, *, synthetic=False, model_config=None, explan
     automation = GlanceAutomation(glance,explainer,page_allowed=page_allowed) if explainer else None
     reading = ReadingView(glance,explainer,automation) if explainer else None
 
+    agent_setup = AgentSetup()
+
     def explanation_info():
         return dict(explainer.info(), automatic_on_open=bool(page_allowed()),
                     providers=provider_options(directory))
@@ -86,7 +89,7 @@ def create_server(port, databases, *, synthetic=False, model_config=None, explan
                 raw=(ROOT/'dist'/name).read_bytes()
                 if name=='i18n.js':raw=('globalThis.YukioEnglish='+json.dumps(catalog(),ensure_ascii=False)+';\n').encode()+raw
                 return self.reply(200,raw,mime)
-            routes = {'/api/health': set(), '/api/clients': set(), '/api/groups': {'client','archive','offset','snapshot'},
+            routes = {'/api/agent-status': set(), '/api/health': set(), '/api/clients': set(), '/api/groups': {'client','archive','offset','snapshot'},
                       '/api/timeline': {'client','key','before','snapshot'}, '/api/blocks': {'client','key','sequence','offset'},
                       '/api/handoffs': {'client','key','snapshot'}, '/api/context': {'client','key','snapshot','offset','filter'}, '/api/relations': {'client','key','snapshot'},
                       '/api/current':set(), '/api/glance':{'client','key'}, '/api/task-summary':{'client','key'},
@@ -112,7 +115,8 @@ def create_server(port, databases, *, synthetic=False, model_config=None, explan
                 if 'archive' in p:
                     if p['archive'] not in ('0','1'): raise ValueError('Invalid archive')
                     p['archive'] = p['archive']=='1'
-                if url.path=='/api/current':result=glance.cards()
+                if url.path=='/api/agent-status':result=agent_setup.inventory()
+                elif url.path=='/api/current':result=glance.cards()
                 elif url.path=='/api/glance':result=glance.detail(**p)
                 elif url.path=='/api/task-summary':result=glance.summary(**p)
                 elif url.path=='/api/work-understanding':result=WorkUnderstanding(glance).detail(**p)
@@ -142,7 +146,7 @@ def create_server(port, databases, *, synthetic=False, model_config=None, explan
             if (host not in allowed or self.headers.get('Sec-Fetch-Site')=='cross-site' or
                     self.headers.get('Origin','http://'+host)!='http://'+host or self.headers.get('X-Yukio-Workbench')!='1'):
                 return self.reply(403,b'Local access only','text/plain')
-            if self.path not in ('/api/explanation-settings','/api/explanation-preview','/api/explanation-generate','/api/context-preview','/api/glance-preview','/api/glance-authorize','/api/glance-refresh','/api/glance-stop','/api/glance-heartbeat','/api/reading-current','/api/reading-history','/api/reading-explain','/api/reading-work','/api/reading-review'):
+            if self.path not in ('/api/agent-check','/api/explanation-settings','/api/explanation-preview','/api/explanation-generate','/api/context-preview','/api/glance-preview','/api/glance-authorize','/api/glance-refresh','/api/glance-stop','/api/glance-heartbeat','/api/reading-current','/api/reading-history','/api/reading-explain','/api/reading-work','/api/reading-review'):
                 return self.reply(404,b'Not found','text/plain')
             if explainer is None:
                 return self.json_reply(503,dict(error='尚未配置模型，本机记录仍可查看。'))
@@ -154,7 +158,10 @@ def create_server(port, databases, *, synthetic=False, model_config=None, explan
                 self.connection.settimeout(5)
                 data=json.loads(self.rfile.read(int(length)))
                 if not isinstance(data,dict):raise ValueError('Invalid request')
-                if self.path=='/api/explanation-settings':
+                if self.path=='/api/agent-check':
+                    if set(data)!={'provider'}:raise ValueError('Invalid assistant check')
+                    result=agent_setup.check(data['provider'])
+                elif self.path=='/api/explanation-settings':
                     if set(data)!={'provider','automatic_on_open'} or not isinstance(data['provider'],str) or type(data['automatic_on_open']) is not bool:
                         raise ValueError('Invalid explanation settings')
                     replacement=configuration(directory,data['provider'])

@@ -4,6 +4,7 @@ The model rephrases fixed-rule observations. Its output is not a state update or
 verified fact. Structure and references are validated, not semantic truth.
 """
 from collections import OrderedDict, deque
+from copy import deepcopy
 import hashlib
 import ipaddress
 import json
@@ -314,9 +315,14 @@ RESULT_PATTERNS_EN={
     'succeeded':r'reported success'}
 
 def current_claim(text):
-    return any(re.search(r'正在|仍在|\b(?:(?:is|are|am)(?: still)?|still|currently) (?:[A-Za-z]{3,}ing)',c,re.I)
-               and not re.search(r'不再|并非|无法确认|不能确认|是否|(?:not|cannot|unclear|whether|unconfirmed)',c,re.I)
-               for c in re.split(r'[。；，.!?]',text))
+    for clause in re.split(r'[。；，.!?]',text):
+        if re.search(r'不再|并非|无法确认|不能确认|是否|(?:not|cannot|unclear|whether|unconfirmed)',clause,re.I):continue
+        for match in re.finditer(r'正在|仍在|\b(?:(?:is|are|am)(?: still)?|still|currently) (?:[A-Za-z]{3,}ing)',clause,re.I):
+            # A narrow past-time prefix is not a claim that this turn is still open.
+            # Evaluate every claim: a later “现在仍在” must still be rejected.
+            if re.fullmatch(r'\s*(?:此前|当时|先前|那时|刚才)(?:助手|模型|它)?(?:还)?',clause[:match.start()]):continue
+            return True
+    return False
 
 
 def complete_response(content,payload):
@@ -537,6 +543,8 @@ MESSAGES={
     'agent_config_unsupported':'无法安全读取 Agent 的模型设置。请检查客户端配置；从源码运行自定义服务时需 Python 3.11 或更新版本。',
     'agent_model_unavailable':'Agent 选择的模型不支持当前登录。请先在对应命令行客户端选择可用模型，再重试。',
     'agent_probe_timeout':'检查助手是否可用时超时，尚未发送聊天摘录。请检查客户端后重试。',
+    'agent_compatibility_timeout':'读取命令行客户端功能说明超过 5 秒，尚未检查登录或发送摘录。请在终端运行所选客户端的 --help，确认能打开后重试。',
+    'agent_login_check_timeout':'客户端功能检查通过，但登录状态检查超过 5 秒；这不代表未登录，尚未发送摘录。请运行 codex login status 或 claude auth status --json 检查所选客户端，再重试。',
 
     'unnamed_subject':'这次说明没说清具体是哪组按钮，暂时保留已有内容。',
     'service_unavailable':'模型暂时没有响应，仍可查看下面的本机说明。',
@@ -551,6 +559,7 @@ MESSAGES={
     'rate_limited':'调用次数或间隔已达到本机限制，请稍后再试。',
     'busy':'已有一条解释正在生成，请稍后再试。',
     'preview_expired':'发送预览已过期，请重新预览。',
+    'recipient_changed':'解释接收方或客户端配置已变化，请重新预览后再发送。',
     'consent_required':'请先预览内容，再确认发送。',
     'missing_current_result':'模型漏掉了最近一步的结果，先保留本机说明。',
     'contradictory_result':'这次说明与操作记录不一致，先保留本机说明。',
@@ -584,28 +593,44 @@ class ExplanationService:
                                    total_references=len(fact['ids'])))
         return self.preview_prepared(dict(selection,context_snapshot=context['snapshot']),payload,references)
 
-    def preview_prepared(self,selection,payload,references):
+    def preview_prepared(self,selection,payload,references, *, request_config=None):
+        payload=deepcopy(payload)
         payload['scope'].setdefault('language',current_language())
-        identity=hashlib.sha256(encode(dict(selection=selection,payload=payload,references=references,version=VERSION)).encode()).hexdigest()
+        identity=hashlib.sha256(encode(dict(selection=selection,payload=payload,references=references,
+                                         config=self.config,bound=request_config,version=VERSION)).encode()).hexdigest()
         with self.lock:
+            if self.retired:raise ExplanationError('preview_expired')
             now=self.clock()
             for token,entry in list(self.entries.items()):
                 if now-entry['created']>300 and entry['state']!='running':del self.entries[token]
             for token,entry in self.entries.items():
                 if entry['identity']==identity and now-entry['created']<=300:
                     return self.public_preview(token,entry)
+        # Resolve before consent, outside the lock. A login/help probe sends no excerpts.
+        resolved=deepcopy(request_config if request_config is not None else self.config)
+        if resolved.get('provider')=='agent' and 'command' not in resolved:
+            from agent_explanation import select_agent
+            resolved=select_agent(resolved,selection.get('client') if isinstance(selection,dict) else None)
+        recipient=dict(provider=resolved.get('agent','lan'),model=resolved['model'],
+                       destination=('agent://'+resolved['agent']) if resolved.get('provider')=='agent' else resolved['base_url'])
+        with self.lock:
+            if self.retired:raise ExplanationError('preview_expired')
+            for token,entry in self.entries.items():
+                if entry['identity']==identity and self.clock()-entry['created']<=300:
+                    return self.public_preview(token,entry)
             while len(self.entries)>=64:
                 victim=next((k for k,v in self.entries.items() if v['state']!='running'),None)
                 if victim is None:raise ExplanationError('busy')
                 del self.entries[victim]
             token=secrets.token_urlsafe(32)
-            entry=dict(identity=identity,selection=selection,payload=payload,references=references,created=now,state='ready')
+            entry=dict(identity=identity,selection=deepcopy(selection),payload=payload,references=deepcopy(references),
+                       config=deepcopy(self.config),request_config=resolved,recipient=recipient,created=self.clock(),state='ready')
             self.entries[token]=entry
             return self.public_preview(token,entry)
 
     def public_preview(self,token,entry):
         glance=entry['payload'].get('scope',{}).get('glance')
-        return dict(token=token,**self.info(),payload=entry['payload'],references=entry['references'],
+        return dict(token=token,**self.info(),recipient=deepcopy(entry['recipient']),payload=entry['payload'],references=entry['references'],
                     cached=entry['state']=='done',expires_in_seconds=max(0,int(300-(self.clock()-entry['created']))),
                     excluded=('将发送下方的短摘录：整体目标、前面进展、近期要求、公开说明、操作结果、可对应的工具返回短片段和拟修改片段（可能含少量代码）。项目说明与实际观察分别标注。已过滤常见凭据，但请仍检查私人内容；不发送完整聊天、整份文件、原始长输出、内部思考或私人编号。' if glance else '不发送聊天正文、代码、命令、文件路径、工具原名、聊天或助手编号、时间与内容指纹。'),
                     instructions=output_system(entry['payload']))
@@ -616,6 +641,7 @@ class ExplanationService:
             entry=self.entries.get(token);now=self.clock()
             if self.retired:raise ExplanationError('preview_expired')
             if not entry or now-entry['created']>300:raise ExplanationError('preview_expired')
+            if entry['config']!=self.config:raise ExplanationError('recipient_changed')
             if entry['state']=='done':return dict(entry['result'],cached=True)
             if self.running:raise ExplanationError('busy')
             while self.calls and now-self.calls[0]>=3600:self.calls.popleft()
@@ -624,11 +650,14 @@ class ExplanationService:
             self.running=True;entry['state']='running'
         sent=False
         try:
-            request_config=self.config
-            if self.config.get('provider')=='agent':
+            request_config=deepcopy(entry['request_config'])
+            if request_config.get('provider')=='agent':
                 from agent_explanation import select_agent
-                request_config=select_agent(self.config,entry['selection'].get('client') if isinstance(entry['selection'],dict) else None)
+                # Recheck this exact assistant. Never fall back to a different recipient.
+                checked=select_agent(request_config)
+                if checked['command']!=request_config['command']:raise ExplanationError('recipient_changed')
             with self.lock:
+                if self.retired or entry['config']!=self.config:raise ExplanationError('recipient_changed')
                 if can_send is not None:can_send()
                 self.calls.append(self.clock())
             sent=True
@@ -645,4 +674,5 @@ class ExplanationService:
             result=dict(mode='fallback',reason='internal_error',message='暂时无法生成解释，请继续查看本机记录。',explanations=[],cached=False)
         with self.lock:
             self.running=False;entry['state']='done' if sent else 'ready';entry['result']=result
+            if result.get('reason')=='recipient_changed':self.entries.pop(token,None)
         return result

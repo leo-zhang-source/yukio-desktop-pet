@@ -952,5 +952,8 @@
   "按时间顺序的公开记录 ": "Public records in chronological order ",
   "最后观察到的工作与状态": "Last observed work and status",
   "：": ": ",
-  "。": ". "
+  "。": ". ",
+  "读取命令行客户端功能说明超过 5 秒，尚未检查登录或发送摘录。请在终端运行所选客户端的 --help，确认能打开后重试。": "Reading CLI capabilities exceeded 5 seconds. Login has not been checked and no excerpt was sent. Run the selected client with --help in Terminal, then retry once it opens.",
+  "客户端功能检查通过，但登录状态检查超过 5 秒；这不代表未登录，尚未发送摘录。请运行 codex login status 或 claude auth status --json 检查所选客户端，再重试。": "CLI capabilities were checked, but checking login exceeded 5 seconds. This does not mean you are signed out; no excerpt was sent. Run codex login status or claude auth status --json for the selected client, then retry.",
+  "解释接收方或客户端配置已变化，请重新预览后再发送。": "The explanation recipient or client configuration changed. Review a new preview before sending."
 }

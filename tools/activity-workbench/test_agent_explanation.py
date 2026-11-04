@@ -217,6 +217,10 @@ else:
                     return 0, encode(dict(subtype='success', structured_output=content)).encode(), b''
                 fx.service.sender = agent.call_agent
                 with patch.object(agent, 'find_agent', return_value=['fake']), patch.object(agent, 'run_bounded', side_effect=transport):
+                    # A provider change needs a fresh grant, just as the HTTP settings route does.
+                    _, payload, refs = fx.fx.glance.prepared('codex', fx.fx.key)
+                    preview = fx.service.preview_prepared(dict(client='codex', key=fx.fx.key), payload, refs)
+                    fx.grant = fx.auto.authorize(preview['token'], True, page_owned=True)['grant']
                     self.assertEqual(fx.auto.refresh(fx.grant, True)['result']['model'], agent.LABELS[provider])
                     fx.now[0] += 11
                     current = fx.reading.current(fx.grant)
@@ -258,6 +262,19 @@ class ProviderHTTPTests(unittest.TestCase):
                     self.assertEqual(post(invalid)[0], 400)
             finally:
                 server.shutdown(); server.server_close(); thread.join()
+
+
+class ProbeStageTests(unittest.TestCase):
+    def test_help_and_login_timeouts_remain_distinct_without_a_generation(self):
+        flags=b'--print --safe-mode --output-format --no-session-persistence --tools --disable-slash-commands --strict-mcp-config --mcp-config --system-prompt --json-schema\n  auth  Login commands'
+        for outcomes,reason,count in [([ExplanationError('agent_timeout')],'agent_compatibility_timeout',1),
+                                      ([(0,flags,b''),ExplanationError('agent_timeout')],'agent_login_check_timeout',2),
+                                      ([(0,flags,b''),(0,b'{"loggedIn":false}',b'')],'agent_login_required',2)]:
+            with patch.object(agent,'run_bounded',side_effect=outcomes) as run:
+                result=agent.probe_agent('claude',['claude'])
+                self.assertEqual(result['reason'],reason)
+                self.assertEqual(run.call_count,count)
+                self.assertTrue(all(call.args[1]=='' for call in run.call_args_list))
 
 
 if __name__ == '__main__':
