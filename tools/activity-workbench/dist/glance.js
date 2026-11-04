@@ -158,13 +158,13 @@ function renderProviderSettings(){
 }
 async function setExplanationProvider(enabled){
  if(enabled&&(autoRun||readingBusy)){$('providerNote').textContent=tr('正在生成一段说明，请等它结束后再更改。');return;}
- const enable=$('providerEnable'),disable=$('providerDisable');enable.disabled=true;disable.disabled=true;
+ const enable=$('providerEnable'),disable=$('providerDisable');enable.disabled=true;disable.disabled=true;if(enabled)enable.textContent=tr('正在检查助手…');
  try{
   const updated=await api('explanation-settings',{provider:enabled?$('explanationProvider').value:model.provider,automatic_on_open:enabled});
   epoch++;resetReading();model=updated;grant=null;autoRun=null;modelAnswer=null;modelPending=false;attemptMessage='';nextRetry=0;
   renderProviderSettings();if(current)render(current);void automatic();
  }catch(error){$('providerNote').textContent=error.message;}
- finally{enable.disabled=false;disable.disabled=false;}
+ finally{enable.disabled=false;disable.disabled=false;enable.textContent=model?.automatic_on_open?tr('应用并继续解释'):tr('开启解释');}
 }
 $('providerEnable').onclick=()=>setExplanationProvider(true);
 $('providerDisable').onclick=()=>setExplanationProvider(false);
@@ -173,7 +173,7 @@ async function choose(value,keepAnswer=false){resetReading();epoch++;selected=JS
 async function refresh(force=false){if(busy){refreshAgain=refreshAgain||force;return;}if(document.hidden&&!force)return;busy=true;const own=epoch;try{
  if(force||Date.now()-cardsAt>30000){const data=await api('current');if(own!==epoch)return;cardsAt=Date.now();chatCatalog=data.cards;chatLimited=Boolean(data.limited);const prior=selected?JSON.stringify(selected):'';$('chat').replaceChildren();
  for(const [helper,label] of [[false,tr('你的聊天')],[true,tr('协助助手的工作')]]){const group=make('optgroup');group.label=label;for(const c of data.cards.filter(c=>Boolean(c.is_helper)===helper)){const option=make('option',names[c.client]+' · '+c.title+' · '+age(c.last_activity_ms));option.value=JSON.stringify({client:c.client,key:c.key});group.append(option);}if(group.children.length)$('chat').append(group);}
- renderChatNavigation();note('');$('connection').textContent=synthetic?tr('模拟活动 · 用于检查'):data.cards.length?tr('已连接本机记录'):tr('已连接 · 等待聊天');if(!data.cards.length){epoch++;current=null;selected=null;modelAnswer=null;autoRun=null;modelPending=false;void stopAuto();$('work').hidden=true;$('empty').hidden=false;$('chat').append(make('option',tr('尚未发现可显示的聊天')));try{const info=await api('clients');if(own===epoch)emptyHelp(info.clients);}catch{}return;}
+ renderChatNavigation();note('');$('connection').textContent=synthetic?tr('模拟活动 · 用于检查'):data.cards.length?tr('已连接本机记录'):tr('已连接 · 等待聊天');if(!data.cards.length){const emptyEpoch=++epoch;current=null;selected=null;modelAnswer=null;autoRun=null;modelPending=false;void stopAuto();$('work').hidden=true;$('empty').hidden=false;$('chat').append(make('option',tr('尚未发现可显示的聊天')));try{const info=await api('clients');if(emptyEpoch===epoch)emptyHelp(info.clients);}catch{}return;}
  if(prior&&[...$('chat').options].some(o=>o.value===prior))$('chat').value=prior;
  else if(selected){const next=continuation(selected,data.cards);if(next){await choose(JSON.stringify(next),true);return;}const option=make('option',names[selected.client]+' · '+(current?.title||tr('当前聊天')));option.value=prior;$('chat').prepend(option);$('chat').value=prior;}
  else selected=JSON.parse($('chat').value);}

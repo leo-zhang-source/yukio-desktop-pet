@@ -11,10 +11,10 @@ class Element{
  querySelector(tag){return this.children.find(c=>c.tag===tag);}
  focus(){this.focused=true;}
 }
-function setup(){
+function setup({clientRequests=false}={}){
  const elements=new Map(),pending=[],listeners={},timers=[];const document={activeElement:null,hidden:false,createElement:tag=>new Element(tag),getElementById:id=>{const live=[...elements.values()].flatMap(e=>[e,...e.querySelectorAll('*')]).find(e=>e.id===id);if(live)return live;if(!elements.has(id))elements.set(id,new Element('div'));return elements.get(id);}};
  const context=vm.createContext({document,location:{search:''},URLSearchParams,AbortSignal,atob,setInterval(){},setTimeout(fn){timers.push(fn);},window:{addEventListener(name,fn){listeners[name]=fn;}},fetch:async (url,options)=>{
-  if(url==='/api/clients')return new Promise(()=>{}); // Leave page startup out of the focused polling test.
+  if(url==='/api/clients'&&!clientRequests)return new Promise(()=>{}); // Leave page startup out of the focused polling test.
   return new Promise(resolve=>pending.push({url,options,resolve:(value,status=200)=>resolve({ok:status<400,json:async()=>value})}));
  }});
  vm.runInContext(fs.readFileSync(path.join(__dirname,'dist/glance.js'),'utf8'),context);
@@ -402,4 +402,20 @@ test('a recipient changed by another page cannot inherit this page sending grant
  const f=setup();enabledPage(f);f.run('model.destination="agent://codex"');
  const run=f.run('automatic()');f.pending[0].resolve({token:'preview',destination:'agent://claude'});await run;
  assert.equal(f.pending.length,1);assert.equal(f.run('model.automatic_on_open'),false);
+});
+
+// Reproduce an empty installation, including the asynchronous recorder status.
+test('a fresh empty workbench shows source status and rejects late empty responses',async()=>{
+ const f=setup({clientRequests:true});
+ // Startup is left pending; drive the refresh independently.
+ const request=f.run('refresh(true)');
+ f.pending.find(r=>r.url==='/api/current').resolve({cards:[]});await tick();
+ const clients=f.pending.filter(r=>r.url==='/api/clients');
+ clients.at(-1).resolve({clients:[{id:'codex',recorder:{state:'source_unavailable'}}]});
+ await request;assert.match(f.elements.get('emptyClients').children[0].textContent,/Codex.*暂时没读到/);
+ const second=f.run('refresh(true)');
+ f.pending.filter(r=>r.url==='/api/current').at(-1).resolve({cards:[]});await tick();
+ f.run('epoch++;$("emptyClients").replaceChildren()');
+ f.pending.filter(r=>r.url==='/api/clients').at(-1).resolve({clients:[{id:'claude',recorder:{state:'source_unavailable'}}]});
+ await second;assert.equal(f.elements.get('emptyClients').children.length,0);
 });

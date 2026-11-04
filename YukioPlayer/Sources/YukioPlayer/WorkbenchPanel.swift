@@ -243,7 +243,18 @@ final class WorkbenchPanelController: NSWindowController, NSWindowDelegate, WKNa
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction,
                  decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
         let allowed = navigationAction.request.url.map { Self.isLocal($0, port: serviceURL?.port ?? 8767) || $0.absoluteString == "about:blank" } ?? false
+        if navigationAction.navigationType == .linkActivated,
+           let url = navigationAction.request.url,
+           Self.isAssistantSetupLink(url) {
+            NSWorkspace.shared.open(url)
+        }
         decisionHandler(allowed ? .allow : .cancel)
+    }
+
+    static func isAssistantSetupLink(_ url: URL) -> Bool {
+        // Only these explicit setup links can leave the local workbench.
+        ["https://learn.chatgpt.com/docs/codex/cli",
+         "https://code.claude.com/docs/en/setup"].contains(url.absoluteString)
     }
 
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {

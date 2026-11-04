@@ -14,7 +14,7 @@ files = [(str(app), "Yukio.app")]
 positions = {"Yukio.app": (188, 224), "应用程序 Applications": (532, 224)}
 if guide.is_file():
     files.append((str(guide), "Start Here.html"))
-    positions["Start Here.html"] = (360, 370)
+    positions["Start Here.html"] = (360, 350)
 
 dmgbuild.build_dmg(
     str(output),
@@ -25,7 +25,7 @@ dmgbuild.build_dmg(
         "files": files,
         "symlinks": {"应用程序 Applications": "/Applications"},
         "background": str(background),
-        "window_rect": ((200, 120), (720, 460)),
+        "window_rect": ((200, 120), (720, 560)),
         "default_view": "icon-view",
         "icon_size": 88,
         "text_size": 13,

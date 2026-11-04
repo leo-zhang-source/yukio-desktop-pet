@@ -21,7 +21,7 @@ from runtime_identity import identity
 from collector_status import read_status
 from explanation import ExplanationService, ExplanationError, MESSAGES, load_config
 from page_explanation_policy import enabled as page_policy_enabled
-from agent_explanation import configuration, save_preferences, provider_options
+from agent_explanation import configuration, save_preferences, provider_options, select_agent
 from agent_setup import AgentSetup
 from localization import language_context,localize,catalog
 
@@ -165,6 +165,11 @@ def create_server(port, databases, *, synthetic=False, model_config=None, explan
                     if set(data)!={'provider','automatic_on_open'} or not isinstance(data['provider'],str) or type(data['automatic_on_open']) is not bool:
                         raise ValueError('Invalid explanation settings')
                     replacement=configuration(directory,data['provider'])
+                    # An explicit enable action must not report success when
+                    # every local assistant is missing or signed out. This
+                    # probes CLI readiness only; it does not generate text.
+                    if data['automatic_on_open'] and replacement.get('provider') == 'agent':
+                        select_agent(replacement)
                     previous=explainer
                     with previous.lock:
                         if previous.retired:raise ExplanationError('busy')

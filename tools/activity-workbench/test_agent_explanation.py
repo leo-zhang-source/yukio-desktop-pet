@@ -251,7 +251,13 @@ class ProviderHTTPTests(unittest.TestCase):
                 settings = dict(provider='claude', automatic_on_open=True)
                 self.assertEqual(post(settings, {'Origin':'https://other.test'})[0], 403)
                 self.assertFalse((directory / agent.SETTINGS).exists())
-                status, data = post(settings)
+                for reason in ('agent_not_found', 'agent_login_required'):
+                    with patch('server.select_agent', side_effect=ExplanationError(reason)):
+                        status, data = post(settings)
+                    self.assertEqual(status, 409)
+                    self.assertFalse((directory / agent.SETTINGS).exists())
+                with patch('server.select_agent', return_value={}):
+                    status, data = post(settings)
                 self.assertEqual(status, 200)
                 self.assertEqual(data['provider'], 'claude')
                 self.assertTrue(data['automatic_on_open'])

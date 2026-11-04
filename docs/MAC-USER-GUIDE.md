@@ -15,7 +15,7 @@ Yukio is a Mac desktop companion. It turns coding-agent activity into character 
 ## Get started
 
 1. **Install:** open the Mac DMG, drag **Yukio.app** to Applications and launch it. If macOS blocks a trusted download, use System Settings → Privacy & Security → Open Anyway. The current package is not notarized.
-2. **Open the workbench:** right-click the desktop companion. Open Yukio settings to change the character, language and size.
+2. **Open the workbench:** menu-bar avatar → Activity workbench (or right-click the visible companion). Open Yukio settings to change the character, language and size.
 3. **Choose your experience:** Play demo shows animations without an assistant account. For real activity, stop the demo, start a task in local Codex, Claude Code or Deep Code, and enable Follow activity.
 
 <a id="first-run"></a>

@@ -923,7 +923,12 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         ) { [weak self] _ in self?.screensChanged() }
 
         setUpAssistant()
-        if CommandLine.arguments.contains("--open-workbench") { showSettings() }
+        // A new user has no activity, so idle hiding would otherwise leave
+        // only an unexplained menu-bar icon. Keep the existing workbench as
+        // the first-use entry; do not change the saved idle-hiding preference.
+        if !defaults.bool(forKey: "hasOpenedWorkbench") || CommandLine.arguments.contains("--open-workbench") {
+            showSettings()
+        }
         softwareUpdates.start()
         if CommandLine.arguments.contains("--demo") { startDemo() }
     }
@@ -2017,6 +2022,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
             settingsWindow = controller
         }
         controller.show(snapshot: currentSettingsSnapshot(), near: panel.frame)
+        defaults.set(true, forKey: "hasOpenedWorkbench")
     }
 
     private func refreshSettingsPanel() {

@@ -17,8 +17,8 @@ if [ -e "$DMG" ]; then
   exit 1
 fi
 DMG_PYTHON="${YUKIO_DMG_PYTHON:-$SCRIPT_DIR/../build/dmg-tools/bin/python}"
-if ! "$DMG_PYTHON" -c 'import dmgbuild' 2>/dev/null; then
-  echo "先安装 DMG 打包工具（只在开发机需要）：" >&2
+if ! "$DMG_PYTHON" -c 'import dmgbuild; from importlib.metadata import version; assert tuple(map(int, version("dmgbuild").split("."))) >= (1, 6, 7)' 2>/dev/null; then
+  echo "先安装 DMG 打包工具 1.6.7+（修复 Tahoe 背景显示；只在开发机需要）：" >&2
   echo "python3 -m venv YukioPlayer/build/dmg-tools" >&2
   echo "YukioPlayer/build/dmg-tools/bin/python -m pip install -r YukioPlayer/scripts/dmg-requirements.txt" >&2
   exit 1

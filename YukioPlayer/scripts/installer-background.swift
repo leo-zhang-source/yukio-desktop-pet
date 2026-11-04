@@ -1,8 +1,8 @@
 import AppKit
 
-// Finder uses this at its native 720 × 460 size behind the draggable icons.
-let size = NSSize(width: 720, height: 460)
-let bitmap = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: 1440, pixelsHigh: 920,
+// Leave room for the offline guide icon, its filename and the bilingual footer.
+let size = NSSize(width: 720, height: 560)
+let bitmap = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: 1440, pixelsHigh: 1120,
     bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
     colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
 bitmap.size = size
@@ -19,28 +19,29 @@ func text(_ value: String, x: CGFloat, y: CGFloat, size: CGFloat,
 }
 let ink = NSColor(calibratedRed: 0.13, green: 0.20, blue: 0.29, alpha: 1)
 let muted = NSColor(calibratedRed: 0.38, green: 0.45, blue: 0.54, alpha: 1)
-text("安装 Yukio", x: 48, y: 382, size: 30, color: ink, weight: .semibold)
-text("将左侧图标拖到右侧「应用程序」即可安装", x: 48, y: 348, size: 17, color: ink)
-text("Drag Yukio into Applications to install.", x: 48, y: 322, size: 13, color: muted)
+text("安装 Yukio", x: 48, y: 482, size: 30, color: ink, weight: .semibold)
+text("将左侧图标拖到右侧「应用程序」即可安装", x: 48, y: 448, size: 17, color: ink)
+text("Drag Yukio into Applications to install.", x: 48, y: 422, size: 13, color: muted)
 
 NSColor.white.setFill()
-NSBezierPath(roundedRect: NSRect(x: 48, y: 134, width: 624, height: 161),
+NSBezierPath(roundedRect: NSRect(x: 48, y: 250, width: 624, height: 145),
              xRadius: 24, yRadius: 24).fill()
 let arrow = NSBezierPath()
-arrow.move(to: NSPoint(x: 326, y: 224))
-arrow.line(to: NSPoint(x: 394, y: 224))
-arrow.move(to: NSPoint(x: 381, y: 237))
-arrow.line(to: NSPoint(x: 394, y: 224))
-arrow.line(to: NSPoint(x: 381, y: 211))
+arrow.move(to: NSPoint(x: 326, y: 336))
+arrow.line(to: NSPoint(x: 394, y: 336))
+arrow.move(to: NSPoint(x: 381, y: 349))
+arrow.line(to: NSPoint(x: 394, y: 336))
+arrow.line(to: NSPoint(x: 381, y: 323))
 arrow.lineWidth = 3
 arrow.lineCapStyle = .round
 arrow.lineJoinStyle = .round
 NSColor(calibratedRed: 0.36, green: 0.58, blue: 0.80, alpha: 1).setStroke()
 arrow.stroke()
 
-text("安装后，从「应用程序」打开 Yukio，然后推出此磁盘。", x: 48, y: 108, size: 14, color: ink)
-text("首次打开若被阻止：系统设置 → 隐私与安全性 → 仍要打开", x: 48, y: 82, size: 12, color: muted)
-text("更新前请先退出 Yukio。仅在信任下载来源时允许打开。", x: 48, y: 60, size: 12, color: muted)
+text("安装后从「应用程序」打开；完整说明见 Start Here.html。", x: 48, y: 112, size: 13, color: ink)
+text("Open Yukio from Applications. Read Start Here.html for setup.", x: 48, y: 90, size: 12, color: muted)
+text("首次打开若被阻止：系统设置 → 隐私与安全性 → 仍要打开", x: 48, y: 66, size: 12, color: muted)
+text("If blocked: System Settings → Privacy & Security → Open Anyway.", x: 48, y: 46, size: 12, color: muted)
 NSGraphicsContext.restoreGraphicsState()
-// TIFF records the logical size so Finder displays the 2× artwork at 720 × 460.
+// TIFF records the logical size so Finder displays the 2× artwork at 720 × 560.
 try bitmap.representation(using: .tiff, properties: [:])!.write(to: URL(fileURLWithPath: CommandLine.arguments[1]))

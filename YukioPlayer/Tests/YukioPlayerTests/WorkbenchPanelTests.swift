@@ -5,6 +5,15 @@ import YukioCore
 @testable import YukioPlayer
 
 @Suite @MainActor struct WorkbenchPanelTests {
+    @Test func onlyExactOfficialSetupLinksCanLeaveWorkbench() throws {
+        for value in ["https://learn.chatgpt.com/docs/codex/cli", "https://code.claude.com/docs/en/setup"] {
+            #expect(WorkbenchPanelController.isAssistantSetupLink(try #require(URL(string: value))))
+        }
+        for value in ["http://learn.chatgpt.com/docs/codex/cli", "https://learn.chatgpt.com.evil.invalid/docs/codex/cli",
+                      "https://code.claude.com/docs/en/setup?redirect=private", "file:///Users/test/private"] {
+            #expect(!WorkbenchPanelController.isAssistantSetupLink(try #require(URL(string: value))))
+        }
+    }
     @Test func explicitAppLanguageWinsAndSwitchingRefreshesTheWholeWorkbench() throws {
         _ = NSApplication.shared
         #expect(WorkbenchPanelController.preferredLanguage(["zh-Hans"], appPreference: "en") == "en")

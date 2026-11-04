@@ -12,13 +12,13 @@ For Apple silicon Macs running macOS 13+. These steps cover 5.4 Preview 1 (55); 
 2. Open it, drag **Yukio.app** to Applications, then launch it from there.
 3. If macOS cannot verify the developer, and you trust the download, use System Settings → Privacy & Security → Open Anyway. The current package is not notarized.
 
-You should see the companion on your desktop and an avatar in the menu bar.
+An avatar appears in the menu bar. The companion hides while idle by default; choose Show Yukio or Play demo in Settings.
 
 <a id="first-run"></a>
 <a id="follow"></a>
 ## 2. Get started
 
-1. **Right-click the companion** to open the workbench.
+1. Choose **menu-bar avatar → Activity workbench**, or right-click the visible companion.
 2. Choose Settings at the upper right of the workbench to set language, skin and size.
 3. Enable Follow activity. Set Assistant to Auto and Pet follows chat to Automatic.
 4. Start a task in Codex, Claude Code or Deep Code under the same Mac user. Yukio changes animations when she reads the local activity.
