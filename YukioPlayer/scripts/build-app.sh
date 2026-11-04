@@ -81,8 +81,6 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
   <key>CFBundleVersion</key><string>36</string>
   <key>CFBundleLocalizations</key><array><string>zh-Hans</string><string>en</string></array>
   <key>LSMinimumSystemVersion</key><string>13.0</string>
-  <key>SUFeedURL</key><string>https://github.com/leozhang8654/yukio-desktop-pet/releases/latest/download/appcast.xml</string>
-  <key>SUPublicEDKey</key><string>UuIYaOS2mImMarKEoskVy22Juxl1pQeAL5s+mPnqHFg=</string>
   <key>SURequireSignedFeed</key><true/>
   <key>SUVerifyUpdateBeforeExtraction</key><true/>
   <key>SUEnableAutomaticChecks</key><true/>
@@ -95,6 +93,9 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
 </dict>
 </plist>
 PLIST
+
+# All Mac build paths use the same channel and public key, before code signing.
+python3 ../scripts/update_channel.py "$APP/Contents/Info.plist"
 
 SOURCE_REVISION="$(git rev-parse HEAD)"
 /usr/libexec/PlistBuddy -c "Add :YukioSourceRevision string $SOURCE_REVISION" "$APP/Contents/Info.plist"

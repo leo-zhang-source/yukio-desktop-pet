@@ -1,40 +1,81 @@
-# 在雪绪里回答问题、处理批准申请
+# Background answers on Mac / Mac 后台回答说明
 
-开发中的 0.4.4：现有 GPT、Claude、DeepSeek 三个选择同时用于对应的本机连接和可识别的网页／插件申请。正式下载版仍以 GitHub Release 为准。
+[简体中文](#zh) · [English](#en)
 
-有申请时，雪绪显示问号牌。点卡片选项后，先打开完整申请，用户看完再选择。回车、关闭和“稍后处理”不会批准。发送前再次核对申请，过期或内容改变就停止；不会把“允许一次”变成“以后都允许”。看不清、接不上或无法确认收到时，保留提示并请用户到原聊天核对。
+<a id="zh"></a>
+## 适用范围
 
-## 接入范围
+本说明对应 5.4 Preview 1（55）的 Mac 后台回答入口。Windows 工作暂缓；旧 Windows 步骤保留在源码仓库的历史资料中。真实问题卡、中文输入法及所有客户端组合尚未完成独立验收。
 
-| 入口 | 当前实现 | 验证边界 |
-|---|---|---|
-| GPT / Codex 本机活动聊天 | 原有问题回答；命令、文件修改和权限申请 | 已有后台连接的聊天才能收到。插件与 App 不是必然共用一条连接 |
-| Claude Code | AskUserQuestion 和 PermissionRequest | 需安装雪绪连接后重启 Claude Code；不是普通 Claude 聊天的通用接口 |
-| DeepSeek / Deep Code 0.4.1 | 问题回答、当前工具申请允许／拒绝 | 需通过随包单独入口启动，并保留自己的模型配置 |
-| Chrome 的 GPT / Claude 官方插件，以及 ChatGPT、Claude、DeepSeek 网页 | 读取页面上真实存在的批准卡片和按钮，用户选择后回传 | 仅可识别的结构与按钮；不能保证每种网页版本或其他第三方 App 通用。没有按钮、只有“我将申请”的文字不会举批准牌 |
-| GPT 插件的普通问题回答 | macOS 在后台连接不可用时，尝试匹配当前聊天名称、完整问题和专门的提交按钮 | 不向普通聊天输入框盲发；匹配不唯一、题目已结束、已有其他草稿则停止。真实插件往返尚待验证 |
+**跟随活动、生成解释和回传回答是三种不同功能。** 登录 Codex／Claude Code 用于解释，不会自动建立问题回传连接。先在雪绪设置开启“在这儿回答问题”，保持雪绪运行并跟随对应助手。
 
-macOS 网页／插件方式需要辅助功能权限；Windows 使用 UI Automation，可读性由目标软件决定。两个系统都不移动鼠标、不向当前任意输入框敲字。跨屏读取不依赖当前正在使用哪个屏幕。网页／插件识别目前属于实验功能，不能把底层检查通过写成所有真实服务已经测试通过。
+## 连接自己的助手
 
-## Claude 连接
+| 来源 | 操作和限制 |
+| --- | --- |
+| GPT / Codex | 只有已有后台连接的本机聊天能接收。不同 App、CLI、网页和插件不保证共用连接，没有通用连接开关；未连接时到原聊天处理。 |
+| Claude Code | 菜单栏小头像 →“连接 Claude 后台回答”，按提示完成后重启 Claude Code。支持 AskUserQuestion 和 PermissionRequest；普通 Claude 网页聊天不是此入口。 |
+| DeepSeek / Deep Code | 需要 Node.js 22+、Git 和自己的 Deep Code 模型配置。菜单栏选择“安装 DeepSeek 回答适配器”，成功后用下面的专用入口启动新聊天。已在其他入口启动的聊天不会自动接管。 |
+| 网页／浏览器插件 | 实验功能，仅支持可识别的真实问题／批准按钮，不能保证任意页面版本可用。无法可靠匹配时到原聊天处理。 |
 
-雪绪设置中的连接按钮会合并 `PreToolUse / AskUserQuestion` 与 `PermissionRequest`，保留其他钩子和权限规则，修改前备份配置。然后重启 Claude Code。
+Deep Code 的单独入口不覆盖原客户端。安装器从官方仓库固定版本构建；今后在终端这样启动需要回传的聊天：
 
-macOS 默认配置在 `~/.claude/settings.json`，也遵从 `CLAUDE_CONFIG_DIR`。Windows 同样遵从该配置位置，连接通过打包的雪绪程序处理，不需要额外安装 Python。Windows 备份在 `%LOCALAPPDATA%/Yukio`，macOS 在 `~/Library/Application Support/YukioPlayer`。
+```sh
+"$HOME/Library/Application Support/YukioPlayer/deepseek-runtime/yukio-deepseek"
+```
 
-保持雪绪运行、跟随对应助手并开启问题卡。未连接或雪绪退出时，退回 Claude 原有流程，不会自动允许。每次最多等待约 9.5 分钟。回执说明本地程序收到选择，不代表后续任务一定成功。Claude 未发出 PermissionRequest 的申请不属于此通道，例如某些独立的网络权限提示。
+Claude 连接会备份并合并 `PreToolUse / AskUserQuestion` 和 `PermissionRequest` hooks，保留其他规则。默认设置文件是当前用户的 `~/.claude/settings.json`，也遵从 `CLAUDE_CONFIG_DIR`；备份在 `~/Library/Application Support/YukioPlayer`。没有对应 PermissionRequest 的其他独立权限提示不走此通道。雪绪退出或未连接时退回原助手流程，不会自动允许。每次连接等待最多约 9.5 分钟。
 
-依据：[Claude Code hooks](https://code.claude.com/docs/en/hooks)。
+## 回答和批准
 
-## DeepSeek 连接
+1. 先核对聊天名称和完整问题。单选点选项，多选选好后提交，文字输入后按回车或发送键。问题或选项不完整时到原聊天查看。
+2. 批准申请先显示完整内容，再明确选择允许或拒绝。回车、关闭或“稍后处理”不自动批准；“允许一次”不会变成长期权限。发送前发现请求过期或改变会停止。
+3. 小回答框支持 Command-V/C/X/A 和撤销。失败保留输入；若提示可能已发出但回执缺失，先看原聊天，避免重复发送。收到回执不保证后续任务成功。
+4. 收起问题后可回原聊天继续处理。关闭“在这儿回答问题”可隐藏回答卡，回原聊天继续处理。演示不发送。
 
-需要 Node.js 22+、Git，以及原有 Deep Code 模型配置。使用雪绪中的 DeepSeek 连接／安装按钮，会从[官方仓库](https://github.com/lessweb/deepcode-cli)固定版本 `d370f3afe0391e22e22667479c5425efb3a14b5f` 构建单独入口，不覆盖原来的 Deep Code。今后从该入口启动需要连接的聊天：
+## 权限与常见问题
 
-- macOS：`~/Library/Application Support/YukioPlayer/deepseek-runtime/yukio-deepseek`
-- Windows：`%LOCALAPPDATA%/Yukio/deepseek-runtime/yukio-deepseek.cmd`
+本机后台回答不要求辅助功能权限。识别当前可见聊天以自动放下完成牌、实验网页／插件方式才用到该权限：雪绪设置中的“自动放牌需要辅助功能权限…”会打开系统入口，在“隐私与安全性 → 辅助功能”选择实际运行的 Yukio。临时签名候选更换后可能需要重新选择准确 App；授权成功不保证聊天一定可识别，可手动“取消举牌”。无需因此开启完全磁盘访问或屏幕录制。
 
-拒绝时保留 Deep Code 的拒绝状态；允许时只允许当前卡片列出的申请，不授予长期权限。已在其他终端启动的聊天不能自动接管。
+Claude 接不上：确认执行了连接、重启了 Claude Code，且它确实发出了支持的请求。Deep Code 接不上：确认使用上方专用入口，并检查 `~/Library/Application Support/YukioPlayer/deepseek-setup.log` 的安装错误。Codex 未连接：在原聊天回答，不向其他窗口盲发。网页识别不唯一或已有其他草稿时，停止并回原聊天操作。
 
-## 回答框与断线
+连接设置属于当前使用者，不随包提供作者凭据。卸载 App 不会自动撤销原助手中的 hooks；如需清理，先备份，只移除明确属于 Yukio 的配置，不覆盖助手的全部设置。
 
-macOS 小回答框直接支持 Command-V、Command-C、Command-X、Command-A、撤销，无需先打开助手窗口。发送失败保留原文。如果回复可能已经发出但回执丢失，会提示到原聊天核对，避免自动重复发送。
+<a id="en"></a>
+## Scope
+
+This help covers Mac background answers in 5.4 Preview 1 (55). Windows work is deferred; its older instructions remain in the source repository's historical records. Real question cards, Chinese input methods and all client combinations have not completed independent acceptance testing.
+
+**Activity following, explanations and answer delivery are separate capabilities.** Signing in to Codex/Claude Code for explanations does not establish a return connection. Enable Answer here in Yukio settings, keep Yukio running and follow the relevant assistant.
+
+## Connect your assistant
+
+| Source | Setup and limits |
+| --- | --- |
+| GPT / Codex | Only local chats with an existing background connection can receive answers. Apps, CLI, websites and plugins do not necessarily share that connection. There is no universal connection switch; use the original chat when unconnected. |
+| Claude Code | Menu-bar avatar → Connect Claude background answers, then restart Claude Code. Supports AskUserQuestion and PermissionRequest, not ordinary Claude web chats. |
+| DeepSeek / Deep Code | Requires Node.js 22+, Git and your own Deep Code model configuration. Choose Install DeepSeek answer adapter in the menu bar, then launch new chats through the dedicated entry below. Existing chats from other launchers are not taken over. |
+| Websites / browser plugins | Experimental. Requires recognizable real question/approval controls; not every page version is supported. Use the original chat when matching is unreliable. |
+
+The separate Deep Code launcher does not replace your original client. Setup builds a pinned version from its official repository. Launch chats needing this connection in Terminal with:
+
+```sh
+"$HOME/Library/Application Support/YukioPlayer/deepseek-runtime/yukio-deepseek"
+```
+
+Claude setup backs up and merges `PreToolUse / AskUserQuestion` and `PermissionRequest` hooks, keeping other rules. The default settings file is your `~/.claude/settings.json`, respecting `CLAUDE_CONFIG_DIR`; backups are in `~/Library/Application Support/YukioPlayer`. Independent permission prompts without a corresponding PermissionRequest do not use this route. When Yukio is closed or unconnected, the original assistant flow remains; requests are not automatically allowed. A connection waits up to about 9.5 minutes.
+
+## Answer and approve
+
+1. Check the chat name and full question. Click a single-choice option, submit after making multiple selections, or type and press Return/the send control. Use the original chat when text or options are incomplete.
+2. Approvals show the full request before an explicit allow/deny choice. Return, closing or postponing does not approve. Allow once does not grant permanent permission. Changed or expired requests stop before sending.
+3. The answer field supports Command-V/C/X/A and Undo. Failed sends retain input. If delivery may have happened without acknowledgement, check the original chat before retrying. Acknowledgement does not guarantee later task success.
+4. After dismissing a question, continue in the original chat. Turn off Answer here to hide the card and handle it in the original chat. Demo mode does not send.
+
+## Permissions and troubleshooting
+
+Native background answers do not require Accessibility. Visible-chat recognition for automatic lowering of completion signs, and experimental website/plugin interactions, do. In Yukio settings choose Auto-lower needs Accessibility, then select the actual running Yukio in System Settings → Privacy & Security → Accessibility. Replacing an ad-hoc-signed candidate may require selecting the exact App again. Permission does not guarantee recognition; you can Lower sign manually. This is not a reason to enable Full Disk Access or Screen Recording.
+
+For Claude failures, confirm setup, restart Claude Code and verify it issued a supported request. For Deep Code, use the dedicated launcher and inspect installation errors in `~/Library/Application Support/YukioPlayer/deepseek-setup.log`. For unconnected Codex chats, answer in the original chat. If website matching is ambiguous or another draft exists, stop and use the original chat instead.
+
+Connections belong to the current user; no author credentials are bundled. Uninstalling the App does not undo hooks in the original assistant. To remove them, back up settings and remove only entries clearly belonging to Yukio, not the entire assistant configuration.

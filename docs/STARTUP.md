@@ -1,8 +1,12 @@
+> **当前 Mac 用户操作 / Current Mac steps:** [中文指南](MAC-USER-GUIDE.zh-CN.md#daily) · [English guide](MAC-USER-GUIDE.md#daily)。下文为实现及历史测试说明，旧截图不代表新版布局；Windows 说明保留但当前暂缓，不要求用户执行。 Implementation and historical tests follow; old screenshots are not the new layout. Windows instructions are retained but deferred.
+
 # 登录时自动启动（macOS / Windows）
 
-打开桌宠设置，在“启动”区域切换“登录时自动启动”。开启后，登录当前 macOS 用户时自动打开雪绪；关闭后不再自动启动。首次添加功能不会替用户开启，已有系统设置会保留。
+当前 Mac：打开工作台左上角“设置 → 打开雪绪设置”，在“通用设置”中切换“登录时自动启动”。旧版设置入口可能位于右上角。开启后，登录当前 macOS 用户时自动打开雪绪；关闭后不再自动启动。首次添加功能不会替用户开启，已有系统设置会保留。
 
 开关读取 macOS 登录项的实际状态，没有另存一份容易失步的布尔偏好。若系统要求批准，会显示提示和“打开系统登录项…”按钮；若修改失败，会显示错误并恢复系统实际状态。
+
+## 实现与历史测试
 
 使用 Apple 的 [`SMAppService.mainApp`](https://developer.apple.com/documentation/servicemanagement/smappservice/mainapp) 管理主 App 登录项，不添加 LaunchAgent 或额外后台程序。实现位于 `YukioPlayer/Sources/YukioPlayer/LaunchAtLogin.swift`，设置入口位于 `SettingsPanel.swift`。
 
@@ -14,7 +18,7 @@ swift test --package-path YukioPlayer --filter LaunchAtLoginTests
 
 登录项的真实开关需在安装好的 `.app` 中验证。编译生成的裸命令行程序不代表已安装 App 的注册状态。
 
-## Windows
+## Windows（历史说明，当前暂缓）
 
 右键雪绪，在小设置窗口勾选「登录时自动启动」。默认关闭，打开设置不会自动注册。也可以由助手侧边栏进入小设置。
 
@@ -24,7 +28,7 @@ swift test --package-path YukioPlayer --filter LaunchAtLoginTests
 
 Windows 自动测试会用独立的临时启动项验证实际注册和移除，最后清理；macOS 的系统注册接口使用注入测试。真实注销／重新登录和全屏 App 的覆盖显示仍需要在用户环境验证。
 
-## 设置窗口
+## 历史设置截图
 
 <img src="readme/settings-macos.png" width="420" alt="macOS 浮动小设置和登录启动开关">
 

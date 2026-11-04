@@ -1,3 +1,5 @@
+> **历史功能记录 / Historical feature record:** 本页独立提醒助手入口已暂停，不是当前活动工作台，也不是可照做的现行用户教程。以下“已经能用”和运行参数仅描述当时版本。The standalone reminder assistant is paused, distinct from the activity workbench. “Available” features and commands below describe that historical version. Current use: [中文](MAC-USER-GUIDE.zh-CN.md) · [English](MAC-USER-GUIDE.md).
+
 # Yukio 助手：从提醒开始
 
 > 当前发布状态：独立助手 App 页面已暂停对外显示，macOS 和 Windows 均不在启动时打开，也不在桌宠设置或菜单中提供入口。再次打开应用进入桌宠设置。以下为保留的开发记录；旧的 assistant-only / assistant-smoke 参数不再启用该页面。

@@ -20,6 +20,7 @@ import sys
 import tarfile
 import time
 import urllib.request
+from update_channel import validate_update_channel, apply_update_settings
 
 ROOT = Path(__file__).resolve().parents[1]
 PRIVATE_NAMES = {'local-explanation-options.json', 'auth.json', 'credentials.json', 'lan-model.json', 'work-context.json',
@@ -52,6 +53,10 @@ def version(value):
 
 def validate(config):
     version(config['version']); version(config['workbench_version'])
+    validate_update_channel(config)
+    tag = config.get('release_tag')
+    if tag and not re.fullmatch(r'v[0-9][A-Za-z0-9.-]*', tag):
+        raise ValueError('Invalid release tag')
     if version(config['build']) <= version(config['upgrade_baseline_build']):
         raise ValueError('Build must be newer than the selected upgrade baseline')
     if config['architecture'] != 'arm64' or config['minimum_macos'] != '13.0':
@@ -170,6 +175,7 @@ def build(args):
         p = snapshot / 'YukioPlayer/Resources' / name
         if p.is_dir(): shutil.copytree(p, resources / name)
         else: shutil.copy2(p, resources / name)
+    shutil.copy2(snapshot / 'docs/mac-guide.html', resources / 'UserGuide.html')
     source_assets = manifest(snapshot / 'YukioPlayer/Resources/Assets')
     pages = out / 'work/pages/Assets'
     for p in pages.rglob('windows-pages'):
@@ -201,6 +207,9 @@ def build(args):
         SUVerifyUpdateBeforeExtraction=True, SUEnableAutomaticChecks=True, SUScheduledCheckInterval=21600,
         SUAutomaticallyUpdate=False, SUAllowsAutomaticUpdates=False, SUEnableInstallerLauncherService=False,
         YukioSourceRevision=commit, YukioWorkbenchVersion=config['workbench_version'], YukioBuildChannel='candidate')
+    apply_update_settings(info, config)
+    info['YukioBuildChannel'] = config.get('release_channel', 'candidate')
+    if config.get('release_tag'): info['YukioReleaseTag'] = config['release_tag']
     (contents / 'Info.plist').write_bytes(plistlib.dumps(info))
     inputs = {'source_revision': commit, 'source_tree': git('rev-parse', commit + '^{tree}'), 'configuration': config,
               'dependency_lock_sha256': sha(snapshot / 'scripts/macos-build-requirements.txt'),
@@ -216,8 +225,12 @@ def build(args):
     run('sign-candidate', ['codesign', '--force', '--sign', '-', app])
     run('verify-signature', ['codesign', '--verify', '--deep', '--strict', app])
     run('check-packaged-assets', [contents / 'MacOS/YukioPlayer', '--check'])
-    archive = out / ('Yukio-' + config['version'] + '-candidate-' + config['build'] + '-macOS-arm64.zip')
-    run('archive-app', ['ditto', '-c', '-k', '--norsrc', '--keepParent', app, archive])
+    label = config['release_tag'][1:] if config.get('release_tag') else config['version'] + '-candidate-' + config['build']
+    archive = out / ('Yukio-' + label + '-macOS-arm64.zip')
+    distribution = out / 'work/distribution'; distribution.mkdir()
+    shutil.copytree(app, distribution / 'Yukio.app', symlinks=True)
+    shutil.copy2(resources / 'UserGuide.html', distribution / 'Start Here.html')
+    run('archive-app', ['ditto', '-c', '-k', '--norsrc', distribution, archive])
     dmg = archive.with_suffix('.dmg')
     run('create-installer', ['sh', snapshot / 'YukioPlayer/scripts/package-macos-dmg.sh', app, dmg],
         extra={'YUKIO_DMG_PYTHON': str(python)})

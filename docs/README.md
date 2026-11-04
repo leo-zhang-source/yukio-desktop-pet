@@ -1,21 +1,26 @@
-# 文档导航
+# Yukio documentation
 
-- [项目使用说明](../README.zh-CN.md)：下载、运行和构建。
-- [账号迁移与版本状态](GITHUB-MIGRATION.md)
-- [开发入口与项目约定](../DEVELOPMENT.md)：平台范围、发布节奏与验收要求。
-- [macOS 开发说明](../YukioPlayer/README.zh-CN.md)
-- [Windows 开发说明](../YukioWin/README.zh-CN.md)
-- [设计与接续记录](HANDOFF.md)
-- [动画格式](animation-format.md)
-- [动画审查标准](animation-review/round_13/REVIEW_CRITERIA.md)
-- [早期交接资料](history/README.md)
+[简体中文](README.zh-CN.md)
 
-`readme/` 保存项目说明用图和生成脚本。原图、透明底图、生成参考仍分别在根目录的 `sources/`、`assets/`、`references/`，供现有工具使用。
+- **[Meet Yukio · Quick start](MAC-USER-GUIDE.md)**: what it does, how to start and what to try.
+- [Setup and troubleshooting](MAC-HELP.md)
+- [Updates and rollback](MANUAL-UPDATES.md#en)
+- [Background answers](../YukioPlayer/Resources/BACKGROUND-ANSWERS.md#en)
 
-- [个人助手使用与开发](ASSISTANT.md)
-- [个性化后续设计（未实现）](PERSONALIZATION.md)
+<details>
+<summary>Development and history</summary>
 
-- [登录时自动启动（双平台）](STARTUP.md)
-- [0.3.2 整体测试范围与结果](TESTING.md)
+These are implementation notes and evidence, not prerequisites for using the App.
 
-- [开发过程资料归档（2026-10-21）](development-evidence/2026-10-21/README.md)：43 项重点材料、完整分包和原件／公开副本哈希。
+- [Development entry](../DEVELOPMENT.md) and [current Mac build process](remediation/MAC-BUILD.md).
+- [Mac player source notes](../YukioPlayer/README.md) and [workbench source notes](../tools/activity-workbench/README.md).
+- [Explanation implementation and evidence](AGENT-EXPLANATIONS.md); [startup implementation](STARTUP.md).
+- [Windows deferred scope](remediation/WINDOWS-DEFERRED.md) and [retained Windows source](../YukioWin/README.md).
+- [Design and handoff](HANDOFF.md), [animation format](animation-format.md), [animation review criteria](animation-review/round_13/REVIEW_CRITERIA.md).
+- [Paused standalone assistant](ASSISTANT.md) and [personalization plans, not implemented](PERSONALIZATION.md).
+- [Historical 0.3.2 testing](TESTING.md), [early history](history/README.md), [development archive](development-evidence/2026-10-21/README.en.md).
+- [Superseded user instructions](history/user-guides-20261103/README.md), preserved for traceability rather than current use.
+
+Images in `readme/` include older interfaces and preset demos. They are illustrations, not proof that a current package passed first-run acceptance.
+
+</details>

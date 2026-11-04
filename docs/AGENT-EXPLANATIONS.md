@@ -1,25 +1,24 @@
-# 每个用户使用自己的 Agent 解释工作
+# Agent explanations: implementation and evidence / Agent 解释实现与证据
 
-工作台 0.4.1 的默认来源为每个用户自己电脑上的 Agent。安装到另一台电脑后，会在那台电脑重新识别客户端并读取该用户自己的登录与模型配置。分发包不携带开发者地址、账号、个人目录、模型选择或聊天授权。用户在首页开启后，自动解释所选聊天，三分钟内不重复调度新活动；深入解释和分段回顾仍按需生成。首次未开启时不调用账号。停用、关闭页面和更换聊天仍沿用原有范围限制。选择保存在用户数据目录的 `explanation-provider.json`，不包含密钥或摘录，不随包分发。
+Users: follow the **[English Mac guide](MAC-USER-GUIDE.md#explain)** or **[中文 Mac 指南](MAC-USER-GUIDE.zh-CN.md#explain)**. 5.4 Preview 1 uses the host 41.6 workbench and backend. The records below also describe a separate remediation line; its setup cards and UI are not in this package. / 5.4 Preview 1 采用本机 41.6 工作台与后台；下方部分记录属于另一条整改线，其设置卡片与界面不在本包中。
 
-- 自动：优先选当前聊天对应的 Codex / Claude Code；未安装、未登录、启动检查超时或不支持所需功能时，发送摘录前尝试另一个可调用的客户端。指定某个客户端时不更换。Deep Code 聊天也可由已安装的 Codex / Claude Code 解释。
-- 指定 Codex 或 Claude Code：只用选定客户端。调用错误不换另一个服务，也不回到千问。
-- 自选内网模型：沿用本机 `lan-model.json`。旧授权不会自动授予 Agent。默认模式不依赖该旧文件是否有效。
+## Current behavior / 当前行为
 
-每次生成前，先在空临时目录读取客户端帮助和登录状态，不发送聊天、开启新一轮生成或消耗生成次数。无法检查登录状态但参数兼容的客户端保留“尚未确认”，不假称已登录。检查不证明服务在线、额度充足或配置的模型可用；这些只能由真实调用确认。检查期间关掉页面或停止，发送前会再次核对页面是否仍授权。
+- Each user installs and signs in to their own Codex or Claude Code. Ordinary users see automatic selection, Codex and Claude Code; the author's private Qwen option is excluded from normal installations. / 每位用户使用自己的客户端与账号；普通安装只显示自动、Codex 和 Claude Code，不显示作者私人千问选项。
+- Checks read client capabilities and sign-in status without generation. Automatic selection may try the other client before sending if readiness fails; an explicit selection or a failed generation does not silently switch services. / 检查不生成回答；自动模式可在发送前选择另一家已就绪助手，指定来源或实际调用失败不偷偷换服务。
+- Explanations run independently, using bounded excerpts and the user's own account/service configuration. They do not continue or send messages to the source chat. Local records remain available on failure. / 解释独立运行，只使用有限摘录与用户自己的服务配置，不续接或发消息到原聊天；失败保留本机记录。
+- Enabling automatic explanations is a user action. Closing the page stops further sends; already submitted requests may finish. With explanations enabled, expanding host workbench history groups can generate summaries on demand. / 自动解释需主动开启；关闭页面停止后续发送，已提交请求可能完成。启用解释后，展开本版历史分组可按需生成总结。
+- Personal account data, private model options and explanation authorization are not shipped in the package. Windows work remains deferred. / 个人账号资料、私人模型开关与解释授权不进入包；Windows 继续暂缓。
 
-调用复用各自的登录和账号额度。Claude 需要 Claude Code，而普通网页和普通 Claude 桌面聊天本身没有此入口。Codex 支持 CLI 和 Mac App 内置 CLI；Windows 识别原生程序及 npm 的 JS 入口。Finder/开始菜单缺少 PATH 时会搜索常用安装位置；非标准路径可用本机环境变量 `YUKIO_CODEX_PATH` / `YUKIO_CLAUDE_PATH` 指定程序。Windows npm 入口直接调用 Node，不通过 cmd 拼接命令；开始菜单没有刷新 PATH 时，还检查该用户的 Node 安装目录和标准 Windows 安装位置。
+## Evidence by version / 按版本查看证据
 
-Mac 的发现顺序为：用户明确指定的路径 → 当前用户或系统 Applications 中带有已知程序清单的 ChatGPT/Codex 桌面版 → PATH 与常见 CLI 安装位置 → 旧版 Codex App。设置检查和解释使用同一规则；新版桌面入口无法启动或不兼容时，在预览前尝试独立 CLI。明确未登录或用户指定了路径时，不悄悄改用另一入口。预览后入口发生变化，会要求重新预览，不把已授权的摘录转给另一个程序。读取安装清单不运行客户端，也不修改用户全局模型或账号设置。
+| Record | Scope / 范围 |
+| --- | --- |
+| [Early workbench 0.4.1 notes](history/user-guides-20261103/AGENT-EXPLANATIONS.md) | Historical protocol tests and then-missing real-service evidence. “Real generation unverified” applies to that snapshot. / 早期协议测试与当时未完成的真实调用，不代表后续候选状态。 |
+| [Candidate 48 setup work](remediation/AGENT-SETUP-20261101.md) | Installation/sign-in cards, discovery and error handling; includes the later private-only Qwen change. / 安装登录卡片、发现和错误处理，含千问仅本机显示的后续改动。 |
+| [Candidate 49 independent checks](remediation/CANDIDATE49-INDEPENDENT-20261101.md) | Both assistants' checks and real explanations in an independent Mac VM, within its recorded scope. / 独立 Mac VM 的两家检查与真实解释，结论限定于记录范围。 |
+| [Candidate 50 independent checks](remediation/CANDIDATE50-INDEPENDENT-20261103.md) | Actual package, system reboot, old-history reading and chat continuation; not a clean first-install run. / 实际包、重启、旧历史与续跑，不是全新首次安装。 |
 
-Codex 使用 `exec`、临时会话、只读权限、结构化输出和隔离配置；保留已选模型、模型服务及相关认证方式，不加载用户工具接入。自定义 HTTP 凭据放入仅该子进程的环境变量，不进入命令参数。Claude 使用 `--print`、`--safe-mode`、空工具列表、空 MCP 配置、无会话持久化和结构化输出，继续使用订阅登录；没有使用会跳过订阅登录的 bare 模式。不续写、恢复或发消息给正在工作的聊天。
+See the [acceptance limits](MAC-USER-GUIDE.md#verification) / [验收边界](MAC-USER-GUIDE.zh-CN.md#verification) before making delivery claims. Earlier client flags and test counts are retained in the historical notes, not presented as universal compatibility guarantees.
 
-需客户端支持上述参数；旧版返回升级提示。源码运行普通配置支持 Python 3.9+，Codex 自定义服务/命名 profile 需要 Python 3.11+；Mac 包内置 Python 3.12。超时为 90 秒，限制输出大小并结束本次解释进程树。登录失效、额度不足、缺失客户端、参数不支持、错误格式和错误引用均保留原记录。格式与引用检查不能证明所有解释语义正确。已经提交给服务端的推理不保证能撤回。
-
-通用性补强：262 项 Python 检查（Python 3.12，含两种 CLI 子进程协议、默认选择、Unicode/空格路径、Windows npm 参数适配、首页/深入/回顾、异常回退、超时/超量、服务切换及同源保护）；31 项页面与语言检查通过；新增两位用户隔离、登录变化后直接重试、检查失败不计入预算、另一客户端可用与不可用、旧版参数、未知登录子命令、检查期间停止等场景。`.github/workflows/agent-portability.yml` 用同一源码在 Mac、Windows、Linux 运行；Mac/Windows 另构建独立运行程序并检查两种离线客户端的帮助、登录和生成协议。各平台结果需以实际执行记录为准，不能以 Mac 模拟测试代替 Windows。
-
-历史验证（工作台 0.4.1）：Codex CLI 0.142.3 能读取用户的实际模型选择，但所选模型不受该 CLI 的当前登录支持；未确认成功生成。Claude Code 2.1.195 返回未登录；已确认登录提示，未确认真实生成。不能把协议模拟通过说成两种服务的真实生成都已通过。本机没有 Windows 虚拟机；独立 Mac、Windows、Linux 的同源检查已通过；Windows 原生程序的离线助手收发也已通过。具体环境与范围见[跨平台验收](validation/agent-portability-0.4.1/README.md)。使用真实 Claude/Codex 账号完成线上生成仍未验证。
-
-后续本机与独立 Mac 虚拟机的真实生成结果见 [41.6 验收](remediation/HOST-AGENT-41.6.md)。这不覆盖所有平台和所有客户端安装方式。
-
-参数依据：[Claude CLI](https://code.claude.com/docs/en/cli-reference)、[Claude 非交互调用](https://code.claude.com/docs/en/headless)，以及本机 Codex `exec --help` 和配置参考。调用的客户端最终使用自身服务设置；本功能不提供共享账号或开发者内网代理。
+Current release lineage / 本次发布来源：[Host 41.6](remediation/HOST-AGENT-41.6.md) · [5.4 Preview 1](releases/5.4-preview.1.md).

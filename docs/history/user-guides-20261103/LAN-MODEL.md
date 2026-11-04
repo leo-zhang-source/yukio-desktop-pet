@@ -1,0 +1,60 @@
+> **Historical snapshot / 历史快照（归档于 2026-11-03）**：下文保留旧版本的操作与当时结论，不是当前安装或配置步骤。These instructions and findings describe earlier versions, not the current workflow. Use the [Mac user guide](../../MAC-USER-GUIDE.md) / [Mac 使用指南](../../MAC-USER-GUIDE.zh-CN.md). Relative links were adjusted for this archive location.
+
+# 默认使用自己的 Agent
+
+当前工作台默认不读取千问作为解释来源。打开工作台，在“解释交给”中选择自动、Codex 或 Claude Code，再点“开启解释”。无需额外填写 API 密钥；CLI 使用本机登录。页面会说明摘录范围与账号用量。详情见 [Agent 解释](../../AGENT-EXPLANATIONS.md)。
+
+要继续使用下面的内网配置，配置好后在来源中选择“自选内网模型”，再开启。旧内网自动说明授权不会迁移给 Agent。
+
+# 配置自己的内网说明服务
+
+无需模型也能查看本机活动与简短说明。已使用本机模型的用户继续沿用原配置；安装包不携带任何人的模型地址、密钥或聊天。
+
+当前适配器接受无鉴权的内网OpenAI兼容 `/v1` 接口。先在服务端确认已有可用模型，不自动下载或切换模型。下面只是结构示例，模型名必须换成服务端实际列出的名称：
+
+```json
+{
+  "base_url": "http://127.0.0.1:11434/v1",
+  "model": "your-existing-model",
+  "timeout_seconds": 45,
+  "max_tokens": 600,
+  "max_calls_per_hour": 20,
+  "cooldown_seconds": 10
+}
+```
+
+文件名为 `lan-model.json`，放到Mac用户应用支持目录 `YukioPlayer/activity-observation` 中，权限只允许当前用户读取。重新打开活动工作台后生效。这个文件留在本机，不提交GitHub，不把访问密钥放进这个JSON。当前适配器不支持保存鉴权密钥，需鉴权的服务属于后续适配范围。
+
+页面的解释按钮先展示实际短摘录，再选择只解释一次或限时持续说明。页面不发送完整聊天或整份文件；过滤无法保证隐藏所有私人信息，请检查实际预览。关闭页面、切换聊天或记录入口后停止后续自动发送，已经发出的远端请求不保证能取消。失败时继续显示本机说明。
+
+
+## Mac 的完整配置与撤销步骤
+
+这项能力可选。只有你自己的服务已经提供**无需鉴权的私有网络接口**时才适用；若现有服务要求密钥，请保留它的鉴权，当前版本不能用此适配器连接。公网云 API、域名地址和含密钥的 URL 不受支持。安装模型及服务所需的硬件、下载和费用由使用者自行准备，雪绪不会自动下载模型。
+
+1. 从服务自己的管理界面确认 API 地址与已安装模型的准确名称。地址必须是回环或私网 IP，以 `/v1` 结尾，例如本机 `http://127.0.0.1:11434/v1`；端口以你的服务为准。另一台机器的 `127.0.0.1` 指向它自己，不能直接用于本机配置。
+2. 在终端验证连接（将示例地址换成自己的地址）：
+
+   ```sh
+   /usr/bin/curl --connect-timeout 3 --max-time 10 -i 'http://127.0.0.1:11434/v1/models'
+   ```
+
+   应看到 HTTP 200 及模型列表，使用其中模型的 `id`。连接拒绝通常表示服务未启动或端口不对；超时检查服务地址、网络与防火墙；404 检查 `/v1` 路径和兼容接口；401／403 表示需要鉴权，当前适配器不支持。不要把密钥粘进地址或关闭现有服务的鉴权。
+3. 在 Finder 选择“前往 → 前往文件夹”，输入 `~/Library/Application Support/YukioPlayer/activity-observation/`。如果尚未创建，可先打开雪绪工作台，或在“应用程序 → 实用工具 → 终端”运行：
+
+   ```sh
+   mkdir -p "$HOME/Library/Application Support/YukioPlayer/activity-observation"
+   ```
+
+4. 使用文本编辑器的**纯文本**模式，将本页 JSON 示例保存为该目录的 `lan-model.json`，替换 `base_url` 和 `model`。文件不能带 `.txt` 后缀、中文引号或注释。已有同名文件时先复制为自己的备份，不直接覆盖。不要加入 `api_key`、`Authorization` 等字段；读取器会拒绝不支持的字段。
+5. 仅允许当前用户读写该文件：
+
+   ```sh
+   chmod 600 "$HOME/Library/Application Support/YukioPlayer/activity-observation/lan-model.json"
+   ```
+
+6. 退出并重新打开雪绪，在工作台“解释交给”选择“自选内网模型”。确认页面显示自己的模型和接收地址，再开启解释。先用无私人资料的测试聊天，核对预览后只发送一次；检查结果与失败提示，不用其他模型的成功代替此服务的验证。
+
+如果 `/v1/models` 成功，但生成提示模型不可用，请检查 `model` 是否逐字匹配；如果模型未返回有效格式，工作台保留本机事实，不代表请求从未到达服务。部分兼容服务器不提供模型列表，应以该服务器公开文档为准，再用其明确支持的模型测试。
+
+撤销时先在页面关闭解释，切回其他来源或仅使用本机说明。需要移除配置时，将自己的 `lan-model.json` 移到备份位置并重新打开雪绪；**不要删除整个 activity-observation 目录**，其中还有历史资料。关闭解释不会撤回已经发往服务的请求。本步骤是公开操作说明；真实自建服务与独立用户验收仍待完成，不以作者内网可用替代。

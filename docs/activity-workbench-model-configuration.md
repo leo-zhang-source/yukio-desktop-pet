@@ -1,26 +1,17 @@
-# 默认使用自己的 Agent
+# Explanation setup / 解释配置入口
 
-工作台 0.4.1 默认不读取千问作为解释来源。打开工作台，在“解释交给”中选择自动、Codex 或 Claude Code，再点“开启解释”。无需额外填写 API 密钥；CLI 使用本机登录。页面会说明摘录范围与账号用量。详情见 [Agent 解释](AGENT-EXPLANATIONS.md)。
+## English
 
-要继续使用下面的内网配置，配置好后在来源中选择“自选内网模型”，再开启。旧内网自动说明授权不会迁移给 Agent。
+For 5.4 Preview 1, use **[Connect your own Codex or Claude Code](MAC-USER-GUIDE.md#explain)**. It covers installation, sign-in, enabling/stopping explanations and failures. Basic local activity works without a model. Older 5.3 downloads have different controls; check the [version boundary](MAC-USER-GUIDE.md#version).
 
-# 配置自己的内网说明服务
+Ordinary users do not see Qwen or a custom LAN model option and should not create `lan-model.json` to complete setup. The author's private local option and service settings are not part of the download. Do not remove authentication from a service to fit an old adapter.
 
-无需模型也能查看本机活动与简短说明。已使用本机模型的用户继续沿用原配置；安装包不携带任何人的模型地址、密钥或聊天。
+The old LAN configuration and “explain once” instructions have been [archived](history/user-guides-20261103/LAN-MODEL.md) for historical maintenance. They are not the current public-user workflow. Existing private configuration files should be preserved, not deleted as an upgrade step.
 
-当前适配器接受无鉴权的内网OpenAI兼容 `/v1` 接口。先在服务端确认已有可用模型，不自动下载或切换模型。下面只是结构示例，模型名必须换成服务端实际列出的名称：
+## 简体中文
 
-```json
-{
-  "base_url": "http://127.0.0.1:11434/v1",
-  "model": "your-existing-model",
-  "timeout_seconds": 45,
-  "max_tokens": 600,
-  "max_calls_per_hour": 20,
-  "cooldown_seconds": 10
-}
-```
+5.4 Preview 1 请按 **[接入自己的 Codex／Claude Code](MAC-USER-GUIDE.zh-CN.md#explain)** 操作，包括安装、登录、开启／停止解释和失败处理。基础活动无需模型。旧版 5.3 的操作入口可能不同，先看[版本范围](MAC-USER-GUIDE.zh-CN.md#version)。
 
-文件名为 `lan-model.json`，放到Mac用户应用支持目录 `YukioPlayer/activity-observation` 中，权限只允许当前用户读取。重新打开活动工作台后生效。这个文件留在本机，不提交GitHub，不把访问密钥放进这个JSON。当前适配器不支持保存鉴权密钥，需鉴权的服务属于后续适配范围。
+普通用户不显示千问或“自选内网模型”，不需要创建 `lan-model.json`。作者私人本机开关与服务配置不随包分发。不要为了兼容旧适配器关闭现有服务鉴权。
 
-页面的“让千问解释这段聊天”先展示实际短摘录，再选择只解释一次或限时持续说明。页面不发送完整聊天或整份文件；过滤无法保证隐藏所有私人信息，请检查实际预览。关闭页面、切换聊天或记录入口后停止后续自动发送，已经发出的远端请求不保证能取消。失败时继续显示本机说明。
+旧内网配置与“只解释一次”等旧按钮说明已[归档](history/user-guides-20261103/LAN-MODEL.md)，仅供历史维护，不再作为新用户配置步骤。已有私人配置应保留，不将删除配置作为升级操作。

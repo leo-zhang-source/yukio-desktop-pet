@@ -1,3 +1,15 @@
+# 当前开发与发布入口
+
+5.4 Preview 1（构建 55）使用 `codex/host-agent-integration` 的现用工作台产品线，保留界面与历史功能；本次发布整理在 `codex/mac-54-preview-release`，向 GitHub `main` 集成。包、更新源与实际运行核对见[交付记录](docs/remediation/RELEASE-54-PREVIEW1.md)。
+
+[快速上手](docs/MAC-USER-GUIDE.zh-CN.md) · [English](docs/MAC-USER-GUIDE.md) · [完整 Mac 构建](docs/remediation/MAC-BUILD.md) · [开发约定](AGENTS.md)
+
+整改线候选 54 与现用工作台布局不同，未整体覆盖到本次发布；见[候选记录](docs/remediation/CANDIDATE54-INDEPENDENT-20261103.md)。Windows 与云端 Cowork 按用户要求暂缓。后续没有新的明确上传要求时继续只保存在本地。
+
+---
+
+以下保留历史开发快照，不是当前包版本或发布状态。
+
 # 开发从这里开始
 
 2026-10-31 账号迁移：新账号主线汇集到 `8d248f984f18` 的阶段 1～4 开发成果，并合并旧公开主线历史和最新 Mac 优先约定。长期本地集成入口仍为 `codex/remediation-baseline`。开始下一项工作前先看 `AGENTS.md`，再核对分支和工作区改动。5.4 (41) 已有候选包，但独立验收和正式发行尚未完成；迁移没有替换现用 App。详见 [迁移状态](docs/GITHUB-MIGRATION.md)。
