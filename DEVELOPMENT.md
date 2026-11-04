@@ -1,5 +1,7 @@
 # 开发从这里开始
 
+2026-11-03 发布补记：已按用户要求上传 [Mac 5.4 Preview 1（55）](https://github.com/leo-zhang-source/yukio-desktop-pet/releases/tag/v5.4-preview.1)，产品源码 `cb507e73`，GitHub `main` 提供双语简明说明；桌面实际 App 已由公开下载包替换且记录／配置保留。发布线沿用 host 41.6 界面，本整改分支的候选 54 源码已单独同步，**不要把两条产品线当作同一包，也不要用此分支整包覆盖主机界面**。后续从 [最终交付记录](https://github.com/leo-zhang-source/yukio-desktop-pet/blob/main/docs/remediation/RELEASE-54-PREVIEW1.md) 核对来源与未完成验收；本机发布工作树为 `/Users/leozhang/.codex/worktrees/yukio-54-release/yukio-cloud-handoff`。下文为各阶段历史记录。
+
 2026-11-03 最新范围：云端 Claude/Cowork 已按用户决定移至[后期可选待办](docs/remediation/CLOUD-DEFERRED.md)，本地 Code 与 Agent 解释继续推进。[候选 53](docs/remediation/CANDIDATE53-INDEPENDENT-20261103.md)恢复旧待答问题；[候选 54](docs/remediation/CANDIDATE54-INDEPENDENT-20261103.md)已验证两聊天中文草稿、10 次切换、10 次关闭重开、自然超时接续及 10 次失败后继续输入。本机界面来源为 262a10a6 / 41.4，和虚拟机不同；整包 54 曾临时安装后已撤回，原包 488 项完整恢复且新增数据保留。按用户要求，已在独立 host-agent-integration 分支仅接入解释后台，主机为 41.5.1，禁止用 VM 布局覆盖本机，见[本机专项记录](docs/remediation/HOST-AGENT-INTEGRATION-20261103.md)。下面旧记录按当时范围理解。
 
 **GitHub 上传要求（2026-10-31）：只有用户明确说“更新上传”或要求上传 GitHub 时才执行；其余工作默认只保存在本地，阶段完成也不自动上传。上传前告知目标与范围，结束后报告结果和链接；已明确授权的当次范围不重复询问确认。** 具体约定见 [AGENTS.md](AGENTS.md)。
