@@ -1,6 +1,6 @@
 {
   "version": "5.4",
-  "build": "51",
+  "build": "52",
   "upgrade_baseline_build": "40",
   "workbench_version": "0.5.6",
   "architecture": "arm64",

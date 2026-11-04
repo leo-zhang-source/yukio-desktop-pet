@@ -15,12 +15,13 @@ final class ClaudeQuestionBridge {
         let expiresAt: Double
     }
     enum Failure: LocalizedError {
-        case notConnected, expired, unconfirmed
+        case notConnected, expired, unconfirmed, ambiguous
         var errorDescription: String? {
             switch self {
             case .notConnected: return tr("Claude bridge needed · ask again after setup", "Claude 需连接回答通道后重新提问")
             case .expired: return tr("Question expired or already answered", "问题已结束或已回答")
             case .unconfirmed: return tr("No receipt yet · retry to check", "暂未收到回执 · 可重试核对")
+            case .ambiguous: return tr("Question cannot be matched safely · answer in Claude", "无法唯一确认问题 · 请在 Claude 中回答")
             }
         }
     }
@@ -73,16 +74,48 @@ final class ClaudeQuestionBridge {
         shown = next
         return events
     }
-    func send(session: String, callID: String, answer: String, provider: String = "claude") throws {
-        let parts = callID.split(separator: ":")
+    /// The transcript and hook can arrive in either order. Resolve a transcript
+    /// question only by its provider, session, tool-use ID and complete question.
+    /// Titles, arrival order and question text alone are never sufficient.
+    private func answerKey(session: String, callID: String, question: PetQuestion?, provider: String) throws -> String {
+        if callID.hasPrefix("yukio-") { return callID }
+        guard provider == "claude", !callID.isEmpty, callID.utf8.count < 1024,
+              let question, !question.isApproval else { throw Failure.notConnected }
+        let now = Date().timeIntervalSince1970 * 1000
+        let directories = (try? FileManager.default.contentsOfDirectory(at: root, includingPropertiesForKeys: nil)) ?? []
+        var matches: [String] = []
+        for dir in directories where UUID(uuidString: dir.lastPathComponent) != nil {
+            guard let bytes = try? Data(contentsOf: dir.appendingPathComponent("request.json")), bytes.count < 1 << 20,
+                  let r = try? JSONDecoder().decode(Request.self, from: bytes), r.id == dir.lastPathComponent,
+                  (r.provider ?? "claude") == provider, r.session == session, r.callID == callID,
+                  r.expiresAt > now else { continue }
+            for index in r.questions.indices where r.questions[index] == question {
+                // A receipt remains eligible for an idempotent retry. Otherwise
+                // only a still-running hook may receive an answer.
+                if FileManager.default.fileExists(atPath: dir.appendingPathComponent("receipt-\(index).json").path)
+                    || request(at: dir, now: now) != nil {
+                    matches.append(key(r, index))
+                }
+            }
+        }
+        guard !matches.isEmpty else { throw Failure.notConnected }
+        guard matches.count == 1 else { throw Failure.ambiguous }
+        return matches[0]
+    }
+
+    func send(session: String, callID: String, answer: String, provider: String = "claude", question: PetQuestion? = nil) throws {
+        let resolved = try answerKey(session: session, callID: callID, question: question, provider: provider)
+        let parts = resolved.split(separator: ":")
         guard parts.count == 3, parts[0] == "yukio-\(provider)", UUID(uuidString: String(parts[1])) != nil,
               let index = Int(parts[2]), index >= 0 else { throw Failure.notConnected }
         let dir = root.appendingPathComponent(String(parts[1]))
         guard !answer.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, answer.utf8.count < 65536,
               let requestData = try? Data(contentsOf: dir.appendingPathComponent("request.json")),
+              requestData.count < 1 << 20,
               let savedRequest = try? JSONDecoder().decode(Request.self, from: requestData),
               savedRequest.id == String(parts[1]), savedRequest.session == session,
               (savedRequest.provider ?? "claude") == provider, index < savedRequest.questions.count else { throw Failure.expired }
+        if let question, savedRequest.questions[index] != question { throw Failure.expired }
         if savedRequest.questions[index].isApproval && !ApprovalQuestion.accepts(answer) { throw Failure.expired }
         let receipt = dir.appendingPathComponent("receipt-\(index).json")
         if let data = try? Data(contentsOf: receipt), let saved = try? JSONDecoder().decode(String.self, from: data) {

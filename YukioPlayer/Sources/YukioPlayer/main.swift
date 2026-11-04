@@ -1698,7 +1698,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
                         try self.surfaceApprovalBridge.sendQuestion(session: pending.targetSession, titles: titles, callID: pending.callID, question: pending.question, answer: text, provider: "gpt")
                     }
                 case .claude:
-                    try ClaudeQuestionBridge().send(session: pending.targetSession, callID: pending.callID, answer: text)
+                    try ClaudeQuestionBridge().send(session: pending.targetSession, callID: pending.callID, answer: text, question: pending.question)
                 case .deepseek:
                     guard pending.callID.hasPrefix("yukio-deepseek:") else { throw BackgroundAnswerSetup.Failure.deepSeekNotConnected }
                     try ClaudeQuestionBridge().send(session: pending.targetSession, callID: pending.callID, answer: text, provider: "deepseek")
