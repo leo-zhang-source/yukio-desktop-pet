@@ -1,7 +1,7 @@
 {
   "version": "5.4",
-  "build": "41.5",
-  "upgrade_baseline_build": "41.4",
+  "build": "41.5.1",
+  "upgrade_baseline_build": "41.5",
   "workbench_version": "0.4.6",
   "architecture": "arm64",
   "minimum_macos": "13.0",

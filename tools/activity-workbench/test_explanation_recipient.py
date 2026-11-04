@@ -66,4 +66,13 @@ class RecipientTests(unittest.TestCase):
                 self.assertEqual(service.generate(token,True)['reason'],'agent_not_found')
         finally:fx.tearDown()
 
-
+class ErrorIdentityTests(unittest.TestCase):
+    def test_localized_errors_keep_machine_identity_for_retry_and_diagnosis(self):
+        from localization import language_context, localize
+        from explanation import MESSAGES
+        for lang in ('zh','en'):
+            with language_context(lang):
+                for reason in ('preview_expired','consent_required','recipient_changed','invalid_response'):
+                    value=localize(dict(mode='fallback',reason=reason,message=MESSAGES.get(reason,'模型返回的内容未通过检查，已保留本机说明。')))
+                    self.assertEqual(value['reason'],reason)
+                    self.assertTrue(value['message'])
