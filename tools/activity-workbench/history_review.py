@@ -5,6 +5,7 @@ does: ContextView remains the authority for result identity and gap boundaries.
 No generated prose is substituted with source excerpts on a model failure.
 """
 from collections import defaultdict
+import hashlib
 import json
 import re
 import secrets
@@ -152,9 +153,11 @@ class HistoryReview:
         chosen=[c for c in candidates if c['sequence']>=cutoff]
         if len(chosen)>32:chosen=chosen[-32:];missing=True
         facts=[];refs=[];readings=[]
-        for index,item in enumerate(chosen):
+        for item in chosen:
             eid=self.add(facts,refs,item['title'],item.pop('material'),'assistant' if item['kind']=='report' else 'observed',item['sequence'])
-            item['part']='step'+str(index+1);item['evidence_ids']=[eid]
+            # Source availability may change between summary and detail. Bind
+            # the part to the saved item, never to its position in a shorter list.
+            item['part']='step_'+hashlib.sha256(item['id'].encode()).hexdigest()[:20];item['evidence_ids']=[eid]
             readings.append(dict(part=item['part'],title=item['title'],allowed=[eid],required=[eid]))
         next_before=chosen[0]['sequence'] if chosen else ctx['window_start']
         data=dict(items=chosen,parts=readings,references=refs,snapshot=frozen,next_before=next_before,

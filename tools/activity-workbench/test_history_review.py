@@ -81,6 +81,15 @@ class HistoryReviewTests(unittest.TestCase):
         self.assertLess(max(i['sequence'] for i in older['items']),min(i['sequence'] for i in first['items']))
         self.assertEqual(first['snapshot'],older['snapshot'])
 
+    def test_detail_identity_cannot_shift_when_other_source_text_disappears(self):
+        self.append(speech('刚补充的公开汇报。'))
+        first,_,_=self.prepare('steps');op=next(i for i in first['items'] if i['kind']=='operation')
+        report=next(i for i in first['items'] if i['kind']=='report')
+        self.fx.path.unlink()
+        detail,_,_=self.prepare('steps',snapshot=first['snapshot'],part=op['part'])
+        self.assertEqual(detail['parts'][0]['part'],op['part'])
+        with self.assertRaises(ValueError):self.prepare('steps',snapshot=first['snapshot'],part=report['part'])
+
     def test_missing_source_yields_no_fake_recaps(self):
         self.fx.path.unlink()
         data,payload,_=self.prepare()
