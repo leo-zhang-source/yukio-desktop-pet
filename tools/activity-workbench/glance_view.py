@@ -7,8 +7,8 @@ import time
 from history_view import CLIENTS, CLIENT, FROM, SOURCE, GENERATION, SESSION, HistoryView, key_parts
 from source_context import SourceContext, clean
 from collector_status import read_status
-from context_view import ContextView,unlinked_summary
-from turn_lifecycle import turn_marker
+from context_view import ContextView,unlinked_summary,BOUNDARIES
+from turn_lifecycle import turn_marker,waiting_request
 from handoff_view import HandoffView
 from task_summary import recap
 from plain_language import plain_words,readable_fragment
@@ -42,14 +42,6 @@ def progress_headline(text):
         current=next((s for s in useful[1:] if re.match(r'^(?:我(?:现在)?正在|(?:现在|目前)?正在)',s) and not re.search(r'例如|比如|示例|模拟',s)),None)
         if current:return clean(current,120)
     return clean(useful[0],120) if useful else ''
-
-
-def waiting_request(operations,start,closed):
-    for op in reversed(operations):
-        if op['request']['sequence']<=max(start,closed) or op['status'] in ('succeeded','failed','cancelled','conflict','unresolved'):continue
-        latest=max([op['request']]+op['receipts'],key=lambda r:r['sequence'])
-        if latest.get('reported_await_user_response') is True:return latest
-    return None
 
 
 def public_reason(speech):
@@ -230,8 +222,9 @@ class GlanceView:
         elif age is not None and age<90:status='刚有新活动';tone='fresh'
         else:status='暂时没有新消息'
         # Do not keep an old waiting signal after a result, reply or closed turn.
-        closed=max((seq for seq,r in selected if turn_marker(r) in ('turn_ended','turn_cancelled') or r.get('kind')=='context_boundary'),default=0)
-        attention=waiting_request(context['operations'],current_start,closed)
+        closed=max([seq for seq,r in selected if turn_marker(r) in ('turn_ended','turn_cancelled') or r.get('kind') in BOUNDARIES]
+                   +[w['evidence']['sequence'] for w in context['warnings']],default=0)
+        attention=waiting_request(context['operations'],current_start,closed,context['unlinked_receipts']) if not context['window_limited'] else None
         if attention:
             status='有一项请求等你处理';tone='attention';needs='这次操作提到需要你回答。请回原聊天确认并处理。'
         meaningful=[];seen=set()

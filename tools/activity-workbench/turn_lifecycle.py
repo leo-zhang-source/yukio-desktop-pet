@@ -13,3 +13,23 @@ def turn_marker(row):
         if not any(b.get('kind') == 'tool_requested' for b in row.get('blocks', []) if isinstance(b, dict)):
             return 'turn_ended'
     return None
+
+
+def waiting_request(operations, start, closed, unlinked_receipts=()):
+    """Only explicit, still-unanswered requests with unambiguous identity."""
+    question_tools = {'askuserquestion', 'ask_user_question', 'request_user_input', 'request_user_input_async'}
+    for op in reversed(operations):
+        request = op['request']
+        if request['sequence'] <= max(start, closed) or op['status'] in ('succeeded', 'failed', 'cancelled', 'conflict', 'unresolved'):
+            continue
+        if any(r.get('call_id') == request.get('call_id') and r['sequence'] >= request['sequence'] for r in unlinked_receipts):
+            continue
+        latest = max([request] + op['receipts'], key=lambda r: r['sequence'])
+        if latest.get('reported_await_user_response') is True:
+            return latest
+        tool = request.get('tool_name', '').rsplit('.', 1)[-1].lower()
+        # The tool's name is structural metadata, not message-text inference.
+        # Any receipt ends this question wait, even when its outcome is unknown.
+        if op['status'] == 'no_receipt' and tool in question_tools:
+            return request
+    return None

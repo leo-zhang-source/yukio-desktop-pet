@@ -1,8 +1,8 @@
 {
   "version": "5.4",
-  "build": "50",
+  "build": "51",
   "upgrade_baseline_build": "40",
-  "workbench_version": "0.5.5",
+  "workbench_version": "0.5.6",
   "architecture": "arm64",
   "minimum_macos": "13.0",
   "bundle_identifier": "local.yukio.player",

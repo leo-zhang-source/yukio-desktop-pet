@@ -9,12 +9,13 @@ from contextlib import closing
 from pathlib import Path
 from source_context import clean
 from localization import current_language, english_text
-from turn_lifecycle import turn_marker
+from turn_lifecycle import turn_marker,waiting_request
+from context_view import project,BOUNDARIES
 
 
 def catalog_card(history, reader, client, group, clock):
     """Build navigation from scoped metadata; don't reconstruct every task."""
-    from history_view import key_parts, CLIENT, FROM
+    from history_view import key_parts, CLIENT, FROM, SOURCE, GENERATION
     from collector_status import read_status
     parts=key_parts(group['key']);scope,args=history.scope(parts)
     with history.connect(client) as db:
@@ -23,6 +24,9 @@ def catalog_card(history, reader, client, group, clock):
         state=json.loads(saved[0])
         if state.get('generation')!=parts[1]:raise ValueError('Old source')
         rows=[(seq,json.loads(raw)) for seq,raw in db.execute('SELECT e.sequence,e.record'+FROM+f' WHERE {scope} AND {CLIENT}=? ORDER BY e.sequence DESC LIMIT 80',args+[client])]
+        # A boundary older than this bounded request window cannot close one of
+        # its requests. Avoid scanning years of unrelated history for every card.
+        boundary=db.execute('SELECT max(e.sequence) FROM events e WHERE '+f"e.sequence>=? AND {SOURCE}=? AND {GENERATION}=? AND {CLIENT}=? AND json_extract(e.record,'$.kind') IN ({','.join('?' for _ in BOUNDARIES)})",[rows[-1][0] if rows else 0,parts[0],parts[1],client,*BOUNDARIES]).fetchone()[0] or 0
         marker_order="coalesce(json_extract(e.record,'$.timestamp_ms'),0) DESC,e.sequence DESC" if client=='claude' else 'e.sequence DESC'
         marker=db.execute('SELECT e.sequence,e.record'+FROM+f" WHERE {scope} AND {CLIENT}=? AND (json_extract(e.record,'$.kind') IN ('turn_started','turn_ended','turn_cancelled') OR json_extract(e.record,'$.turn_marker') IN ('turn_started','turn_ended','turn_cancelled') OR (json_extract(e.record,'$.kind')='message_observed' AND json_extract(e.record,'$.source_kind')='assistant' AND json_extract(e.record,'$.reported_stop_reason') IN ('end_turn','stop_sequence'))) ORDER BY {marker_order} LIMIT 1",args+[client]).fetchone()
         speech=db.execute('SELECT e.sequence,e.record'+FROM+f" WHERE {scope} AND {CLIENT}=? AND json_extract(e.record,'$.source_kind') IN ('message','user_message','user') ORDER BY e.sequence LIMIT 5",args+[client]).fetchall()
@@ -44,6 +48,12 @@ def catalog_card(history, reader, client, group, clock):
     elif marker_kind=='turn_cancelled' and not later:status='这一轮已取消'
     latest=meaningful[0][1] if meaningful else {}
     tone='attention' if latest.get('reported_await_user_response') is True and marker_kind not in ('turn_ended','turn_cancelled') else 'quiet'
+    pending=project([(seq,row,True) for seq,row in reversed(rows)],client)
+    start=max([seq for seq,row in rows if turn_marker(row)=='turn_started']
+              +([marker[0]] if marker_kind=='turn_started' else []),default=0)
+    closed=max([boundary]+[seq for seq,row in rows if turn_marker(row) in ('turn_ended','turn_cancelled')])
+    if not pending['atom_limit_reached'] and waiting_request(pending['operations'],start,closed,pending['unlinked_receipts']):
+        tone='attention';status='有一项请求等你处理'
     card=dict(client=client,key=group['key'],session_id=parts[2],title=readable_title(title),
               title_source='客户端聊天名称' if has_client_title else ('开场要求' if title else '名称待确认'),status=status,tone=tone,last_activity_ms=stamp,
               source_unavailable=not available,turn_marker=marker_kind,age_seconds=age,
