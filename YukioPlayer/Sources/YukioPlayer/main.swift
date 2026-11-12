@@ -628,7 +628,7 @@ func runOpenChat() -> Never {
     for event in feeds.poll(now: nowMs()) { router.ingest(event, now: min(event.ts, nowMs())) }
     let titles = router.sessionSummaries(now: nowMs()).filter {
         AgentProvider.owner(ofSource: router.sourceOfSession($0.id) ?? "") == .gpt
-    }.map { (id: $0.id, title: $0.title) }
+    }.map { (id: router.sourceSessionID($0.id), title: $0.title) }
     for app in NSWorkspace.shared.runningApplications {
         guard let bundle = app.bundleIdentifier, BrowserOpenChat.supportedBundles.contains(bundle) else { continue }
         let pid = app.processIdentifier
@@ -882,10 +882,10 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
             : library.assetsRoot.deletingLastPathComponent().deletingLastPathComponent())
         self.defaults = defaults
         // 先定语言，再回放会话记录：回放时生成的说明文字才是对的语言。
-        L10n.language = UILanguage(code: UserDefaults.standard.string(forKey: "language"))
+        L10n.language = UILanguage(code: defaults.string(forKey: "language"))
         self.catalog = catalog
         self.library = library
-        self.feeds = AgentSources(provider: AgentProvider(code: UserDefaults.standard.string(forKey: "source")))
+        self.feeds = AgentSources(provider: AgentProvider(code: defaults.string(forKey: "source")))
         self.stateTimeline = SpriteTimeline(spec: catalog.spec(for: .idle), now: nowMs())
         super.init()
     }
@@ -1095,8 +1095,11 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
             if openChat(session: session) { router.dismissCompletion(now: now) }
             return
         }
-        if shownState == .question_for_user, let session = router.askingSession {
-            openChat(session: session)
+        if shownState == .question_for_user, let pending = router.askingQuestion {
+            if questionPresentation.isDismissed(.init(pending)) {
+                questionPresentation.reopen(.init(pending))
+                updateQuestion(now: now, immediate: true)
+            } else { openChat(session: pending.session) }
         }
     }
 
@@ -1104,14 +1107,15 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// 至少把那个应用带到前面，不乱跳到别的聊天。
     @discardableResult
     private func openChat(session: String) -> Bool {
+        let target = router.sourceSessionID(session)
         switch AgentProvider.owner(ofSource: router.sourceOfSession(session) ?? "") {
         case .gpt:
-            if feeds.isBrowserSession(session) {
-                return BrowserChatDestination.open(session: session)
+            if feeds.isBrowserSession(target) {
+                return BrowserChatDestination.open(session: target)
             }
             // Codex 桌面版（ChatGPT.app，标识 com.openai.codex）注册的深链。
             // 会话 ID 就是记录文件名里的那个，应用自己的日志里叫 threadId，两边是同一个。
-            if let url = URL(string: "codex://threads/\(session)") {
+            if let url = URL(string: "codex://threads/\(target)") {
                 NSWorkspace.shared.open(url)
                 return true
             }
@@ -1120,7 +1124,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
             // Deep Code 跑在终端里，没有可跳的窗口：只放下牌子。
             break
         default:
-            if let url = links.chatURL(forTranscriptSession: session) {
+            if let url = links.chatURL(forTranscriptSession: target) {
                 NSWorkspace.shared.open(url)
                 return true
             }
@@ -1132,7 +1136,8 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// 举着的牌子能不能点回那条聊天（Deep Code 没有窗口可跳）。
     private func canOpenChat(session: String?) -> Bool {
         guard let session else { return false }
-        if feeds.isBrowserSession(session) { return BrowserChatDestination.contains(session) }
+        let target = router.sourceSessionID(session)
+        if feeds.isBrowserSession(target) { return BrowserChatDestination.contains(target) }
         return AgentProvider.owner(ofSource: router.sourceOfSession(session) ?? "") != .deepseek
     }
 
@@ -1229,9 +1234,9 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         let links = self.links
         let codex = codexOpenChat
-        let candidates = router.sessionSummaries(now: nowMs()).compactMap { row -> (String, AgentProvider, String?)? in
+        let candidates = router.sessionSummaries(now: nowMs()).compactMap { row -> (String, AgentProvider, String?, String)? in
             guard let owner = AgentProvider.owner(ofSource: router.sourceOfSession(row.id) ?? "") else { return nil }
-            return (row.id, owner, row.title)
+            return (row.id, owner, row.title, router.sourceSessionID(row.id))
         }
         let started = nowMs()
         DispatchQueue.global(qos: .utility).async {
@@ -1240,7 +1245,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
             var selected: String?
             for (pid, bundle) in apps {
                 let found = BrowserOpenChat.read(processID: pid, snapshot: snapshot, nativeGPT: bundle == Self.codexBundleID, nativeClaude: bundle == Self.claudeBundleID,
-                    gptTitles: candidates.filter { $0.1 == .gpt }.map { (id: $0.0, title: $0.2) })
+                    gptTitles: candidates.filter { $0.1 == .gpt }.map { (id: $0.3, title: $0.2) })
                 documents += found
                 if bundle == Self.codexBundleID, !found.contains(where: { $0.provider == .gpt }),
                    snapshot.visibleSingleWindow(pid: pid) {
@@ -1250,9 +1255,9 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
             }
             let aliases = documents.contains { $0.provider == .claude } ? links.transcriptAliases() : [:]
             var visible = Set(candidates.filter { candidate in
-                documents.contains { $0.matches(session: candidate.0, provider: candidate.1, aliases: aliases) }
+                documents.contains { $0.matches(session: candidate.3, provider: candidate.1, aliases: aliases) }
             }.map { $0.0 })
-            if let selected, candidates.contains(where: { $0.0 == selected && $0.1 == .gpt }) { visible.insert(selected) }
+            if let selected, let candidate = candidates.first(where: { $0.3 == selected && $0.1 == .gpt }) { visible.insert(candidate.0) }
             let notes = BrowserOpenChat.notes
             DispatchQueue.main.async { [weak self] in
                 guard let self else { return }
@@ -1307,8 +1312,8 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if tickCount % 15 == 0 {
             refreshOpenChat()
             let sessions = router.sessionSummaries(now: now, quietWithinMs: 24 * 60 * 60 * 1000).filter {
-                router.sourceOfSession($0.id) == "codex" && !$0.id.hasPrefix("surface-")
-            }.map(\.id)
+                router.sourceOfSession($0.id) == "codex" && !router.sourceSessionID($0.id).hasPrefix("surface-")
+            }.map { router.sourceSessionID($0.id) }
             codexApprovalMonitor.poll(sessions: sessions, enabled: following && showQuestionCard && !manuallyHidden) { [weak self] events in
                 guard let self else { return }
                 for event in events { self.router.ingest(event, now: nowMs()) }
@@ -1669,16 +1674,20 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// Answer through the provider's background channel; never open or activate a chat.
     private func sendAnswer(_ typed: String) {
         guard let pending = shownQuestion, let text = composedAnswer(typed) else { return }
+        guard simulation != nil || router.containsQuestion(pending) else {
+            updateQuestion(now: nowMs(), immediate: true)
+            return
+        }
         let key = QuestionPresentationState.Key(pending)
-        guard !answersInFlight.contains(key) else { return }
+        guard !questionPresentation.isSending(key) else { return }
         guard simulation == nil else {
             questionPresentation.setNotice(tr("Demo only — nothing was sent", "模拟演示，不会真的送出"), for: key)
             updateQuestion(now: nowMs(), immediate: true)
             return
         }
-        let owner = AgentProvider.owner(ofSource: router.sourceOfSession(pending.session) ?? "")
-        let titles = router.sessionSummaries(now: nowMs()).filter { router.sourceOfSession($0.id) == "codex" }.map { (id: $0.id, title: $0.title) }
-        answersInFlight.insert(key)
+        let owner = AgentProvider.owner(ofSource: pending.source)
+        let titles = router.sessionSummaries(now: nowMs()).filter { router.sourceOfSession($0.id) == "codex" }.map { (id: router.sourceSessionID($0.id), title: $0.title) }
+        guard let submission = questionPresentation.beginSubmission(key) else { return }
         questionPresentation.setNotice(tr("Sending in background…", "正在后台回答…"), for: key)
         updateQuestion(now: nowMs(), immediate: true)
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
@@ -1686,21 +1695,21 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
             do {
                 if pending.callID.hasPrefix("surface-approval:") {
                     guard let self else { throw CodexAnswerClient.Failure.unavailable }
-                    try self.surfaceApprovalBridge.send(session: pending.session, callID: pending.callID, question: pending.question, answer: text)
+                    try self.surfaceApprovalBridge.send(session: pending.targetSession, callID: pending.callID, question: pending.question, answer: text)
                 } else { switch owner {
                 case .gpt:
                     do {
-                        try CodexAnswerClient().send(session: pending.session, callID: pending.callID,
+                        try CodexAnswerClient().send(session: pending.targetSession, callID: pending.callID,
                                                      question: pending.question, answer: text)
                     } catch CodexAnswerClient.Failure.unavailable where !pending.question.isApproval {
                         guard let self else { throw CodexAnswerClient.Failure.unavailable }
-                        try self.surfaceApprovalBridge.sendQuestion(session: pending.session, titles: titles, callID: pending.callID, question: pending.question, answer: text, provider: "gpt")
+                        try self.surfaceApprovalBridge.sendQuestion(session: pending.targetSession, titles: titles, callID: pending.callID, question: pending.question, answer: text, provider: "gpt")
                     }
                 case .claude:
-                    try ClaudeQuestionBridge().send(session: pending.session, callID: pending.callID, answer: text)
+                    try ClaudeQuestionBridge().send(session: pending.targetSession, callID: pending.callID, answer: text)
                 case .deepseek:
                     guard pending.callID.hasPrefix("yukio-deepseek:") else { throw BackgroundAnswerSetup.Failure.deepSeekNotConnected }
-                    try ClaudeQuestionBridge().send(session: pending.session, callID: pending.callID, answer: text, provider: "deepseek")
+                    try ClaudeQuestionBridge().send(session: pending.targetSession, callID: pending.callID, answer: text, provider: "deepseek")
                 default:
                     throw CodexAnswerClient.Failure.ambiguous
                 } }
@@ -1708,11 +1717,17 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
             } catch { result = .failure(error) }
             DispatchQueue.main.async {
                 guard let self else { return }
-                self.answersInFlight.remove(key)
+                guard self.questionPresentation.finishSubmission(key, token: submission),
+                      self.router.containsQuestion(pending) else { return }
                 switch result {
                 case .success:
+                    if self.shownQuestion == pending {
+                        self.questionPanel.cardView.draftText = ""
+                        self.pickedOptions = []
+                    }
+                    self.questionPresentation.saveDraft("", picked: [], for: key)
                     self.questionPresentation.dismiss(key)
-                    self.router.acknowledgeQuestion(session: pending.session, callID: pending.callID, now: nowMs())
+                    self.router.acknowledgeQuestion(pending, now: nowMs())
                 case .failure(let error):
                     self.questionPresentation.setNotice(error.localizedDescription, for: key)
                 }
@@ -1724,7 +1739,6 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     /// 这张卡此刻该长什么样：内容没变就不重算排版（每秒 30 次量文字太浪费）。
     private var questionSignature: String = ""
-    private var answersInFlight: Set<QuestionPresentationState.Key> = []
 
     private func updateQuestion(now: Double, immediate: Bool = false) {
         guard let questionPanel else { return }
@@ -1732,11 +1746,17 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // 她自己都收起来了就不立卡（卡是跟着她走的子窗口，没有她在旁边立着很怪）。
         var pending = (showQuestionCard && !petHidden) ? source?.askingQuestion : nil
         if let p = pending, questionPresentation.isDismissed(.init(p)) { pending = nil }
-        if pending?.callID != shownQuestion?.callID || pending?.session != shownQuestion?.session {
-            // 换了一道题（或问完了）：选中项、输入框、提示一律重来。
-            pickedOptions = []
+        if pending.map(QuestionPresentationState.Key.init) != shownQuestion.map(QuestionPresentationState.Key.init) {
+            // Hide/switch without losing or transferring a draft to another chat.
+            if let previous = shownQuestion {
+                questionPresentation.saveDraft(questionPanel.cardView.draftText, picked: pickedOptions, for: .init(previous))
+            }
+            let nextKey = pending.map { QuestionPresentationState.Key($0) }
+            pickedOptions = nextKey.map { questionPresentation.picked(for: $0) } ?? []
             answerNotice = nil
-            questionPanel.cardView.answerText = ""
+            questionPanel.cardView.draftText = nextKey.map { questionPresentation.draft(for: $0) } ?? ""
+            questionPanel.cardView.diagnosticRequestID = nextKey.map { questionPresentation.diagnosticID(for: $0) } ?? "none"
+            questionPanel.cardView.recordInputState("question_changed")
         }
         shownQuestion = pending
         answerNotice = pending.flatMap { questionPresentation.notice(for: .init($0)) }
@@ -1746,11 +1766,11 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
             return
         }
         let canOpen = simulation == nil && canOpenChat(session: pending.session)
-        let signature = "\(pending.session)|\(pending.callID)|\(pickedOptions.sorted().map(String.init).joined(separator: ","))|\(answerNotice ?? "")|\(canOpen)|\(L10n.language.rawValue)"
+        let signature = "\(pending.source)|\(pending.generation)|\(pending.session)|\(pending.callID)|\(pickedOptions.sorted().map(String.init).joined(separator: ","))|\(answerNotice ?? "")|\(canOpen)|\(L10n.language.rawValue)"
         guard signature != questionSignature || immediate else { return }
         questionSignature = signature
         let layout = QuestionCardLayout(pending.question, picked: pickedOptions,
-                                        canOpenChat: canOpen, sentNotice: answerNotice, isSending: answersInFlight.contains(.init(pending)))
+                                        canOpenChat: canOpen, sentNotice: answerNotice, isSending: questionPresentation.isSending(.init(pending)))
         questionPanel.cardView.card = layout
         showQuestionPanel(layout)
     }
@@ -1873,7 +1893,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func setUpAssistant() {
         // Optional isolated storage for local previews and smoke tests.
         let reminderURL = ProcessInfo.processInfo.environment["YUKIO_REMINDER_FILE"].map { URL(fileURLWithPath: $0) }
-        let store = ReminderStore(url: reminderURL)
+        let store = ReminderStore(url: reminderURL, defaults: defaults)
         reminderStore = store
         let delivery = ReminderPanelController(store: store)
         reminderPanel = delivery
@@ -2396,6 +2416,62 @@ app.run()
 
 #if DEBUG
 extension AppController {
+    func initialSettingsForCheck() -> (language: UILanguage, provider: AgentProvider, following: Bool, cards: Bool) {
+        (L10n.language, feeds.provider, following, showCards)
+    }
+    /// Exercise the production question controller with two artificial requests;
+    /// no polling, assistant connection, or answer submission takes place.
+    func questionDraftsForCheck() -> [String: Bool] {
+        following = true; showQuestionCard = true; manuallyHidden = false; hideWhenIdle = false
+        setUpWindow(); setUpQuestion()
+        defer { panel.removeChildWindow(questionPanel); questionPanel.close(); panel.close() }
+        let now = nowMs()
+        let question = PetQuestion(text: "Synthetic question", options: [.init(label: "One"), .init(label: "Two")], multiSelect: true)
+        for session in ["draft-A", "draft-B"] {
+            router.ingest(PetEvent(ts: now, source: "test", session: session, kind: .taskStart), now: now)
+            router.ingest(PetEvent(ts: now + 1, source: "test", session: session, kind: .activityStart,
+                                  eventID: "question-" + session, activity: .question_for_user, question: question), now: now + 1)
+        }
+        func show(_ session: String) {
+            _ = router.focusSessionTemporarily(session, now: now + 2)
+            router.settle(now: now + 2)
+            shownState = router.displayed
+            updateQuestion(now: now + 2, immediate: true)
+        }
+        show("draft-A")
+        questionPanel.makeKeyAndOrderFront(nil)
+        _ = questionPanel.makeFirstResponder(questionPanel.cardView.field)
+        let editor = questionPanel.cardView.field.currentEditor() as? NSTextView
+        editor?.insertText("  A 你好123  ", replacementRange: NSRange(location: NSNotFound, length: 0))
+        pickedOptions = [1]
+        if let editor {
+            _ = questionPanel.cardView.control(questionPanel.cardView.field, textView: editor,
+                                               doCommandBy: #selector(NSResponder.cancelOperation(_:)))
+        }
+        var checks = ["escapeDismissesQuestion": shownQuestion == nil && questionPanel.ignoresMouseEvents,
+                      "escapeDoesNotSubmit": !questionPresentation.hasSubmissions]
+        petClicked()
+        checks["escapeReopenKeepsExactDraftAndChoice"] = questionPanel.cardView.draftText == "  A 你好123  " && pickedOptions == [1]
+        for _ in 0..<10 {
+            questionPanel.cardView.onClose?()
+            petClicked()
+            checks["repeatedCloseReopenKeepsDraft"] = (checks["repeatedCloseReopenKeepsDraft"] ?? true) && questionPanel.cardView.draftText == "  A 你好123  " && pickedOptions == [1]
+        }
+        show("draft-B")
+        checks["newQuestionDoesNotInheritDraft"] = questionPanel.cardView.draftText.isEmpty && pickedOptions.isEmpty
+        questionPanel.cardView.draftText = "B independent draft"
+        for _ in 0..<10 {
+            show("draft-A")
+            checks["switchRestoresOnlyA"] = (checks["switchRestoresOnlyA"] ?? true) && questionPanel.cardView.draftText == "  A 你好123  " && pickedOptions == [1]
+            show("draft-B")
+            checks["switchRestoresOnlyB"] = (checks["switchRestoresOnlyB"] ?? true) && questionPanel.cardView.draftText == "B independent draft" && pickedOptions.isEmpty
+        }
+        manuallyHidden = true; updateQuestion(now: now + 3, immediate: true)
+        manuallyHidden = false; updateQuestion(now: now + 4, immediate: true)
+        checks["petHideReopenKeepsDraft"] = questionPanel.cardView.draftText == "B independent draft"
+        return checks
+    }
+
     /// Exercise the real child windows without polling the user's conversations.
     func chatCardsForCheck() -> [String: Bool] {
         following = true; showBubble = true; showCards = true; hideWhenIdle = false

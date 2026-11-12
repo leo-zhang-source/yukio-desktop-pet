@@ -2,16 +2,14 @@ name: Agent explanation portability
 
 on:
   workflow_dispatch:
-  push:
-    branches: [codex/agent-portability]
-  pull_request:
-    paths: ['tools/activity-workbench/**', '.github/workflows/agent-portability.yml']
 
 permissions:
   contents: read
 
 jobs:
   test:
+    # Preserved for future scope review. Windows/cloud work is deferred by user.
+    if: ${{ false }}
     strategy:
       fail-fast: false
       matrix:

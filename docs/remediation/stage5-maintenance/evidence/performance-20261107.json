@@ -1,0 +1,64 @@
+{
+  "source_revision": "7cf565b28739d4be4976daa4ae4337e06bc0ddc9",
+  "source_sha256": "b328c08c8b6c7fed27afe62ae85ebc9f3303cea92767ea604d4830c0e6e776a0",
+  "baseline_revision": "2701916b9c471d34dc11ff421b27d90cbb801248",
+  "fixture_sha256": "06a91d7a064529703450067a29c1d02ac1a80506973ed1d9a2dbba576a74ebd7",
+  "system": "macOS-27.2-arm64-arm-64bit-Mach-O",
+  "limits_ms": {
+    "idle": 5,
+    "normal": 25,
+    "burst": 100
+  },
+  "gui_latency_tested": false,
+  "rows": [
+    {
+      "mode": "idle",
+      "before_maximum_ms": [
+        0.13520833454094827,
+        0.11320832709316164,
+        0.09995832806453109
+      ],
+      "after_maximum_ms": [
+        0.1700833236100152,
+        0.13737499830313027,
+        0.11337500473018736
+      ],
+      "median_speedup": 0.8240824639965222,
+      "identity_and_order_passed": true,
+      "candidate_within_limit": true
+    },
+    {
+      "mode": "normal",
+      "before_maximum_ms": [
+        17.061624996131286,
+        16.178499994566664,
+        15.928124994388781
+      ],
+      "after_maximum_ms": [
+        1.020666677504778,
+        0.8191249944502488,
+        0.757583329686895
+      ],
+      "median_speedup": 19.750953888819833,
+      "identity_and_order_passed": true,
+      "candidate_within_limit": true
+    },
+    {
+      "mode": "burst",
+      "before_maximum_ms": [
+        1555.111333334935,
+        1530.4816666757688,
+        1535.549375010305
+      ],
+      "after_maximum_ms": [
+        48.16787500749342,
+        45.660791656700894,
+        45.13633332680911
+      ],
+      "median_speedup": 33.62949522547223,
+      "identity_and_order_passed": true,
+      "candidate_within_limit": true
+    }
+  ],
+  "passed": true
+}

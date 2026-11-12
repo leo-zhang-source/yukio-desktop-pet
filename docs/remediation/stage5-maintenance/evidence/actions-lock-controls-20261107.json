@@ -1,0 +1,22 @@
+{
+  "generator": "github/gh-actions-lock v0.4.1",
+  "scope": "offline coverage controls plus separately recorded online provenance verification; remote enforcement untested",
+  "cases": [
+    {
+      "case": "valid",
+      "exit_code": 0,
+      "passed": true
+    },
+    {
+      "case": "missing_lock",
+      "exit_code": 1,
+      "passed": true
+    },
+    {
+      "case": "changed_action",
+      "exit_code": 1,
+      "passed": true
+    }
+  ],
+  "passed": true
+}

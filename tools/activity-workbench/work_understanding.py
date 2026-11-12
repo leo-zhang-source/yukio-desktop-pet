@@ -10,6 +10,7 @@ import sqlite3
 
 from source_context import clean
 from localization import current_language
+from plain_language import plain_words
 
 MAX_PROJECT_CHATS = 6
 BOUNDARY = ('这是有限公开记录的解读。要求和计划不等于执行，助手汇报未经独立核验；'
@@ -189,8 +190,8 @@ class WorkUnderstanding:
         # Local summaries quote what is available. They make no semantic claim
         # that different requests have a shared goal or that a method succeeded.
         def quotes(items, limit=2):
-            return '；'.join('「' + clean(title, 46) + '」：' + clean(text, 140)
-                            for title, text, _ in items[:limit])
+            return '；'.join(('「' + clean(plain_words(title),46) + '」：' if scope=='project' else '') + clean(plain_words(text),140)
+                            for title, text, _ in items[:limit] if plain_words(text))
 
         local_goal = ('记录中的要求：' + quotes(local_goals) if local_goals else
                       '还没有读到明确目标。请先在原聊天说明想得到什么结果，以及怎样算完成。')

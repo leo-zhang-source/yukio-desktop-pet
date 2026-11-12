@@ -98,6 +98,56 @@ http_headers={X-Key="SECRET_HEADER"}
             self.assertEqual(agent.find_agent('claude', environ={'YUKIO_CLAUDE_PATH': str(path)}, home=self.root), [str(path)])
             self.assertIsNone(agent.find_agent('claude', environ={'YUKIO_CLAUDE_PATH': str(path)+'missing'}, home=self.root))
 
+    def test_short_explanations_cap_expensive_reasoning_without_changing_user_configuration(self):
+        path = self.root / 'config.toml'
+        for effort in ('none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max', 'ultra'):
+            with self.subTest(effort=effort):
+                raw = 'model="chosen-model"\nmodel_reasoning_effort=' + json.dumps(effort) + '\n'
+                path.write_text(raw)
+                with patch.dict(os.environ, {'CODEX_HOME': str(self.root)}):
+                    args, _ = agent.codex_overrides()
+                expected = effort if effort in ('none', 'minimal', 'low', 'medium') else 'medium'
+                self.assertIn('model_reasoning_effort=' + json.dumps(expected), args)
+                self.assertIn('model="chosen-model"', args)
+                self.assertEqual(path.read_text(), raw)
+
+    def test_disabled_codex_selection_survives_server_restart_without_falling_back(self):
+        databases = dict(codex=self.root / 'history.sqlite')
+        servers = []
+        threads = []
+        def start():
+            server = create_server(0, databases)
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start(); servers.append(server); threads.append(thread)
+            return server
+        def request(server, settings=None):
+            c = http.client.HTTPConnection('127.0.0.1', server.server_port, timeout=3)
+            c.request('POST' if settings else 'GET', '/api/explanation-settings' if settings else '/api/clients',
+                      encode(settings).encode() if settings else None,
+                      {'Content-Type': 'application/json', 'X-Yukio-Workbench': '1'})
+            r = c.getresponse(); raw = r.read(); c.close(); return r.status, json.loads(raw)
+        try:
+            server = start()
+            with patch('server.select_agent', side_effect=ExplanationError('agent_login_required')) as probe:
+                status, data = request(server, dict(provider='codex', automatic_on_open=False))
+                probe.assert_not_called()
+                self.assertEqual(status, 200)
+                self.assertEqual(data['provider'], 'codex')
+                self.assertFalse(data['automatic_on_open'])
+                self.assertEqual(request(server, dict(provider='codex', automatic_on_open=True))[0], 409)
+            restarted = start()
+            data = request(restarted)[1]['explanation']
+            self.assertEqual(data['provider'], 'codex')
+            self.assertFalse(data['automatic_on_open'])
+            with patch('server.select_agent', return_value={}):
+                self.assertEqual(request(restarted, dict(provider='codex', automatic_on_open=True))[0], 200)
+            data = request(start())[1]['explanation']
+            self.assertEqual(data['provider'], 'codex')
+            self.assertTrue(data['automatic_on_open'])
+        finally:
+            for server, thread in zip(servers, threads):
+                server.shutdown(); server.server_close(); thread.join()
+
     def test_windows_npm_shim_uses_node_without_cmd_shell(self):
         path = self.root / 'npm/codex.cmd'
         path.parent.mkdir()

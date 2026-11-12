@@ -4,17 +4,13 @@ var uiLanguage=globalThis.YukioI18n?.language||'zh';
 const $=id=>document.getElementById(id), make=(tag,text)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n;};
 const names={codex:'Codex',claude:'Claude',deepcode:'Deep Code'}, basis={observed:tr('记录所见'),assistant:tr('助手自述'),user_request:tr('你的要求'),inference:tr('推测'),unknown:tr('尚不清楚')};
 let selected=null, current=null, epoch=0, busy=false, cardsAt=0, model=null, grant=null, modelAnswer=null, refreshAgain=false, synthetic=false, modelPending=false, attemptMessage='', pageClosed=false, autoRun=null, nextRetry=0;
-let chatCatalog=[],chatSearch='',chatLimited=false;
-const openProjects=new Set(),activityLabels={working:tr('正在工作'),waiting:tr('等你处理'),inactive:tr('本轮已结束'),unknown:tr('状态待确认')};
+let chatCatalog=[],chatSearch='',chatLimited=false,providerSaving=false;
+const chatExpansion=new Map();let chatRenderedSearch='';
+const activityLabels={working:tr('正在工作'),waiting:tr('等你处理'),inactive:tr('本轮已结束'),unknown:tr('状态待确认')};
 const chatValue=c=>JSON.stringify({client:c.client,key:c.key});
 function filteredChats(cards,query){
  const search=query.trim().toLocaleLowerCase();
- return cards.filter(c=>(!search||[c.title,c.project?.name,names[c.client]].filter(Boolean).join(' ').toLocaleLowerCase().includes(search)));
-}
-function projectGroups(cards){
- const groups=new Map();for(const card of cards){if(!card.project?.id)continue;const id=card.project.id;
- if(!groups.has(id))groups.set(id,{...card.project,cards:[]});groups.get(id).cards.push(card);}
- return [...groups.values()];
+ return cards.filter(c=>!c.source_unavailable&&c.has_content!==false&&(!search||[c.title,names[c.client]].filter(Boolean).join(' ').toLocaleLowerCase().includes(search)));
 }
 function toggleChatBrowser(open){
  document.body?.classList.toggle('chat-nav-open',open);$('chatBrowse').setAttribute('aria-expanded',String(open));
@@ -31,31 +27,44 @@ function chatRow(card){
  button.append(text,badge);button.onclick=()=>{toggleChatBrowser(false);void choose(chatValue(card));};return button;
 }
 function renderChatNavigation(){
- const shown=filteredChats(chatCatalog,chatSearch),signature=JSON.stringify([shown.map(c=>[c.key,c.title,c.project,c.activity_state,age(c.last_activity_ms)]),selected,chatSearch]);
+ const shown=filteredChats(chatCatalog,chatSearch),signature=JSON.stringify([shown.map(c=>[c.client,c.key,c.title,c.is_helper,c.activity_state,age(c.last_activity_ms)]),selected,chatSearch]);
  const list=$('chatLists');if(list.dataset.signature===signature)return;list.dataset.signature=signature;
- const focused=list.contains(document.activeElement)?document.activeElement?.dataset.chatValue:null;let restore;
- const add=(container,card)=>{const row=chatRow(card);container.append(row);if(row.dataset.chatValue===focused)restore=row;};
- list.replaceChildren();const projects=projectGroups(shown);
- list.append(make('h2',tr('项目')));if(projects.length){for(const group of projects){
-  const folder=make('details');folder.className='chat-project';folder.open=openProjects.has(group.id)||Boolean(chatSearch);
-  const heading=make('summary');heading.append(make('span','▱'),make('span',group.name),make('small',String(group.cards.length)));folder.append(heading);
-  folder.addEventListener('toggle',()=>{if(folder.open)openProjects.add(group.id);else openProjects.delete(group.id);});
-  const rows=make('div');rows.className='project-chats';for(const card of group.cards)add(rows,card);folder.append(rows);list.append(folder);
- }}else {const empty=make('p',tr('暂未读到相符的项目'));empty.className='chat-list-empty';list.append(empty);}
- list.append(make('h2',chatSearch?tr('搜索结果'):tr('最近聊天')));
- for(const card of shown.filter(c=>!c.is_helper))add(list,card);
- const helpers=shown.filter(c=>c.is_helper);if(helpers.length){const section=make('details');section.className='chat-project';section.append(make('summary',tr('协助助手的工作 · ')+helpers.length));for(const card of helpers)add(section,card);list.append(section);}
+ const active=list.contains(document.activeElement)?document.activeElement:null,focused=active?.dataset.chatValue,focusedClient=active?.dataset.clientToggle,scroll=list.scrollTop;let restore;
+ // Remember manual folds only outside search. Searching briefly opens matches,
+ // then restores the user's folds; a new page always starts collapsed.
+ if(!chatRenderedSearch)for(const section of list.querySelectorAll('details'))chatExpansion.set(section.dataset.client,section.open);
+ chatRenderedSearch=chatSearch.trim();
+ list.replaceChildren();
+ for(const client of ['claude','codex','deepcode']){
+  const chats=shown.filter(c=>c.client===client);if(!chats.length)continue;
+  const section=make('details');section.className='chat-client';section.dataset.client=client;section.open=Boolean(chatRenderedSearch)||chatExpansion.get(client)===true;
+  const summary=make('summary');summary.dataset.clientToggle=client;summary.append(make('span',names[client]),make('small',String(chats.length)));
+  const rows=make('div');rows.className='client-chats';section.append(summary,rows);list.append(section);
+  if(client===focusedClient)restore=summary;
+  for(const card of chats){const row=chatRow(card);rows.append(row);if(row.dataset.chatValue===focused)restore=section.open?row:summary;}
+ }
  if(!shown.length){const message=make('p',chatSearch?tr('没有找到相符的聊天。'):tr('还没有读到聊天记录。'));message.className='chat-list-empty';list.append(message);}
  $('chatListNote').textContent=chatLimited?tr('先显示最近读到的聊天；更早的内容可在记录详情查看。'):tr('按本机读到的记录整理。缺少依据时保留“状态待确认”。');
  restore?.focus();
+ list.scrollTop=scroll;
 }
+function chatIdentity(value){try{const key=value.key.replace(/-/g,'+').replace(/_/g,'/'),p=JSON.parse(atob(key+'='.repeat((4-key.length%4)%4)));return Array.isArray(p)&&p.length===5&&typeof p[2]==='string'&&p[2]&&!p[2].startsWith('source-')?JSON.stringify([value.client,p[2],p[3],p[4]]):null;}catch{return null;}}
 function continuation(selection,cards){
- // A resumed chat can move to a new file. Match explicit client/session/agent
- // identity, never a title. This only changes the current page selection.
- const identity=value=>{try{const key=value.key.replace(/-/g,'+').replace(/_/g,'/'),p=JSON.parse(atob(key+'='.repeat((4-key.length%4)%4)));return Array.isArray(p)&&p.length===5&&typeof p[2]==='string'&&p[2]&&!p[2].startsWith('source-')?JSON.stringify([value.client,p[2],p[3],p[4]]):null;}catch{return null;}};
- const prior=identity(selection);if(!prior)return null;
- const matches=cards.filter(c=>identity(c)===prior);
+ // Same transcript identity, or Claude Desktop's explicit current/prior IDs.
+ // Never infer a relationship from matching titles, paths or recent activity.
+ const prior=chatIdentity(selection);if(!prior)return null;const scope=JSON.parse(prior);
+ const matches=cards.filter(c=>{
+  if(chatIdentity(c)===prior)return true;
+  if(scope[0]!=='claude'||scope[2]!==''||scope[3]!==0||c.client!=='claude'||!c.conversation_id||!Array.isArray(c.continuation_sessions))return false;
+  const target=chatIdentity(c);if(!target)return false;const parts=JSON.parse(target);
+  return parts[2]===''&&parts[3]===0&&c.continuation_sessions.includes(scope[1]);
+ });
  return matches.length===1?{client:matches[0].client,key:matches[0].key}:null;
+}
+async function continueSelection(next){
+ // A rewind changes the evidence branch: revoke its grant and clear its old
+ // explanation. Moving the same transcript to another file can retain it.
+ await choose(JSON.stringify(next),chatIdentity(selected)!==null&&chatIdentity(selected)===chatIdentity(next));
 }
 async function api(route,data){
  let response;
@@ -100,7 +109,7 @@ function render(data){current=data;$('chatName').textContent=data.title;$('chatL
  $('latestStep').hidden=!data.last_step;if(data.last_step){$('stepAction').textContent=data.last_step.action;$('stepResult').textContent=data.last_step.result;}
  $('historyLink').href='/history?'+new URLSearchParams({client:data.client,key:data.key,lang:uiLanguage});
  $('historyRecords').href=$('historyLink').href;
- $('historyScope').textContent=tr('这次聊天的历史：')+data.title+tr(' · 切换左侧聊天可回顾项目中的其他工作。');
+ $('historyScope').textContent=tr('这次聊天的历史：')+data.title+tr(' · 切换左侧聊天可查看其他聊天的记录。');
  $('scope').textContent=(data.source_unavailable?tr('这段原文暂时读不到，等待来源恢复。'):data.partial?tr('这次只看到一部分，缺失内容没有补猜。'):tr('依据最近可读取的一段聊天。'))+' '+(uiLanguage==='en'?'Last activity: '+age(data.last_activity_ms)+'.':age(data.last_activity_ms)+tr('有活动。'));
  $('recent').replaceChildren();for(const item of data.recent)$('recent').append(make('p',(item.kind==='assistant'?tr('助手说：'):tr('观察到：'))+item.text));
  const applicable=modelAnswer&&modelAnswer.revision===data.revision;
@@ -156,16 +165,21 @@ function renderProviderSettings(){
  $('providerDisable').hidden=!model?.automatic_on_open;
  $('providerNote').textContent=(model?.automatic_on_open?tr('已开启：'):tr('开启后：'))+tr('只解释所选聊天的短摘录，使用对应 Agent 的账号额度。自动模式优先使用该聊天的 Agent，未安装、未登录或版本不支持时选择另一个可用的 Agent；调用失败时保留本机说明。');
 }
-async function setExplanationProvider(enabled){
- if(enabled&&(autoRun||readingBusy)){$('providerNote').textContent=tr('正在生成一段说明，请等它结束后再更改。');return;}
- const enable=$('providerEnable'),disable=$('providerDisable');enable.disabled=true;disable.disabled=true;if(enabled)enable.textContent=tr('正在检查助手…');
+async function setExplanationProvider(enabled,provider=enabled?$('explanationProvider').value:model.provider){
+ if(providerSaving||!model)return;
+ if((enabled||provider!==model.provider)&&(autoRun||readingBusy||workInFlight)){$('explanationProvider').value=model.provider;$('providerNote').textContent=tr('选择尚未保存：正在生成一段说明，请等它结束后再切换。');return;}
+ const enable=$('providerEnable'),disable=$('providerDisable'),select=$('explanationProvider');providerSaving=true;enable.disabled=true;disable.disabled=true;select.disabled=true;
+ $('providerNote').textContent=tr('正在保存解释来源…');if(enabled)enable.textContent=tr('正在检查助手…');
+ let saved=false;
  try{
-  const updated=await api('explanation-settings',{provider:enabled?$('explanationProvider').value:model.provider,automatic_on_open:enabled});
+  const updated=await api('explanation-settings',{provider,automatic_on_open:enabled});
   epoch++;resetReading();model=updated;grant=null;autoRun=null;modelAnswer=null;modelPending=false;attemptMessage='';nextRetry=0;
-  renderProviderSettings();if(current)render(current);void automatic();
- }catch(error){$('providerNote').textContent=error.message;}
- finally{enable.disabled=false;disable.disabled=false;enable.textContent=model?.automatic_on_open?tr('应用并继续解释'):tr('开启解释');}
+  renderProviderSettings();$('providerNote').textContent=tr('解释来源已保存。')+' '+$('providerNote').textContent;if(current)render(current);saved=true;
+ }catch(error){select.value=model.provider;$('providerNote').textContent=tr('更改未保存，仍保留原解释来源。')+' '+error.message;}
+ finally{providerSaving=false;enable.disabled=false;disable.disabled=false;select.disabled=false;enable.textContent=model?.automatic_on_open?tr('应用并继续解释'):tr('开启解释');}
+ if(saved)void automatic();
 }
+$('explanationProvider').onchange=()=>setExplanationProvider(Boolean(model?.automatic_on_open),$('explanationProvider').value);
 $('providerEnable').onclick=()=>setExplanationProvider(true);
 $('providerDisable').onclick=()=>setExplanationProvider(false);
 async function stopAuto(){const old=grant;grant=null;if(old){try{await api('glance-stop',{grant:old});}catch{}}}
@@ -175,14 +189,14 @@ async function refresh(force=false){if(busy){refreshAgain=refreshAgain||force;re
  for(const [helper,label] of [[false,tr('你的聊天')],[true,tr('协助助手的工作')]]){const group=make('optgroup');group.label=label;for(const c of data.cards.filter(c=>Boolean(c.is_helper)===helper)){const option=make('option',names[c.client]+' · '+c.title+' · '+age(c.last_activity_ms));option.value=JSON.stringify({client:c.client,key:c.key});group.append(option);}if(group.children.length)$('chat').append(group);}
  renderChatNavigation();note('');$('connection').textContent=synthetic?tr('模拟活动 · 用于检查'):data.cards.length?tr('已连接本机记录'):tr('已连接 · 等待聊天');if(!data.cards.length){const emptyEpoch=++epoch;current=null;selected=null;modelAnswer=null;autoRun=null;modelPending=false;void stopAuto();$('work').hidden=true;$('empty').hidden=false;$('chat').append(make('option',tr('尚未发现可显示的聊天')));try{const info=await api('clients');if(emptyEpoch===epoch)emptyHelp(info.clients);}catch{}return;}
  if(prior&&[...$('chat').options].some(o=>o.value===prior))$('chat').value=prior;
- else if(selected){const next=continuation(selected,data.cards);if(next){await choose(JSON.stringify(next),true);return;}const option=make('option',names[selected.client]+' · '+(current?.title||tr('当前聊天')));option.value=prior;$('chat').prepend(option);$('chat').value=prior;}
+ else if(selected){const next=continuation(selected,data.cards);if(next){await continueSelection(next);return;}const option=make('option',names[selected.client]+' · '+(current?.title||tr('当前聊天')));option.value=prior;$('chat').prepend(option);$('chat').value=prior;}
  else selected=JSON.parse($('chat').value);}
  if(!selected)return;const data=await api('glance?'+new URLSearchParams(selected));if(own!==epoch)return;note('');render(data);void loadUnderstanding(force);$('connection').textContent=synthetic?tr('模拟活动 · 用于检查'):tr('已连接本机记录');$('refreshNote').textContent=synthetic?tr('模拟活动 · 用于检查'):tr('自动跟进新消息');void automatic();
  }catch(error){if(own===epoch){note(error.message);$('connection').textContent=tr('暂未连上');if(current){$('status').textContent=tr('显示断开前内容');$('status').className='status quiet';}}}finally{busy=false;if(refreshAgain){refreshAgain=false;refresh(true);}}}
 function revokeOnClose(token){if(token)fetch('/api/glance-stop',{method:'POST',headers:{'Content-Type':'application/json','X-Yukio-Workbench':'1','X-Yukio-Language':uiLanguage},body:JSON.stringify({grant:token}),keepalive:true}).catch(()=>{});}
 function closePage(){resetReading();pageClosed=true;epoch++;const old=grant;grant=null;autoRun=null;modelPending=false;revokeOnClose(old);}
 async function automatic(){
- if(pageClosed||!model?.automatic_on_open||!selected||!current||current.key!==selected.key||autoRun)return;
+ if(pageClosed||providerSaving||!model?.automatic_on_open||!selected||!current||current.key!==selected.key||autoRun)return;
  if(!grant&&Date.now()<nextRetry)return;
  const run={},own=epoch,selection={...selected};autoRun=run;
  const active=()=>!pageClosed&&own===epoch&&autoRun===run;

@@ -413,7 +413,14 @@ def codex_overrides():
         for key in ('model', 'model_provider', 'model_reasoning_effort', 'cli_auth_credentials_store',
                     'forced_login_method', 'forced_chatgpt_workspace_id'):
             if key in value:
-                args += ['-c', key + '=' + toml(value[key])]
+                setting = value[key]
+                # These bounded excerpts have a 90-second deadline. Inheriting
+                # a coding session's maximum effort can exhaust it before any
+                # explanation is returned. Keep the user's model, account and
+                # lower effort choices; cap only this child invocation.
+                if key == 'model_reasoning_effort' and setting in ('high', 'xhigh', 'max', 'ultra'):
+                    setting = 'medium'
+                args += ['-c', key + '=' + toml(setting)]
         provider = value.get('model_provider')
         selected = value.get('model_providers', {}).get(provider)
         if selected:

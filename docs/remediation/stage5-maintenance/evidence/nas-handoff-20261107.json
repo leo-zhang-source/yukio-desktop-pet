@@ -1,0 +1,16 @@
+{
+  "scope": "explicit_archive_NAS_readback",
+  "remote": "nas:/volume1/leo/yukio/maintenance/stage5-20261107/candidate-57-evidence/evidence.tar.gz",
+  "checks": {
+    "remote_hash_matches": true,
+    "restored_manifest_matches": true,
+    "original_unchanged": true
+  },
+  "passed": true,
+  "sha256": "d71375bd9cb12bd0c348fc0718dfa8c4da5ad8e13e11e56eae938b8730441c8d",
+  "remote_sha256": "d71375bd9cb12bd0c348fc0718dfa8c4da5ad8e13e11e56eae938b8730441c8d",
+  "readback_sha256": "d71375bd9cb12bd0c348fc0718dfa8c4da5ad8e13e11e56eae938b8730441c8d",
+  "bytes": 153432295,
+  "files": 46,
+  "seconds": 26.22
+}

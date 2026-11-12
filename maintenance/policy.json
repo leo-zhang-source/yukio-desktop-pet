@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "baseline": {
+    "branch": "codex/stage5-maintenance",
+    "source_commit": "2701916b9c471d34dc11ff421b27d90cbb801248",
+    "product": "Mac 5.4 Preview 2 (56)",
+    "current_worktree": "yukio-54-release",
+    "candidate_archive": "Versioned preview packages; installed App changes only within explicit delivery tasks"
+  },
+  "scope": {
+    "mac": "active",
+    "windows": "deferred_by_user",
+    "cloud_cowork": "deferred_by_user"
+  },
+  "product_acceptance": "independent_acceptance_paused_by_user",
+  "reviews": {
+    "open_failures_and_scope": {
+      "owner": "active project maintainer",
+      "last_reviewed": "2026-11-11",
+      "interval_days": 7,
+      "evidence": "docs/remediation/RELEASE-54-PREVIEW3.md"
+    },
+    "dependencies_and_clients": {
+      "owner": "active project maintainer",
+      "last_reviewed": "2026-11-07",
+      "interval_days": 30,
+      "evidence": "docs/remediation/stage5-maintenance/RESEARCH_LOG.md"
+    },
+    "recovery_and_storage": {
+      "owner": "active project maintainer",
+      "last_reviewed": "2026-11-07",
+      "interval_days": 90,
+      "evidence": "docs/remediation/stage5-maintenance/evidence/nas-recovery-20261107.json"
+    }
+  },
+  "input_locks": {
+    "scripts/macos-build-requirements.txt": "041c754c4a3c02fe76209b1ce961defe61652e665a412714874c16dcd8277fe8",
+    "scripts/maintenance-tools-requirements.txt": "74f812895c5fd4515ffc34ddfc35d436c92e5336428c467300e53e94e0c42a5b",
+    "YukioPlayer/Package.resolved": "44370a704a00901a505e56fe2542eee70322f33ca1812a2d72a85544d1e8da74",
+    "scripts/macos-release.json": "7f400faaf1dcc48ea46e75d409cc04eaa4e64e47b31d68a84833a1c289445a75",
+    ".github/workflows/actions.lock": "c7646b7f47658051342db939a2403f5f7c783e9d0807d439a76e1b2058830b34",
+    ".github/workflows/remediation-checks.yml": "0692e439f27ccebbef4feb6c542e525d24156fb5efce9b7b839985912e855f1a",
+    ".github/workflows/agent-portability.yml": "f9f234c579abc21c8890ef40bf7d29d146ef4cf071f1fe08119eacb6984a055d"
+  },
+  "documents": [
+    "DEVELOPMENT.md",
+    "docs/remediation/stage5-maintenance/README.md",
+    "docs/remediation/stage5-maintenance/MAINTENANCE.md",
+    "docs/remediation/stage5-maintenance/IMPLEMENTATION.md",
+    "docs/remediation/stage5-maintenance/STORAGE.md"
+  ],
+  "open_issues": [
+    {
+      "id": "S5-05-agent-setup",
+      "status": "not_in_current_product",
+      "summary": "The older branch’s separate assistant setup component is absent from Preview 2; its 4 tests cannot validate this product. Existing onboarding remains covered separately."
+    },
+    {
+      "id": "S5-06-remote",
+      "status": "tracked_in_release_record",
+      "summary": "This upload is authorized; actual workflow execution and branch-rule status are recorded in docs/remediation/RELEASE-54-PREVIEW3.md. Neither a local check nor upload alone establishes remote enforcement."
+    },
+    {
+      "id": "S5-09-independent",
+      "status": "paused_by_user",
+      "summary": "Independent first use, actual multi-client acceptance and 30-minute GUI performance remain paused."
+    },
+    {
+      "id": "S5-10-release",
+      "status": "not_run",
+      "summary": "Developer ID/notarization, macOS 13 and Intel validation remain separate; no public-ready claim."
+    },
+    {
+      "id": "DEP-Sparkle-2.10.1",
+      "status": "needs_package_acceptance",
+      "summary": "Unicode update-path fix reviewed; existing 2.10.0 retained until an actual update/cancel/relaunch acceptance can run."
+    },
+    {
+      "id": "DEP-native-runtime",
+      "status": "reviewed_package_evidence_separate",
+      "summary": "Python 3.12.16 upstream review is in PREVIEW3-DEPENDENCIES-20261111.md; exact package/native results are in RELEASE-54-PREVIEW3.md. This is not an exhaustive native-library vulnerability audit."
+    }
+  ]
+}

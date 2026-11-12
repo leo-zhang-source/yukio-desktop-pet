@@ -54,6 +54,45 @@ class GlanceTests(unittest.TestCase):
         finally:store.close()
     def detail(self):return self.glance.detail('codex',self.key)
 
+    def test_client_scaffolding_is_not_a_user_request(self):
+        for context in ('<system-reminder>Use a scratch workspace.</system-reminder>',
+                        '<task-notification><summary>A subscription paused.</summary></task-notification>',
+                        'This session is being continued from a previous conversation that ran out of context. Old task summary.',
+                        '[Request interrupted by user for tool use]',
+                        '<system-reminder>Truncated client title…'):
+            with self.subTest(context=context):self.assertEqual(user_text(context),'')
+        self.assertEqual(user_text('<system-reminder>Internal note.</system-reminder>\n请修复聊天列表。'),'请修复聊天列表。')
+        self.assertEqual(user_text('请解释 system-reminder 是什么。'),'请解释 system-reminder 是什么。')
+
+    def test_bad_client_title_uses_real_request_after_context_and_tool_rows(self):
+        self.rows = [self.rows[0]] + [dict(type='response_item',payload=dict(type='message',role='user',content=[dict(type='input_text',text='<system-reminder>Internal note.</system-reminder>')])) for _ in range(8)] + self.rows[1:]
+        self.write();self.ingest()
+        (self.root/'session_index.jsonl').write_text(json.dumps(dict(id='chat-one',thread_name='<system-reminder>Internal note…'))+'\n')
+        self.key=self.history.groups('codex')['groups'][0]['key']
+        card=self.glance.cards()['cards'][0];detail=self.detail()
+        self.assertIn('请简化首页',card['title']);self.assertEqual(card['title'],detail['title'])
+        for value in (card['title'],detail['goal'],str(detail['work_notes'])):
+            self.assertNotIn('system-reminder',value);self.assertNotIn('Internal note',value)
+
+    def test_attached_image_envelopes_do_not_leak_into_the_short_request(self):
+        request='请修正重复聊天。\n<image name=[Image #1] path="/private/'+('long-folder/'*60)+'screenshot.png">Attachment context only.</image>\n也要核对 Claude。'
+        self.rows[2]['payload']['content'][0]['text']=request
+        self.write();self.ingest();self.key=self.history.groups('codex')['groups'][0]['key']
+        detail=self.detail()
+        self.assertEqual(user_text(request),'请修正重复聊天。 也要核对 Claude。')
+        for value in (detail['goal'],detail['goal_short']):
+            self.assertIn('核对 Claude',value);self.assertNotIn('<image',value);self.assertNotIn('path=',value)
+        self.assertEqual(user_text('请解释 HTML 中的 <image> 元素。'),'请解释 HTML 中的 <image> 元素。')
+
+    def test_fallback_title_does_not_change_when_opening_a_long_chat(self):
+        (self.root/'session_index.jsonl').unlink()
+        def message(text,role='user'):
+            return dict(type='response_item',payload=dict(type='message',role=role,content=[dict(type='input_text',text=text)]))
+        self.rows=[self.rows[0]]+[message('<system-reminder>Context only.</system-reminder>') for _ in range(35)]+[message('请修复聊天列表。')]+[message('正在检查。','assistant') for _ in range(120)]+[message('还要保留搜索。')]
+        self.write();self.ingest();self.key=self.history.groups('codex')['groups'][0]['key']
+        self.assertEqual(self.glance.cards()['cards'][0]['title'],'请修复聊天列表')
+        self.assertEqual(self.detail()['title'],'请修复聊天列表')
+
     def test_title_goal_file_and_reason_have_concrete_content(self):
         d=self.detail();self.assertEqual(d['title'],'简化雪绪首页');self.assertIn('简化首页',d['goal']);self.assertTrue(d['content'].startswith('我先查看入口文件。'));self.assertIn('还没看到结果',d['content']);self.assertIn('main.py',str(d['results']))
         self.assertIn('保留原来的使用方式',d['reason']);self.assertEqual(d['reason_basis'],'assistant')
@@ -107,6 +146,47 @@ class GlanceTests(unittest.TestCase):
 
     def test_missing_source_still_names_chat_without_inventing_content(self):
         self.path.unlink();d=self.detail();self.assertEqual(d['title'],'简化雪绪首页');self.assertTrue(d['source_unavailable']);self.assertFalse(d['evidence'])
+
+    def test_navigation_hides_missing_source_and_restores_it_when_readable(self):
+        self.assertEqual(len(self.glance.cards()['cards']),1)
+        parked=self.path.with_suffix('.parked');self.path.rename(parked)
+        before=self.db.read_bytes()
+        self.assertEqual(self.glance.cards()['cards'],[])
+        self.assertEqual(len(self.history.groups('codex')['groups']),1)
+        parked.rename(self.path)
+        self.assertEqual(self.glance.cards()['cards'][0]['session_id'],'chat-one')
+        self.assertEqual(self.db.read_bytes(),before)
+
+    def test_navigation_hides_named_metadata_and_system_only_chats(self):
+        self.rows=[self.rows[0],dict(type='response_item',payload=dict(type='message',role='user',content=[dict(type='input_text',text='<system-reminder>Internal context only.</system-reminder>')]))]
+        self.write();self.ingest()
+        self.assertEqual(self.glance.cards()['cards'],[])
+        self.rows.append(dict(type='response_item',payload=dict(type='message',role='user',content=[dict(type='input_text',text='好')])) )
+        self.write();self.ingest()
+        self.assertEqual(len(self.glance.cards()['cards']),1)
+
+    def test_navigation_retains_readable_opening_when_recent_records_have_no_text(self):
+        self.rows=[self.rows[0],self.rows[2]]+[dict(type='event_msg',payload=dict(type='token_count')) for _ in range(100)]
+        self.write();self.ingest()
+        self.assertEqual(self.glance.cards()['cards'][0]['session_id'],'chat-one')
+
+    def test_navigation_retains_public_assistant_only_chat_but_not_reasoning_only(self):
+        self.rows=[self.rows[0],self.rows[3]]+[dict(type='event_msg',payload=dict(type='token_count')) for _ in range(100)]
+        self.write();self.ingest()
+        self.assertEqual(len(self.glance.cards()['cards']),1)
+        self.rows[1]['payload']['phase']='analysis'
+        self.write();self.ingest()
+        self.assertEqual(self.glance.cards()['cards'],[])
+
+    def test_empty_recent_chats_do_not_displace_older_readable_chat(self):
+        store=ActivityHistory(self.db)
+        try:
+            for i in range(55):
+                path=self.sources/('empty-'+str(i)+'.jsonl')
+                path.write_text(json.dumps(dict(type='session_meta',payload=dict(id='empty-'+str(i))))+'\n')
+                store.ingest(path)
+        finally:store.close()
+        self.assertEqual([c['session_id'] for c in self.glance.cards()['cards']],['chat-one'])
 
     def test_client_title_database_is_closed_after_read(self):
         from unittest.mock import patch
@@ -317,7 +397,7 @@ class GlanceTests(unittest.TestCase):
         self.write();self.ingest();self.assertEqual(self.detail()['status'],'刚有新活动')
 
     def test_helper_chats_are_identified_and_follow_main_chats(self):
-        p=self.sources/'helper.jsonl';p.write_text(json.dumps(dict(type='session_meta',timestamp='2026-10-24T12:00:00Z',payload=dict(id='helper',source=dict(subagent=dict(thread_spawn=dict(parent_thread_id='chat-one')))) ))+'\n')
+        p=self.sources/'helper.jsonl';p.write_text(json.dumps(dict(type='session_meta',timestamp='2026-10-24T12:00:00Z',payload=dict(id='helper',source=dict(subagent=dict(thread_spawn=dict(parent_thread_id='chat-one')))) ))+'\n'+json.dumps(dict(type='response_item',payload=dict(type='message',role='user',content=[dict(type='input_text',text='检查首页')])) )+'\n')
         store=ActivityHistory(self.db)
         try:store.ingest(p)
         finally:store.close()

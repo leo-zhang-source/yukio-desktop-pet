@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "scope": "Mac source, workbench, shared scenarios and release/maintenance tooling; real installation remains separate",
+  "suites": {
+    "swift": [
+      "YukioPlayer/Tests/YukioCoreTests/AgentSourceTests.swift",
+      "YukioPlayer/Tests/YukioCoreTests/BlinkClockTests.swift",
+      "YukioPlayer/Tests/YukioCoreTests/BlinkOverlayCatalogTests.swift",
+      "YukioPlayer/Tests/YukioCoreTests/BrowserOriginTests.swift",
+      "YukioPlayer/Tests/YukioCoreTests/CardStackTests.swift",
+      "YukioPlayer/Tests/YukioCoreTests/ChatPickTests.swift",
+      "YukioPlayer/Tests/YukioCoreTests/ChatWindowVisibilityTests.swift",
+      "YukioPlayer/Tests/YukioCoreTests/CodexHelperActivityTests.swift",
+      "YukioPlayer/Tests/YukioCoreTests/CodexOpenChatTests.swift",
+      "YukioPlayer/Tests/YukioCoreTests/CodexParserTests.swift",
+      "YukioPlayer/Tests/YukioCoreTests/CodexQuestionLifecycleTests.swift",
+      "YukioPlayer/Tests/YukioCoreTests/CodexResultCorrelationTests.swift",
+      "YukioPlayer/Tests/YukioCoreTests/DeepCodeParserTests.swift",
+      "YukioPlayer/Tests/YukioCoreTests/HangTests.swift",
+      "YukioPlayer/Tests/YukioCoreTests/L10nTests.swift",
+      "YukioPlayer/Tests/YukioCoreTests/LiveSourceTests.swift",
+      "YukioPlayer/Tests/YukioCoreTests/MotionTests.swift",
+      "YukioPlayer/Tests/YukioCoreTests/OpenChatTests.swift",
+      "YukioPlayer/Tests/YukioCoreTests/ParserTests.swift",
+      "YukioPlayer/Tests/YukioCoreTests/ProviderIdentityTests.swift",
+      "YukioPlayer/Tests/YukioCoreTests/QuestionGenerationTests.swift",
+      "YukioPlayer/Tests/YukioCoreTests/QuestionPresentationStateTests.swift",
+      "YukioPlayer/Tests/YukioCoreTests/QuestionTests.swift",
+      "YukioPlayer/Tests/YukioCoreTests/RemediationScenarioProbeTests.swift",
+      "YukioPlayer/Tests/YukioCoreTests/ReminderTests.swift",
+      "YukioPlayer/Tests/YukioCoreTests/RouterTests.swift",
+      "YukioPlayer/Tests/YukioCoreTests/SessionLinkTests.swift",
+      "YukioPlayer/Tests/YukioCoreTests/StatusTests.swift",
+      "YukioPlayer/Tests/YukioCoreTests/TimestampTests.swift",
+      "YukioPlayer/Tests/YukioCoreTests/VisibleChatTests.swift",
+      "YukioPlayer/Tests/YukioCoreTests/VisibleChatTitleTests.swift",
+      "YukioPlayer/Tests/YukioPlayerTests/ApprovalTests.swift",
+      "YukioPlayer/Tests/YukioPlayerTests/BackgroundAnswersTests.swift",
+      "YukioPlayer/Tests/YukioPlayerTests/BrowserChatPermissionTests.swift",
+      "YukioPlayer/Tests/YukioPlayerTests/BrowserDestinationTests.swift",
+      "YukioPlayer/Tests/YukioPlayerTests/ChatCardVisibilityTests.swift",
+      "YukioPlayer/Tests/YukioPlayerTests/CodexAnswerTransportTests.swift",
+      "YukioPlayer/Tests/YukioPlayerTests/IdleVisibilityTests.swift",
+      "YukioPlayer/Tests/YukioPlayerTests/LaunchAtLoginTests.swift",
+      "YukioPlayer/Tests/YukioPlayerTests/LowerSignSettingsTests.swift",
+      "YukioPlayer/Tests/YukioPlayerTests/PetContextMenuTests.swift",
+      "YukioPlayer/Tests/YukioPlayerTests/PetRenderingTests.swift",
+      "YukioPlayer/Tests/YukioPlayerTests/QuestionDraftTests.swift",
+      "YukioPlayer/Tests/YukioPlayerTests/SelectedChatHeaderTests.swift",
+      "YukioPlayer/Tests/YukioPlayerTests/SettingsLayoutTests.swift",
+      "YukioPlayer/Tests/YukioPlayerTests/SkinTests.swift",
+      "YukioPlayer/Tests/YukioPlayerTests/SoftwareUpdateFlowTests.swift",
+      "YukioPlayer/Tests/YukioPlayerTests/SoftwareUpdateSettingsTests.swift",
+      "YukioPlayer/Tests/YukioPlayerTests/TaskBubbleScalingTests.swift",
+      "YukioPlayer/Tests/YukioPlayerTests/WorkbenchPanelTests.swift",
+      "YukioPlayer/Tests/YukioPlayerTests/WorkbenchRuntimeTests.swift"
+    ],
+    "python": [
+      "tools/activity-workbench/test_agent_explanation.py",
+      "tools/activity-workbench/test_agent_setup.py",
+      "tools/activity-workbench/test_chat_catalog.py",
+      "tools/activity-workbench/test_codex_desktop_discovery.py",
+      "tools/activity-workbench/test_context.py",
+      "tools/activity-workbench/test_explanation.py",
+      "tools/activity-workbench/test_explanation_recipient.py",
+      "tools/activity-workbench/test_generic_agents.py",
+      "tools/activity-workbench/test_glance.py",
+      "tools/activity-workbench/test_handoffs.py",
+      "tools/activity-workbench/test_history_restart.py",
+      "tools/activity-workbench/test_history_review.py",
+      "tools/activity-workbench/test_interface_localization.py",
+      "tools/activity-workbench/test_language_context.py",
+      "tools/activity-workbench/test_launcher.py",
+      "tools/activity-workbench/test_local_model_visibility.py",
+      "tools/activity-workbench/test_page_automation.py",
+      "tools/activity-workbench/test_plain_language.py",
+      "tools/activity-workbench/test_project_context.py",
+      "tools/activity-workbench/test_reading.py",
+      "tools/activity-workbench/test_recorder_status.py",
+      "tools/activity-workbench/test_startup_lifecycle.py",
+      "tools/activity-workbench/test_task_summary.py",
+      "tools/activity-workbench/test_work_understanding.py",
+      "tools/activity-workbench/test_workbench.py"
+    ],
+    "node": [
+      "tools/activity-workbench/test_explanation_ui.cjs",
+      "tools/activity-workbench/test_glance_ui.cjs",
+      "tools/activity-workbench/test_language_ui.cjs"
+    ],
+    "release_python": [
+      "scripts/test_macos_build.py",
+      "scripts/test_macos_test_launcher.py",
+      "scripts/test_maintenance.py",
+      "scripts/test_maintenance_recovery.py",
+      "scripts/test_make_appcast.py"
+    ],
+    "progress_python": [
+      "tools/activity-progress/test_export_public.py",
+      "tools/activity-progress/test_runtime_status.py"
+    ]
+  },
+  "excluded": [
+    {
+      "path": "YukioWin native platform tests",
+      "reason": "Windows deferred by user"
+    },
+    {
+      "path": "remediation branch test_agent_setup_ui.cjs",
+      "reason": "Targets agent-setup.js, which is not part of Preview 2 product; not silently copied or reported as tested"
+    }
+  ]
+}

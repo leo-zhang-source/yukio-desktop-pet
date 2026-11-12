@@ -37,11 +37,26 @@ class WorkUnderstandingTests(unittest.TestCase):
 
     def prepare(self, scope='chat'): return self.view.prepared('codex', self.fx.key, scope)
 
+    def test_local_work_story_uses_readable_requests_and_keeps_technical_proof_separate(self):
+        self.fx.rows[2]['payload']['content'][0]['text']='<system-reminder>Internal workspace note.</system-reminder>\n请修复首页 `/tmp/private/main.py` 的聊天选择。'
+        self.fx.rows += [dict(type='response_item',payload=dict(type='message',role='user',content=[dict(type='input_text',text='<task-notification><summary>Internal event</summary></task-notification>')]))]
+        self.fx.write();self.fx.ingest()
+        self.fx.key=self.fx.history.groups('codex')['groups'][0]['key']
+        data,payload,refs=self.prepare()
+        story=data['local']['goal']['text']
+        self.assertIn('聊天选择',story)
+        for marker in ('system-reminder','task-notification','Internal','/tmp','main.py','`'):
+            self.assertNotIn(marker,story)
+        self.assertIn('main.py',encode(refs));self.assertNotIn('Internal',encode(payload))
+
     def add_project(self, count=2):
         """Real transcript parsing and project lookup, with constructed inputs."""
         state = self.fx.root/'state_5.sqlite'
         with closing(sqlite3.connect(state)) as db, db:
             db.execute('CREATE TABLE threads(id TEXT,cwd TEXT,rollout_path TEXT,title TEXT)')
+            db.executescript('CREATE TABLE projects(id TEXT,name TEXT); CREATE TABLE project_roots(project_id TEXT,path TEXT);')
+            db.execute('INSERT INTO projects VALUES(?,?)',('project-one','页面项目'))
+            db.execute('INSERT INTO project_roots VALUES(?,?)',('project-one','/demo/one/app'))
             db.execute('INSERT INTO threads VALUES(?,?,?,?)', ('chat-one','/demo/one/app',str(self.fx.path),'简化雪绪首页'))
             for i in range(count-1):
                 session = 'other-'+str(i); path = self.fx.sources/(session+'.jsonl')

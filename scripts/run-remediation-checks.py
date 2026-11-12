@@ -2,7 +2,7 @@
 """Repeat Mac/workbench checks with synthetic data and isolated child settings.
 
 Requires macOS, Swift 6.1+, Python 3.12+ and Node 22+. No Windows work is run.
-Exit 0 means the check baseline is stable; documented defects are still defects.
+Exit 0 means this automated baseline passed; product acceptance remains separate.
 """
 import argparse
 import hashlib
@@ -17,6 +17,9 @@ import subprocess
 import sys
 import time
 
+from maintenance_lib import (SUITES, discover, inventory_errors, source_fingerprint,
+                             parse_counts, run_passed, sha)
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -25,17 +28,7 @@ def write(path, value):
 
 
 def fingerprint():
-    paths = subprocess.check_output(['git', 'ls-files', '--cached', '--others', '--exclude-standard', '-z'], cwd=ROOT).decode().split('\0')
-    prefixes = ('YukioPlayer/Sources/', 'YukioPlayer/Tests/', 'tools/activity-workbench/', 'tests/remediation/')
-    explicit = {'YukioPlayer/Package.swift', 'YukioPlayer/Package.resolved',
-                'scripts/run-remediation-checks.py', '.github/workflows/remediation-checks.yml'}
-    h = hashlib.sha256()
-    for name in sorted(set(paths)):
-        if name and (name.startswith(prefixes) or name in explicit):
-            path = ROOT / name
-            if path.is_file():
-                h.update(name.encode() + b'\0' + hashlib.sha256(path.read_bytes()).digest())
-    return h.hexdigest()
+    return source_fingerprint(ROOT)
 
 
 def run(command, directory, env, log, timeout):
@@ -55,21 +48,11 @@ def run(command, directory, env, log, timeout):
                 os.killpg(process.pid, signal.SIGKILL)
                 process.wait()
             code = 124
-    return dict(exit_code=code, timed_out=timed_out, seconds=round(time.monotonic()-started, 2), log=log.name)
+    return dict(exit_code=code, timed_out=timed_out, seconds=round(time.monotonic()-started, 2), log=log.name, command=command)
 
 
 def counts(kind, log):
-    text = log.read_text(encoding='utf-8', errors='replace')
-    patterns = {'swift': r'Test run with (\d+) tests?', 'python': r'Ran (\d+) tests?', 'node': r'# tests (\d+)'}
-    matches = re.findall(patterns[kind], text)
-    count = int(matches[-1]) if matches else None
-    if kind == 'node':
-        skipped = re.findall(r'# skipped (\d+)', text)
-    elif kind == 'python':
-        skipped = re.findall(r'skipped=(\d+)', text)
-    else:
-        skipped = re.findall(r'Test run.*?with (\d+) tests? skipped', text)
-    return dict(tests=count, skipped=int(skipped[-1]) if skipped else 0)
+    return parse_counts(kind, log.read_text(encoding='utf-8', errors='replace'))
 
 
 def isolated_environment(out, python, node):
@@ -141,18 +124,28 @@ def main():
     swift, node = shutil.which('swift'), shutil.which('node')
     if not swift or not node:
         p.error('Install the documented Swift and Node prerequisites first')
+    swift_version = subprocess.check_output([swift, '--version'], text=True).strip()
+    node_version = subprocess.check_output([node, '--version'], text=True).strip()
+    version_match = re.search(r'Swift version (\d+)\.(\d+)', swift_version)
+    if not version_match or tuple(map(int, version_match.groups())) < (6, 1):
+        p.error('Swift 6.1+ is required')
+    if int(node_version.lstrip('v').split('.')[0]) < 22:
+        p.error('Node 22+ is required')
     out = args.out.expanduser().resolve()
+    if out.is_relative_to(ROOT):
+        p.error('Evidence must be in a new directory outside the source checkout')
     out.mkdir(parents=True, exist_ok=False, mode=0o700)
-    report = dict(git_head=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
+    report = dict(schema_version=2, inventory_errors=inventory_errors(ROOT), git_head=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
                   source_sha256=fingerprint(), system=platform.platform(), architecture=platform.machine(),
                   python=sys.version.split()[0],
-                  swift=subprocess.check_output([swift, '--version'], text=True).strip(),
-                  node=subprocess.check_output([node, '--version'], text=True).strip(),
+                  swift=swift_version, node=node_version,
                   scope=['macOS', 'workbench'], windows='deferred_by_user',
                   independent_installation_tested=False, full_suite=not args.probe_only,
                   runs=[], gate_passed=False, product_acceptance_passed=False)
     write(out / 'summary.json', report)
     try:
+        if report['inventory_errors']:
+            raise ValueError('; '.join(report['inventory_errors']))
         for number in range(1, args.repeat + 1):
             directory = out / ('run-' + str(number)); directory.mkdir()
             env = isolated_environment(directory, sys.executable, node)
@@ -168,7 +161,12 @@ def main():
                 suites['python'] = run([sys.executable, '-m', 'unittest', 'discover', '-s', 'tools/activity-workbench', '-p', 'test_*.py', '-v'],
                                        ROOT, env, directory / 'python.log', 600)
                 suites['python'].update(counts('python', directory / 'python.log'))
-                suites['node'] = run([node, '--test', '--test-reporter=tap', 'tools/activity-workbench/test_glance_ui.cjs', 'tools/activity-workbench/test_language_ui.cjs'],
+                for name, directory_name, timeout in [('release_python', 'scripts', 300),
+                                                       ('progress_python', 'tools/activity-progress', 120)]:
+                    suites[name] = run([sys.executable, '-m', 'unittest', 'discover', '-s', directory_name, '-p', 'test_*.py', '-v'],
+                                       ROOT, env, directory / (name + '.log'), timeout)
+                    suites[name].update(counts('python', directory / (name + '.log')))
+                suites['node'] = run([node, '--test', '--test-reporter=tap', *discover(ROOT)['node']],
                                      ROOT, env, directory / 'node.log', 120)
                 suites['node'].update(counts('node', directory / 'node.log'))
             shared = run([sys.executable, str(ROOT / 'tests/remediation/check_shared.py'),
@@ -177,8 +175,9 @@ def main():
             shared_report = json.loads((directory / 'shared.json').read_text()) if (directory / 'shared.json').exists() else None
             controls = negative_controls(directory, env, sys.executable) if shared_report else {'passed': False}
             unchanged = fingerprint() == report['source_sha256']
-            passed = (all(s['exit_code'] == 0 and s['tests'] is not None and s['tests'] > 0 for s in suites.values())
-                      and shared['exit_code'] == 0 and controls['passed'] and unchanged)
+            passed = (shared['exit_code'] == 0 and run_passed(
+                suites, shared_report['checks'] if shared_report else {}, controls, unchanged,
+                ['swift'] if args.probe_only else SUITES))
             result = dict(run=number, suites=suites, shared_exit=shared['exit_code'],
                           shared_counts=shared_report['checks'] if shared_report else None,
                           negative_controls=controls, source_unchanged=unchanged, gate_passed=passed)
@@ -187,7 +186,7 @@ def main():
             print(json.dumps(result), flush=True)
             if not passed:
                 break
-        signatures = [({k:(v['exit_code'],v['tests'],v['skipped']) for k,v in r['suites'].items()},r['shared_counts']) for r in report['runs']]
+        signatures = [({k:(v['exit_code'],v['tests'],v['skipped'],v['todo']) for k,v in r['suites'].items()},r['shared_counts']) for r in report['runs']]
         report['repeat_consistent'] = len(signatures) == args.repeat and all(s == signatures[0] for s in signatures)
         report['gate_passed'] = report['repeat_consistent'] and all(r['gate_passed'] for r in report['runs'])
         write(out / 'summary.json', report)
@@ -196,6 +195,12 @@ def main():
         report['runner_error'] = type(error).__name__ + ': ' + str(error)
         write(out / 'summary.json', report)
         raise
+    finally:
+        report['evidence_hashes'] = {str(path.relative_to(out)): sha(path)
+            for path in sorted(out.glob('run-*/*')) if path.is_file() and path.suffix in ('.log', '.json')}
+        report['evidence_hashes'].update({str(path.relative_to(out)): sha(path)
+            for path in sorted(out.glob('run-*/negative-controls/*')) if path.is_file()})
+        write(out / 'summary.json', report)
 
 
 if __name__ == '__main__':

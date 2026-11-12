@@ -1,0 +1,66 @@
+{
+  "git_head": "2701916b9c471d34dc11ff421b27d90cbb801248",
+  "source_sha256": "520b5518969b42ae2b1b4192b9ea4915c04e7a23a8ddc33245fc01b0461a7cf3",
+  "system": "macOS-27.2-arm64-arm-64bit-Mach-O",
+  "architecture": "arm64",
+  "python": "3.13.2",
+  "swift": "Apple Swift version 6.1.2 (swiftlang-6.1.2.1.2 clang-1700.0.13.5)\nTarget: arm64-apple-macosx18.0",
+  "node": "v25.8.0",
+  "scope": [
+    "macOS",
+    "workbench"
+  ],
+  "windows": "deferred_by_user",
+  "independent_installation_tested": false,
+  "full_suite": true,
+  "runs": [
+    {
+      "run": 1,
+      "suites": {
+        "swift": {
+          "exit_code": 1,
+          "timed_out": false,
+          "seconds": 22.92,
+          "log": "swift.log",
+          "tests": 248,
+          "skipped": 0
+        },
+        "python": {
+          "exit_code": 0,
+          "timed_out": false,
+          "seconds": 49.93,
+          "log": "python.log",
+          "tests": 334,
+          "skipped": 0
+        },
+        "node": {
+          "exit_code": 0,
+          "timed_out": false,
+          "seconds": 0.24,
+          "log": "node.log",
+          "tests": 52,
+          "skipped": 0
+        }
+      },
+      "shared_exit": 0,
+      "shared_counts": {
+        "PASS": 230,
+        "KNOWN_FAIL": 0,
+        "UNEXPECTED_FAIL": 0,
+        "UNEXPECTED_PASS": 0
+      },
+      "negative_controls": {
+        "wrong_assertion_exit": 1,
+        "wrong_assertion_detected": true,
+        "unexpected_pass_exit": 1,
+        "unexpected_pass_detected": true,
+        "passed": true
+      },
+      "source_unchanged": true,
+      "gate_passed": false
+    }
+  ],
+  "gate_passed": false,
+  "product_acceptance_passed": false,
+  "repeat_consistent": true
+}

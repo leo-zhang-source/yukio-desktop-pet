@@ -4,6 +4,11 @@ from explanation import complete_response,encode,ExplanationError,RESULT_SENTENC
 
 
 class PlainLanguageTests(unittest.TestCase):
+    def test_protocol_blocks_do_not_turn_into_mangled_paths(self):
+        text='正在检查首页。<task-notification><task-type>artifact-auto-react</task-type><summary>Internal event</summary></task-notification>'
+        self.assertEqual(plain_words(text),'正在检查首页。')
+        self.assertNotIn('<',plain_words('正在核对 <summary>页面说明</summary>。'))
+
     def test_explicit_role_survives_without_filename_path_code_or_id(self):
         text='调整雪绪 App 封面图（`/Users/demo/assets/cover_839174.png`），修改 `render_cover()`。'
         result=plain_words(text)

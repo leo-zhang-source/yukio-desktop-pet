@@ -1,0 +1,16 @@
+{
+  "scope": "explicit_archive_NAS_readback",
+  "remote": "nas:/volume1/leo/yukio/maintenance/stage5-20261107/recovery-run2/evidence.tar.gz",
+  "checks": {
+    "remote_hash_matches": true,
+    "restored_manifest_matches": true,
+    "original_unchanged": true
+  },
+  "passed": true,
+  "sha256": "864c90be78009f1e9f31793c9daaf9181c4970472cc4473560678c604ca028d9",
+  "remote_sha256": "864c90be78009f1e9f31793c9daaf9181c4970472cc4473560678c604ca028d9",
+  "readback_sha256": "864c90be78009f1e9f31793c9daaf9181c4970472cc4473560678c604ca028d9",
+  "bytes": 2987,
+  "files": 6,
+  "seconds": 1.16
+}

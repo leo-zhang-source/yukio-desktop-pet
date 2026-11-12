@@ -3,12 +3,12 @@
 [返回快速体验](MAC-USER-GUIDE.zh-CN.md) · [English](MAC-HELP.md)
 
 <a id="version"></a>
-适用于 Apple 芯片 Mac，macOS 13+。下方步骤对应 5.4 Preview 2（56）；旧版按钮和布局可能不同。
+适用于 Apple 芯片 Mac，macOS 13+。下方步骤对应 5.4 Preview 3（63）；旧版按钮和布局可能不同。
 
 <a id="install"></a>
 ## 1. 安装
 
-1. 从[下载页](https://github.com/leo-zhang-source/yukio-desktop-pet/releases/tag/v5.4-preview.2)获取 Mac DMG。
+1. 从[下载页](https://github.com/leo-zhang-source/yukio-desktop-pet/releases/tag/v5.4-preview.3)获取 Mac DMG。
 2. 打开 DMG，把 **Yukio.app** 拖到“应用程序”，再从那里启动。
 3. 若提示无法验证开发者，确认下载来源可信后，到“系统设置 → 隐私与安全性 → 仍要打开”。当前包尚未公证。
 
@@ -31,7 +31,7 @@
 不配置也能看活动；想让雪绪解释工作内容，再做这一步。
 
 1. 按 [Codex](https://learn.chatgpt.com/docs/codex/cli) 或 [Claude Code](https://code.claude.com/docs/en/setup) 官方说明，在这台 Mac 安装并登录自己的账号。普通网页登录不等于本机客户端已登录。
-2. 回到工作台顶部，在“解释交给”选择该助手。
+2. 回到工作台顶部，在“解释交给”选择该助手；选择立即保存，不会自动开启已关闭的解释。
 3. 点“开启解释”，选择聊天查看结果。未就绪时按页面提示处理安装、登录或版本问题。
 
 <a id="privacy"></a>
@@ -43,7 +43,7 @@
 
 | 想做什么 | 怎么操作 |
 | --- | --- |
-| 看当前工作 | 工作台侧栏选聊天，查看“正在发生” |
+| 看当前工作 | 展开侧栏的 Claude／Codex 分类，直接选聊天，查看“正在发生”；无可读内容的空聊天隐藏 |
 | 看详细解释或历史 | 点“详细解释正在发生的事”，或展开右侧“历史回顾”；未开启解释时看本机记录；开启后，展开历史分组可按需生成总结 |
 | 切换角色跟随的聊天 | 点头顶气泡展开卡片，再选聊天；恢复自动跟随可在雪绪设置中改回“自动选择” |
 | 移动、缩放角色 | 拖动角色；在雪绪设置中调大小 |

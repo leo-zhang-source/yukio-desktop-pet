@@ -1,6 +1,6 @@
 # Yukio · See your AI at work
 
-[简体中文](MAC-USER-GUIDE.zh-CN.md) · [Download](https://github.com/leo-zhang-source/yukio-desktop-pet/releases/tag/v5.4-preview.2)
+[简体中文](MAC-USER-GUIDE.zh-CN.md) · [Download](https://github.com/leo-zhang-source/yukio-desktop-pet/releases/tag/v5.4-preview.3)
 
 Yukio is a Mac desktop companion. It turns coding-agent activity into character animations, explains progress in a workbench, and alerts you when your input is needed.
 
@@ -28,10 +28,10 @@ Yukio is a Mac desktop companion. It turns coding-agent activity into character 
 | --- | --- |
 | Play the demo, then drag the companion | Twelve animations, independent blinking and drag feedback; demo states are simulated |
 | Give your local assistant a small task | Animations following real activity, followed by a completion notice |
-| Right-click the companion and select that chat | Current work, history and the evidence behind explanations |
+| Right-click the companion and select that chat | Expand the Claude / Codex group, select a chat, and view current work, history and explanation evidence |
 
 <a id="explain"></a>
-**Optional: AI explanations.** Install and sign in on this Mac using the official [Codex](https://learn.chatgpt.com/docs/codex/cli) or [Claude Code](https://code.claude.com/docs/en/setup) instructions. At the top of the workbench, choose Explain with, select your assistant and Enable explanations.
+**Optional: AI explanations.** Install and sign in on this Mac using the official [Codex](https://learn.chatgpt.com/docs/codex/cli) or [Claude Code](https://code.claude.com/docs/en/setup) instructions. At the top of the workbench, select your assistant under Explain with (saved immediately), then Enable explanations if needed.
 
 <a id="privacy"></a>
 Explanations send short chat excerpts and use the selected assistant's account allowance. Local activity remains available without them.
@@ -44,6 +44,6 @@ Explanations send short chat excerpts and use the selected assistant's account a
 <a id="verification"></a>
 ---
 
-For Apple silicon Macs. This guide covers 5.4 Preview 2 (56), which is still being tested. Windows and cloud Cowork are outside this walkthrough's scope.
+For Apple silicon Macs. This guide covers 5.4 Preview 3 (63), which is still being tested. Windows and cloud Cowork are outside this walkthrough's scope.
 
 [Setup and troubleshooting](MAC-HELP.md) · [Updating](MANUAL-UPDATES.md#en) · [Development and validation](../DEVELOPMENT.md)

@@ -310,6 +310,8 @@
   "提供的开发背景，非客户端观察事实": "Provided project background, not an observation from the client",
   "搜索结果": "Search Results",
   "搜索聊天或项目": "Search chats or projects",
+  "搜索聊天": "Search chats",
+  " · 切换左侧聊天可查看其他聊天的记录。": " · Select another chat on the left to view its history.",
   "搜索：": "Search: ",
   "操作与结果": "Action and result",
   "操作和对应结果": "Operation and matching result",
@@ -957,5 +959,13 @@
   "客户端功能检查通过，但登录状态检查超过 5 秒；这不代表未登录，尚未发送摘录。请运行 codex login status 或 claude auth status --json 检查所选客户端，再重试。": "CLI capabilities were checked, but checking login exceeded 5 seconds. This does not mean you are signed out; no excerpt was sent. Run codex login status or claude auth status --json for the selected client, then retry.",
   "解释接收方或客户端配置已变化，请重新预览后再发送。": "The explanation recipient or client configuration changed. Review a new preview before sending.",
   "安装并登录自己的助手：": "Install and sign in with your own account:",
-  "正在检查助手…": "Checking assistant…"
+  "正在检查助手…": "Checking assistant…",
+  "发送后由这台内网模型服务器处理；当前接口没有鉴权。": "Your LAN model server handles it. This connection has no authentication.",
+  "通过本机安装的助手发送到该客户端配置的模型服务，可能由远端服务器处理；使用你在该客户端的登录或凭据及相应用量。": "Sent through the locally installed assistant to the model service configured in that client, which may process it remotely. Uses your login or credentials and the corresponding usage allowance.",
+  "解释交给 ": "Explanations by ",
+  "无法确认接收方，请重新预览。": "The recipient could not be confirmed. Please open a new preview.",
+  "选择尚未保存：正在生成一段说明，请等它结束后再切换。": "Selection not saved: an explanation is being generated. Wait for it to finish before switching.",
+  "正在保存解释来源…": "Saving explanation provider…",
+  "解释来源已保存。": "Explanation provider saved.",
+  "更改未保存，仍保留原解释来源。": "Change not saved. The previous explanation provider is still selected."
 }

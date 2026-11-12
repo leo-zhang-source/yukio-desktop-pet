@@ -1,0 +1,11 @@
+{
+  "status": "passed",
+  "scope": "pinned_python_build_dependencies_only",
+  "lock_sha256": "041c754c4a3c02fe76209b1ce961defe61652e665a412714874c16dcd8277fe8",
+  "native_and_runtime_review": "separate_upstream_review_required",
+  "auditor_version": "pip-audit 2.10.1",
+  "exit_code": 0,
+  "complete": true,
+  "vulnerabilities": 0,
+  "audit_sha256": "b7dd21bf8415d1cd1c19006715cea8872c9007ee36b1d8ddab691dd6622be15a"
+}

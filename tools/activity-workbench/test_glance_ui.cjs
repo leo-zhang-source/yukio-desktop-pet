@@ -247,25 +247,59 @@ test('a long project reading renews the lease without triggering another explana
  const poll=f.run('automatic()');assert.equal(f.pending[0].url,'/api/glance-heartbeat');
  f.pending[0].resolve({alive:true});await poll;assert.equal(f.pending.length,1);
 });
-test('projects precede recent chats and states remain markers instead of categories',()=>{
+test('client sections start collapsed and list chats directly without project folders',()=>{
  const f=setup();f.context.cards=[{client:'codex',key:'a',title:'雪绪首页',project:{id:'p',name:'Yukio'},activity_state:'working'},
  {client:'claude',key:'b',title:'检查图片',project:{id:'q',name:'封面设计'},activity_state:'inactive'},
  {client:'codex',key:'c',title:'之前的工作',activity_state:'unknown'},
  {client:'codex',key:'d',title:'需要回答',activity_state:'waiting'}];
  f.run('selected={client:"codex",key:"a"};chatCatalog=cards;renderChatNavigation()');
- const list=f.elements.get('chatLists');assert.deepEqual(list.children.filter(c=>c.tag==='h2').map(c=>c.textContent),['项目','最近聊天']);
- const rows=list.children.filter(c=>c.className?.startsWith('chat-row'));
- assert.equal(rows.length,4);assert.deepEqual(rows.map(c=>c.children[1].children[0].className),['chat-state working','chat-state inactive','chat-state unknown','chat-state waiting']);
+ const list=f.elements.get('chatLists'),sections=list.children.filter(c=>c.tag==='details');
+ assert.deepEqual(sections.map(c=>c.dataset.client),['claude','codex']);assert.ok(sections.every(c=>!c.open));
+ const rows=list.querySelectorAll('*').filter(c=>c.tag==='button'&&c.className?.startsWith('chat-row'));
+ assert.equal(rows.length,4);assert.deepEqual(rows.map(c=>c.children[1].children[0].className),['chat-state inactive','chat-state working','chat-state unknown','chat-state waiting']);
+ assert.equal(new Set(rows.map(c=>c.dataset.chatValue)).size,4);assert.equal(list.querySelectorAll('details').length,2);
+ assert.deepEqual(sections.map(c=>c.children[0].children[1].textContent),['1','3']);
  assert.equal(f.elements.has('filterWorking'),false);assert.equal(f.elements.has('filterInactive'),false);
  const html=fs.readFileSync(path.join(__dirname,'dist/index.html'),'utf8');assert.doesNotMatch(html,/id="filter(?:Recent|Working|Inactive)"|按工作状态查看/);
- assert.equal(f.run('filteredChats(cards,"yukio")[0].key'),'a');assert.equal(f.run('filteredChats(cards,"claude")[0].key'),'b');
+ assert.equal(f.run('filteredChats(cards,"雪绪")[0].key'),'a');assert.equal(f.run('filteredChats(cards,"claude")[0].key'),'b');
  f.run('chatSearch="图片";renderChatNavigation()');assert.equal(f.run('selected.key'),'a');assert.equal(f.pending.length,0);
 });
-test('project navigation uses identity instead of joining same named projects',()=>{
- const f=setup();f.context.cards=[{client:'codex',key:'a',project:{id:'one',name:'App'}},{client:'codex',key:'b',project:{id:'two',name:'App'}}];
- assert.equal(f.run('projectGroups(cards).length'),2);
+test('identical titles across clients remain separate and helper chats keep their source',()=>{
+ const f=setup();f.context.cards=[{client:'codex',key:'a',title:'App'},{client:'claude',key:'b',title:'App'},{client:'claude',key:'helper',title:'协助检查',is_helper:true}];
+ f.run('chatCatalog=cards;renderChatNavigation()');
+ const children=f.elements.get('chatLists').children;
+ assert.deepEqual(children.map(c=>c.dataset.client),['claude','codex']);
+ const rows=f.elements.get('chatLists').querySelectorAll('*').filter(c=>c.tag==='button'&&c.className?.startsWith('chat-row'));
+ assert.equal(rows.length,3);assert.equal(children[0].children[1].children[1].dataset.chatValue,JSON.stringify({client:'claude',key:'helper'}));
+ assert.match(children[0].children[1].children[1].children[0].children[1].textContent,/协助助手/);
  const html=fs.readFileSync(path.join(__dirname,'dist/index.html'),'utf8');
  assert.match(html,/id="chat" hidden aria-hidden="true"/);assert.match(html,/id="chatSearch"/);
+});
+test('polling preserves client disclosure, focused summary and scroll position',()=>{
+ const f=setup();f.context.cards=[{client:'claude',key:'a',title:'一个聊天'},{client:'codex',key:'b',title:'另一个聊天'}];
+ f.run('chatCatalog=cards;renderChatNavigation()');const list=f.elements.get('chatLists');
+ list.children[0].open=true;f.document.activeElement=list.children[0].children[0];list.scrollTop=48;
+ f.run('chatCatalog[0].title="改过名字";renderChatNavigation()');
+ assert.equal(list.children[0].open,true);assert.equal(list.children[1].open,false);
+ assert.equal(list.children[0].children[0].focused,true);assert.equal(list.scrollTop,48);
+ list.children[0].open=false;f.run('chatCatalog[0].activity_state="working";renderChatNavigation()');
+ assert.equal(list.children[0].open,false);
+});
+test('search temporarily reveals matches and clearing it restores manual folds without selecting a chat',()=>{
+ const f=setup();f.context.cards=[{client:'claude',key:'a',title:'图片处理'},{client:'codex',key:'b',title:'页面设计'}];
+ f.run('chatCatalog=cards;selected={client:"codex",key:"b"};renderChatNavigation()');const list=f.elements.get('chatLists');
+ list.children[1].open=true;
+ f.run('chatSearch="图片";renderChatNavigation()');assert.equal(list.children.length,1);assert.equal(list.children[0].open,true);
+ f.run('chatCatalog[0].activity_state="working";renderChatNavigation();chatSearch="";renderChatNavigation()');
+ assert.equal(list.children[0].open,false);assert.equal(list.children[1].open,true);
+ assert.equal(f.run('selected.key'),'b');assert.equal(f.pending.length,0);
+});
+test('unreadable and explicitly empty chats do not appear in counts or search',()=>{
+ const f=setup();f.context.cards=[{client:'claude',key:'gone',title:'空聊天',source_unavailable:true},{client:'codex',key:'empty',title:'只有名字',has_content:false},{client:'claude',key:'readable',title:'好',has_content:true}];
+ f.run('chatCatalog=cards;renderChatNavigation()');const list=f.elements.get('chatLists');
+ assert.equal(list.children.length,1);assert.equal(list.children[0].children[0].children[1].textContent,'1');
+ assert.equal(list.children[0].children[1].children.length,1);
+ assert.equal(f.run('filteredChats(cards,"空聊天").length'),0);
 });
 function enabledPage(f){f.context.data=currentWork();f.run('selected={client:"codex",key:"chat-a"};model={configured:true,automatic_on_open:true};render(data)');}
 test('opening the page starts one page-owned explanation without any click',async()=>{
@@ -316,6 +350,26 @@ test('a continuation resets the model answer and revokes the old send grant',asy
  f.pending[0].resolve({stopped:true});await request;
  assert.equal(f.run('grant'),null);assert.equal(f.run('modelAnswer'),null);assert.equal(f.run('modelPending'),false);
  assert.equal(f.run('selected.key'),next.key);assert.equal(f.run('refreshAgain'),true);
+});
+
+test('Claude desktop continuation uses explicit members, never a matching title or child agent',()=>{
+ const f=setup();f.context.old={client:'claude',key:chatKey('old',1,'prior-cli')};
+ f.context.cards=[{client:'claude',key:chatKey('current',1,'current-cli'),title:'Same title',conversation_id:'desktop-chat',continuation_sessions:['prior-cli','current-cli']}];
+ assert.equal(f.run('continuation(old,cards).key'),f.context.cards[0].key);
+ f.context.old={client:'claude',key:chatKey('old',1,'prior-cli','helper',1)};
+ assert.equal(f.run('continuation(old,cards)'),null);
+ f.context.old={client:'codex',key:chatKey('old',1,'prior-cli')};assert.equal(f.run('continuation(old,cards)'),null);
+ f.context.old={client:'claude',key:chatKey('old',1,'unrelated'),title:'Same title'};assert.equal(f.run('continuation(old,cards)'),null);
+ f.context.old={client:'claude',key:chatKey('old',1,'prior-cli')};f.context.cards.push({...f.context.cards[0],key:chatKey('other',1,'another-cli')});
+ assert.equal(f.run('continuation(old,cards)'),null);
+});
+test('rewinding a Claude desktop chat clears old-branch explanations and revokes their grant',async()=>{
+ const f=setup();f.context.old={client:'claude',key:chatKey('old',1,'prior-cli')};
+ f.context.next={client:'claude',key:chatKey('new',1,'current-cli')};
+ f.run('selected=old;busy=true;modelAnswer={snapshot:"abandoned branch"};grant="old-grant"');
+ const request=f.run('continueSelection(next)');assert.equal(f.pending[0].url,'/api/glance-stop');
+ f.pending[0].resolve({stopped:true});await request;
+ assert.equal(f.run('modelAnswer'),null);assert.equal(f.run('grant'),null);assert.equal(f.run('selected.key'),f.context.next.key);
 });
 
 test('a confirmed same-chat continuation retains the earlier explanation while replacing its grant',async()=>{
@@ -391,6 +445,44 @@ test('provider changes persist before a new automatic explanation can start',asy
  assert.deepEqual(JSON.parse(f.pending[0].options.body),{provider:'claude',automatic_on_open:true});
  assert.equal(f.pending.length,1);f.pending[0].resolve({provider:'claude',automatic_on_open:true,providers:[]});await change;
  assert.equal(f.run('model.provider'),'claude');assert.equal(f.run('grant'),null);
+});
+test('changing the provider dropdown saves immediately and survives a fresh page',async()=>{
+ const f=setup();f.run('model={provider:"claude",automatic_on_open:true};renderProviderSettings();$("explanationProvider").value="codex"');
+ assert.equal(typeof f.elements.get('explanationProvider').onchange,'function');
+ const change=f.elements.get('explanationProvider').onchange();
+ assert.deepEqual(JSON.parse(f.pending[0].options.body),{provider:'codex',automatic_on_open:true});
+ assert.equal(f.elements.get('explanationProvider').disabled,true);
+ const saved={provider:'codex',automatic_on_open:true,providers:[]};f.pending[0].resolve(saved);await change;
+ assert.equal(f.run('model.provider'),'codex');assert.equal(f.elements.get('explanationProvider').value,'codex');
+ const reopened=setup({clientRequests:true});reopened.pending[0].resolve({explanation:saved});await tick();
+ assert.equal(reopened.elements.get('explanationProvider').value,'codex');
+});
+test('selecting a provider while explanation is off saves without enabling or checking it',async()=>{
+ const f=setup();f.run('model={provider:"claude",automatic_on_open:false};$("explanationProvider").value="codex"');
+ assert.equal(typeof f.elements.get('explanationProvider').onchange,'function');
+ const change=f.elements.get('explanationProvider').onchange();
+ assert.deepEqual(JSON.parse(f.pending[0].options.body),{provider:'codex',automatic_on_open:false});
+ f.pending[0].resolve({provider:'codex',automatic_on_open:false,providers:[]});await change;
+ assert.equal(f.run('model.automatic_on_open'),false);assert.equal(f.pending.length,1);
+});
+test('failed provider saves show the active provider and the failure, with no new explanation',async()=>{
+ const f=setup();f.run('model={provider:"claude",automatic_on_open:true};$("explanationProvider").value="codex"');
+ const change=f.run('setExplanationProvider(true)');f.pending[0].resolve({error:'请登录 Codex。'},409);await change;
+ assert.equal(f.elements.get('explanationProvider').value,'claude');assert.equal(f.run('model.provider'),'claude');
+ assert.match(f.elements.get('providerNote').textContent,/未保存.*请登录 Codex/);assert.equal(f.pending.length,1);
+});
+test('a busy explanation rejects a provider change visibly instead of leaving an unsaved selection',async()=>{
+ const f=setup();f.run('model={provider:"claude",automatic_on_open:true};workInFlight=true;$("explanationProvider").value="codex"');
+ const change=f.run('setExplanationProvider(true)');
+ assert.equal(f.pending.length,0);await change;assert.equal(f.elements.get('explanationProvider').value,'claude');
+ assert.match(f.elements.get('providerNote').textContent,/尚未保存/);
+});
+test('provider saving suppresses overlapping settings and automatic model requests',async()=>{
+ const f=setup();enabledPage(f);f.run('model.provider="claude";$("explanationProvider").value="codex"');
+ const change=f.run('setExplanationProvider(true)');f.run('automatic()');f.run('setExplanationProvider(true)');
+ assert.equal(f.pending.length,1);
+ f.pending[0].resolve({provider:'codex',automatic_on_open:true,providers:[]});await change;await tick();
+ assert.equal(f.pending[1].url,'/api/glance-preview');
 });
 test('stop remains usable while an automatic explanation is in flight',async()=>{
  const f=setup();f.run('model={provider:"codex",automatic_on_open:true};autoRun={};grant="old";$("explanationProvider").value="claude"');

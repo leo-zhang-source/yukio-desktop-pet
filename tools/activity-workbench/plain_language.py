@@ -5,6 +5,7 @@ unknown PNG becomes '这张图片', not an invented 'App 封面图'. An explicit
 such as '雪绪 App 封面图' stays available to the model and is preferred in prose.
 """
 import re
+from conversation_text import conversation_text
 
 
 def object_name(token):
@@ -22,6 +23,10 @@ def object_name(token):
 
 def plain_words(text, language='zh'):
     if not isinstance(text,str):return ''
+    text=conversation_text(text)
+    # Remove markup before path handling; otherwise a closing XML tag becomes
+    # a bogus filesystem object such as "<相关项目>" in the explanation.
+    text=re.sub(r'</?[A-Za-z][\w:.-]*(?:\s[^<>]*?)?/?>','',text)
     # Prefer visible descriptions in links and pictures. Do not expose a URL or
     # storage location just because it appears in an assistant's public note.
     # Clipped diagnostics often contain an opening brace without a closing one.

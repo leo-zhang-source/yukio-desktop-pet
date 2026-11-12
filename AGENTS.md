@@ -1,6 +1,15 @@
 # 本轮整改的开发入口
 
-当前 `codex/remediation-baseline` 为阶段 1 建立的集成入口。先阅读 [DEVELOPMENT.md](DEVELOPMENT.md) 与功能、来源清单。原桌面目录是保留历史和未核实工作的位置；不要用它整目录覆盖此处。已知问题、实验和候选保持各自的验收状态；未经独立环境验收不能宣布可向所有用户交付。
+2026-11-07：用户已批准第五阶段在本地实施，当前入口为 Preview 2 产品线上的 `codex/stage5-maintenance`（本机 `yukio-54-release` 工作树）。`codex/remediation-baseline` 保留为历史整改与候选资料库，不再直接替换现用 App。先阅读 [DEVELOPMENT.md](DEVELOPMENT.md) 与 [长期维护入口](docs/remediation/stage5-maintenance/README.md)。2026-11-11 用户已明确授权本次集中上传，结果见 DEVELOPMENT.md；未来新改动仍需当次明确上传授权。独立首次使用验收仍按此前决定暂停。原桌面目录是保留历史和未核实工作的位置；不要用它整目录覆盖此处。已知问题、实验和候选保持各自的验收状态；未经独立环境验收不能宣布可向所有用户交付。
+
+
+## 每次维护的实际入口（2026-11-07）
+
+- 后续明确授权补充：已配置本聊天的本地定时检查，执行范围见 [定时检查规范](docs/remediation/stage5-maintenance/SCHEDULED_CHECKS.md)。自动任务只做检查/研究和仓库外证据记录，不自动升级、修复、提交、发布、上传 GitHub、替换 App 或恢复暂停验收。
+- 开始任务先读当前维护政策，并运行 `python3 scripts/maintenance.py check --out <仓库外的新目录>`（Python 3.12+）；处理报告中的到期复核和开放项，不能只看退出码。
+- 功能/状态/依赖/检查器的实质改动按范围做定向验证，最终以 `scripts/run-remediation-checks.py --repeat 2` 完整检查；纯说明修改按影响核验链接/来源即可。禁止未批准跳过、零测试或不完整输出放行。
+- 保留第一次失败，修复后换新证据目录。`maintenance.py verify-evidence` 核对提交、当前指纹、两遍原始日志；涉及候选包再核对包 SHA。不能借用旧分支、旧包或另一平台的通过。
+- 维护周期、依赖升级、NAS 回读按 [维护手册](docs/remediation/stage5-maintenance/MAINTENANCE.md) 执行。本轮本地机制完成不构成远端上传、自动发布、数据恢复覆盖或恢复暂停验收的授权。
 
 # Yukio：项目开发与验收约定
 

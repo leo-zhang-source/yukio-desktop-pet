@@ -1,0 +1,990 @@
+{
+  "scope": "synthetic main-thread call benchmark, not GUI acceptance",
+  "system": "macOS-27.2-arm64-arm-64bit-Mach-O",
+  "fixture_sha256": "06a91d7a064529703450067a29c1d02ac1a80506973ed1d9a2dbba576a74ebd7",
+  "swift": "Apple Swift version 6.1.2 (swiftlang-6.1.2.1.2 clang-1700.0.13.5)\nTarget: arm64-apple-macosx18.0",
+  "limits_ms": {
+    "idle": 5,
+    "normal": 25,
+    "burst": 100
+  },
+  "lineages": {
+    "published": {
+      "commit": "2701916b9c471d34dc11ff421b27d90cbb801248",
+      "source_hashes": {
+        "YukioPlayer/Sources/YukioCore/ActivityCards.swift": "f1690fd9744bbddf27c18dceae55172050e8047d0e0753514557408467cffa3b",
+        "YukioPlayer/Sources/YukioCore/ActivityRouter.swift": "0dc2cef6552102813b6359b70ad2146fd27759fcb8ed41c02fd7491959cf7362",
+        "YukioPlayer/Sources/YukioCore/AgentProvider.swift": "561ce7846d8c74cf3aea3abbd970fc87fa913678b615910705598e477f34526b",
+        "YukioPlayer/Sources/YukioCore/AgentSources.swift": "c5e02708b37e2a59d9af65a742448c39ccbee7e4c98c150d539af8996b07fb2b",
+        "YukioPlayer/Sources/YukioCore/ApprovalQuestion.swift": "70f94ab520895ba0d0cb38e7f06109022936528069707b923f5597be5705b32a",
+        "YukioPlayer/Sources/YukioCore/ApprovalSurface.swift": "3e70591b1aae2fa8ed66752e9688d89a69083bbdf749b842857ac56108628b35",
+        "YukioPlayer/Sources/YukioCore/BlinkClock.swift": "1765a193f28ab14ae58a02ffa50cd6c4eb94c8ed61be2ff29977dfa1a6490c02",
+        "YukioPlayer/Sources/YukioCore/Catalog.swift": "c0ae6dcfef64a1f8ddbc183d47b9b60c1055f1d143df39950eb70f876758c2b0",
+        "YukioPlayer/Sources/YukioCore/ChatWindowVisibility.swift": "aa83ba6ee9c481872038ad71871bfad210a9a8d147e2d9055dafe8f6356882b6",
+        "YukioPlayer/Sources/YukioCore/ClaudeParsers.swift": "9887d235d9c19ea5e74ad899064433277f1a4606a3eb1ea87478de193b41598a",
+        "YukioPlayer/Sources/YukioCore/ClaudeSessionLinks.swift": "62dcf4e569ec7802c52693d52bf3df85a71b912dea40b2f274ba801266f4f1d2",
+        "YukioPlayer/Sources/YukioCore/ClaudeToolClassifier.swift": "0e6c75c674db9a45419ac41bb52e3f2c4c59f1b1f24d33e5a2accc81005d33e2",
+        "YukioPlayer/Sources/YukioCore/CodexOpenChat.swift": "9fca140d4c087971dc4ddc4a5ea6a5d8bfbbb6032d477ded3a4449165790f818",
+        "YukioPlayer/Sources/YukioCore/CodexParsers.swift": "36ade0c69d42cf8ea269658f444e96789520bd5cf420079e7e00c4fcba449a69",
+        "YukioPlayer/Sources/YukioCore/CodexToolClassifier.swift": "790d99084e26767afb0fa278326abd4839844e5da02b959829dfc729b4360d5d",
+        "YukioPlayer/Sources/YukioCore/CodexToolResults.swift": "66096df0a580827cf98bda1a9a0b48d0db98824f3664363bf10f589621c6f7c4",
+        "YukioPlayer/Sources/YukioCore/DeepCodeParsers.swift": "c3bc58bd19cc05dd07951ee29548a07145647a34afd70efcd10ba19c18ce2941",
+        "YukioPlayer/Sources/YukioCore/DemoScript.swift": "b87987ec2360e0cba902cfa01825ba5e6fe0ad45cdbd51d8ea72541b84a4d34e",
+        "YukioPlayer/Sources/YukioCore/Events.swift": "fde5175700b40685e273d0ad3a6a349b08563e7f91da825980c01968e1a4c1ea",
+        "YukioPlayer/Sources/YukioCore/HangSwing.swift": "a7fc3594134de3e8cffe340451bbc1c40257f43bcd69e84e7464638e686133ac",
+        "YukioPlayer/Sources/YukioCore/HeldValue.swift": "44cd2047e7a753af81bbf9c07f9c1d3636381b0e063173fd2e47edbef4f5113f",
+        "YukioPlayer/Sources/YukioCore/L10n.swift": "570c56bd37ee5ae9ca76320685acc3396d8cb3982c8f2c686ad60e265716f2e9",
+        "YukioPlayer/Sources/YukioCore/LiveSources.swift": "cf4f3485b371e3879e13067aa29d080b0ebb179dcfddf4ce7209baf7f5898534",
+        "YukioPlayer/Sources/YukioCore/PetQuestion.swift": "c30d52d29681e9213b68bfa98a8786de3458b662d6133de9af9e84079116b26a",
+        "YukioPlayer/Sources/YukioCore/PetSkin.swift": "22ff4cfa9d01c9da283f44864ff4b1f89bc2a420715034290d5e2ec2ba91959b",
+        "YukioPlayer/Sources/YukioCore/QuestionPresentationState.swift": "48042ae2dcb1f8019b2edba6482ba1151e5d95ff4b200107f31c6710a405a3cf",
+        "YukioPlayer/Sources/YukioCore/Reminders.swift": "e6f0d50f09d12a43e293dfcff1ffe1ea4abf0f774d9d5ec38c03539160f7cce9",
+        "YukioPlayer/Sources/YukioCore/SpriteTimeline.swift": "c4f56561f2e9e0f4e4b2f02221c72ae35e38d2d74a0c0b2789741d3c81d1c099",
+        "YukioPlayer/Sources/YukioCore/VisibleChat.swift": "999d61d21cf67ff6946e0d462e122675301f3b78e264089089a54d84f057863e",
+        "YukioPlayer/Sources/YukioCore/VisibleChatTitle.swift": "37ff70a09512cdd9e5121783a37506c58af9ebe271a01822798bab8db9467f84"
+      },
+      "runs": [
+        {
+          "events": 0,
+          "fixture_bytes": 386,
+          "identity_and_order_passed": true,
+          "main_thread": true,
+          "mode": "idle",
+          "per_file_append": 0,
+          "polls": [
+            {
+              "claude_ms": 0.09595834126230329,
+              "codex_ms": 0.09895833500195295,
+              "events": 0,
+              "total_ms": 0.19491667626425624
+            },
+            {
+              "claude_ms": 0.07770833326503634,
+              "codex_ms": 0.09166667587123811,
+              "events": 0,
+              "total_ms": 0.16937500913627446
+            },
+            {
+              "claude_ms": 0.07479166379198432,
+              "codex_ms": 0.08262500341515988,
+              "events": 0,
+              "total_ms": 0.1574166672071442
+            },
+            {
+              "claude_ms": 0.0639583304291591,
+              "codex_ms": 0.07666666351724416,
+              "events": 0,
+              "total_ms": 0.14062499394640326
+            },
+            {
+              "claude_ms": 0.06250001024454832,
+              "codex_ms": 0.07633332279510796,
+              "events": 0,
+              "total_ms": 0.13883333303965628
+            },
+            {
+              "claude_ms": 0.06258333451114595,
+              "codex_ms": 0.07466666284017265,
+              "events": 0,
+              "total_ms": 0.1372499973513186
+            }
+          ],
+          "source_chats": 4,
+          "repetition": 1,
+          "maximum_ms": 0.19491667626425624,
+          "passed": true
+        },
+        {
+          "events": 0,
+          "fixture_bytes": 386,
+          "identity_and_order_passed": true,
+          "main_thread": true,
+          "mode": "idle",
+          "per_file_append": 0,
+          "polls": [
+            {
+              "claude_ms": 0.06333334022201598,
+              "codex_ms": 0.07266666216310114,
+              "events": 0,
+              "total_ms": 0.1360000023851171
+            },
+            {
+              "claude_ms": 0.05500001134350896,
+              "codex_ms": 0.06483332253992558,
+              "events": 0,
+              "total_ms": 0.11983333388343453
+            },
+            {
+              "claude_ms": 0.05320833588484675,
+              "codex_ms": 0.06383334402926266,
+              "events": 0,
+              "total_ms": 0.11704167991410941
+            },
+            {
+              "claude_ms": 0.052541668992489576,
+              "codex_ms": 0.06283333641476929,
+              "events": 0,
+              "total_ms": 0.11537500540725887
+            },
+            {
+              "claude_ms": 0.05170833901502192,
+              "codex_ms": 0.062291655922308564,
+              "events": 0,
+              "total_ms": 0.11399999493733048
+            },
+            {
+              "claude_ms": 0.04833334241993725,
+              "codex_ms": 0.05766666436102241,
+              "events": 0,
+              "total_ms": 0.10600000678095967
+            }
+          ],
+          "source_chats": 4,
+          "repetition": 2,
+          "maximum_ms": 0.1360000023851171,
+          "passed": true
+        },
+        {
+          "events": 0,
+          "fixture_bytes": 386,
+          "identity_and_order_passed": true,
+          "main_thread": true,
+          "mode": "idle",
+          "per_file_append": 0,
+          "polls": [
+            {
+              "claude_ms": 0.04754166002385318,
+              "codex_ms": 0.057041659601964056,
+              "events": 0,
+              "total_ms": 0.10458331962581724
+            },
+            {
+              "claude_ms": 0.043166655814275146,
+              "codex_ms": 0.05141667497809976,
+              "events": 0,
+              "total_ms": 0.09458333079237491
+            },
+            {
+              "claude_ms": 0.04212500061839819,
+              "codex_ms": 0.05079167021904141,
+              "events": 0,
+              "total_ms": 0.0929166708374396
+            },
+            {
+              "claude_ms": 0.04183333658147603,
+              "codex_ms": 0.050083326641470194,
+              "events": 0,
+              "total_ms": 0.09191666322294623
+            },
+            {
+              "claude_ms": 0.04995834024157375,
+              "codex_ms": 0.04979166260454804,
+              "events": 0,
+              "total_ms": 0.09975000284612179
+            },
+            {
+              "claude_ms": 0.04183333658147603,
+              "codex_ms": 0.04958333738613874,
+              "events": 0,
+              "total_ms": 0.09141667396761477
+            }
+          ],
+          "source_chats": 4,
+          "repetition": 3,
+          "maximum_ms": 0.10458331962581724,
+          "passed": true
+        },
+        {
+          "events": 240,
+          "fixture_bytes": 46106,
+          "identity_and_order_passed": true,
+          "main_thread": true,
+          "mode": "normal",
+          "per_file_append": 10,
+          "polls": [
+            {
+              "claude_ms": 8.77704167214688,
+              "codex_ms": 8.348624993232079,
+              "events": 40,
+              "total_ms": 17.125666665378958
+            },
+            {
+              "claude_ms": 7.964791671838611,
+              "codex_ms": 7.788833332597278,
+              "events": 40,
+              "total_ms": 15.75362500443589
+            },
+            {
+              "claude_ms": 7.749666663585231,
+              "codex_ms": 7.7563750091940165,
+              "events": 40,
+              "total_ms": 15.506041672779247
+            },
+            {
+              "claude_ms": 7.738000000244938,
+              "codex_ms": 7.752083329251036,
+              "events": 40,
+              "total_ms": 15.490083329495974
+            },
+            {
+              "claude_ms": 7.757875006063841,
+              "codex_ms": 7.766041671857238,
+              "events": 40,
+              "total_ms": 15.523916677921079
+            },
+            {
+              "claude_ms": 7.756833336316049,
+              "codex_ms": 7.716041669482365,
+              "events": 40,
+              "total_ms": 15.472875005798414
+            }
+          ],
+          "source_chats": 4,
+          "repetition": 1,
+          "maximum_ms": 17.125666665378958,
+          "passed": true
+        },
+        {
+          "events": 240,
+          "fixture_bytes": 46106,
+          "identity_and_order_passed": true,
+          "main_thread": true,
+          "mode": "normal",
+          "per_file_append": 10,
+          "polls": [
+            {
+              "claude_ms": 7.866333340643905,
+              "codex_ms": 7.837208337150514,
+              "events": 40,
+              "total_ms": 15.70354167779442
+            },
+            {
+              "claude_ms": 7.776833343086764,
+              "codex_ms": 7.782333326758817,
+              "events": 40,
+              "total_ms": 15.559166669845581
+            },
+            {
+              "claude_ms": 7.791083335177973,
+              "codex_ms": 7.873958340496756,
+              "events": 40,
+              "total_ms": 15.665041675674729
+            },
+            {
+              "claude_ms": 7.752708334010094,
+              "codex_ms": 7.769999996526167,
+              "events": 40,
+              "total_ms": 15.522708330536261
+            },
+            {
+              "claude_ms": 7.742166664684191,
+              "codex_ms": 7.753750003757887,
+              "events": 40,
+              "total_ms": 15.495916668442078
+            },
+            {
+              "claude_ms": 7.748874995741062,
+              "codex_ms": 7.7629166771657765,
+              "events": 40,
+              "total_ms": 15.511791672906838
+            }
+          ],
+          "source_chats": 4,
+          "repetition": 2,
+          "maximum_ms": 15.70354167779442,
+          "passed": true
+        },
+        {
+          "events": 240,
+          "fixture_bytes": 46106,
+          "identity_and_order_passed": true,
+          "main_thread": true,
+          "mode": "normal",
+          "per_file_append": 10,
+          "polls": [
+            {
+              "claude_ms": 7.876125004258938,
+              "codex_ms": 7.824166663340293,
+              "events": 40,
+              "total_ms": 15.700291667599231
+            },
+            {
+              "claude_ms": 7.76670832419768,
+              "codex_ms": 7.794625009410083,
+              "events": 40,
+              "total_ms": 15.561333333607763
+            },
+            {
+              "claude_ms": 7.7442499896278605,
+              "codex_ms": 7.82091666769702,
+              "events": 40,
+              "total_ms": 15.56516665732488
+            },
+            {
+              "claude_ms": 7.746791670797393,
+              "codex_ms": 7.765208327327855,
+              "events": 40,
+              "total_ms": 15.511999998125248
+            },
+            {
+              "claude_ms": 7.712416670983657,
+              "codex_ms": 7.826000000932254,
+              "events": 40,
+              "total_ms": 15.538416671915911
+            },
+            {
+              "claude_ms": 7.7421250025508925,
+              "codex_ms": 7.792833333951421,
+              "events": 40,
+              "total_ms": 15.534958336502314
+            }
+          ],
+          "source_chats": 4,
+          "repetition": 3,
+          "maximum_ms": 15.700291667599231,
+          "passed": true
+        },
+        {
+          "events": 4000,
+          "fixture_bytes": 769946,
+          "identity_and_order_passed": true,
+          "main_thread": true,
+          "mode": "burst",
+          "per_file_append": 1000,
+          "polls": [
+            {
+              "claude_ms": 763.616208336316,
+              "codex_ms": 765.6693333265139,
+              "events": 4000,
+              "total_ms": 1529.28554166283
+            },
+            {
+              "claude_ms": 0.06795833178330213,
+              "codex_ms": 0.05266666994430125,
+              "events": 0,
+              "total_ms": 0.12062500172760338
+            },
+            {
+              "claude_ms": 0.03674998879432678,
+              "codex_ms": 0.04687500768341124,
+              "events": 0,
+              "total_ms": 0.08362499647773802
+            },
+            {
+              "claude_ms": 0.03925000783056021,
+              "codex_ms": 0.04425000224728137,
+              "events": 0,
+              "total_ms": 0.08350001007784158
+            },
+            {
+              "claude_ms": 0.03754167119041085,
+              "codex_ms": 0.046583329094573855,
+              "events": 0,
+              "total_ms": 0.08412500028498471
+            },
+            {
+              "claude_ms": 0.03608333645388484,
+              "codex_ms": 0.04666666791308671,
+              "events": 0,
+              "total_ms": 0.08275000436697155
+            }
+          ],
+          "source_chats": 4,
+          "repetition": 1,
+          "maximum_ms": 1529.28554166283,
+          "passed": false
+        },
+        {
+          "events": 4000,
+          "fixture_bytes": 769946,
+          "identity_and_order_passed": true,
+          "main_thread": true,
+          "mode": "burst",
+          "per_file_append": 1000,
+          "polls": [
+            {
+              "claude_ms": 771.1395000078483,
+              "codex_ms": 771.2759583228035,
+              "events": 4000,
+              "total_ms": 1542.4154583306517
+            },
+            {
+              "claude_ms": 0.08199999865610152,
+              "codex_ms": 0.060208330978639424,
+              "events": 0,
+              "total_ms": 0.14220832963474095
+            },
+            {
+              "claude_ms": 0.039874998037703335,
+              "codex_ms": 0.04675000673159957,
+              "events": 0,
+              "total_ms": 0.0866250047693029
+            },
+            {
+              "claude_ms": 0.036458339309319854,
+              "codex_ms": 0.043166655814275146,
+              "events": 0,
+              "total_ms": 0.079624995123595
+            },
+            {
+              "claude_ms": 0.035583332646638155,
+              "codex_ms": 0.04245834134053439,
+              "events": 0,
+              "total_ms": 0.07804167398717254
+            },
+            {
+              "claude_ms": 0.035291668609716,
+              "codex_ms": 0.0427083286922425,
+              "events": 0,
+              "total_ms": 0.0779999973019585
+            }
+          ],
+          "source_chats": 4,
+          "repetition": 2,
+          "maximum_ms": 1542.4154583306517,
+          "passed": false
+        },
+        {
+          "events": 4000,
+          "fixture_bytes": 769946,
+          "identity_and_order_passed": true,
+          "main_thread": true,
+          "mode": "burst",
+          "per_file_append": 1000,
+          "polls": [
+            {
+              "claude_ms": 768.5621666751103,
+              "codex_ms": 770.8351249893894,
+              "events": 4000,
+              "total_ms": 1539.3972916644998
+            },
+            {
+              "claude_ms": 0.08212501415982842,
+              "codex_ms": 0.059333324315957725,
+              "events": 0,
+              "total_ms": 0.14145833847578615
+            },
+            {
+              "claude_ms": 0.03962501068599522,
+              "codex_ms": 0.046250002924352884,
+              "events": 0,
+              "total_ms": 0.0858750136103481
+            },
+            {
+              "claude_ms": 0.03654166357591748,
+              "codex_ms": 0.04299999272916466,
+              "events": 0,
+              "total_ms": 0.07954165630508214
+            },
+            {
+              "claude_ms": 0.0349583278875798,
+              "codex_ms": 0.04212500061839819,
+              "events": 0,
+              "total_ms": 0.07708332850597799
+            },
+            {
+              "claude_ms": 0.0344166619470343,
+              "codex_ms": 0.04187499871477485,
+              "events": 0,
+              "total_ms": 0.07629166066180915
+            }
+          ],
+          "source_chats": 4,
+          "repetition": 3,
+          "maximum_ms": 1539.3972916644998,
+          "passed": false
+        }
+      ],
+      "compile_exit": 0
+    },
+    "remediation": {
+      "commit": "c344bcfc33b67705a71eef77d8c0bfcbad4d5da1",
+      "source_hashes": {
+        "YukioPlayer/Sources/YukioCore/ActivityCards.swift": "f1690fd9744bbddf27c18dceae55172050e8047d0e0753514557408467cffa3b",
+        "YukioPlayer/Sources/YukioCore/ActivityRouter.swift": "5b333cc6c591606bcc6dc74f43cea8f9b964dc2018bf68a4f3829973480f6d65",
+        "YukioPlayer/Sources/YukioCore/AgentProvider.swift": "561ce7846d8c74cf3aea3abbd970fc87fa913678b615910705598e477f34526b",
+        "YukioPlayer/Sources/YukioCore/AgentSources.swift": "af7b3330e8fea612c3a0ae801fcb7a4aa6e1eba7441a3e4934997869cf5cf25c",
+        "YukioPlayer/Sources/YukioCore/ApprovalQuestion.swift": "70f94ab520895ba0d0cb38e7f06109022936528069707b923f5597be5705b32a",
+        "YukioPlayer/Sources/YukioCore/ApprovalSurface.swift": "3e70591b1aae2fa8ed66752e9688d89a69083bbdf749b842857ac56108628b35",
+        "YukioPlayer/Sources/YukioCore/BlinkClock.swift": "1765a193f28ab14ae58a02ffa50cd6c4eb94c8ed61be2ff29977dfa1a6490c02",
+        "YukioPlayer/Sources/YukioCore/Catalog.swift": "c0ae6dcfef64a1f8ddbc183d47b9b60c1055f1d143df39950eb70f876758c2b0",
+        "YukioPlayer/Sources/YukioCore/ChatWindowVisibility.swift": "aa83ba6ee9c481872038ad71871bfad210a9a8d147e2d9055dafe8f6356882b6",
+        "YukioPlayer/Sources/YukioCore/ClaudeParsers.swift": "90a818a005ee57dcd75c99e8798d530dc7508804efb8ad2e14e13ab966e87b67",
+        "YukioPlayer/Sources/YukioCore/ClaudeQuestionRecovery.swift": "dacb1b8263d9e687d9cc0a5ae7e6008d449182a49542ce99e19def7bfadb8ba6",
+        "YukioPlayer/Sources/YukioCore/ClaudeSessionLinks.swift": "62dcf4e569ec7802c52693d52bf3df85a71b912dea40b2f274ba801266f4f1d2",
+        "YukioPlayer/Sources/YukioCore/ClaudeToolClassifier.swift": "0e6c75c674db9a45419ac41bb52e3f2c4c59f1b1f24d33e5a2accc81005d33e2",
+        "YukioPlayer/Sources/YukioCore/CodexOpenChat.swift": "9fca140d4c087971dc4ddc4a5ea6a5d8bfbbb6032d477ded3a4449165790f818",
+        "YukioPlayer/Sources/YukioCore/CodexParsers.swift": "36ade0c69d42cf8ea269658f444e96789520bd5cf420079e7e00c4fcba449a69",
+        "YukioPlayer/Sources/YukioCore/CodexToolClassifier.swift": "790d99084e26767afb0fa278326abd4839844e5da02b959829dfc729b4360d5d",
+        "YukioPlayer/Sources/YukioCore/CodexToolResults.swift": "66096df0a580827cf98bda1a9a0b48d0db98824f3664363bf10f589621c6f7c4",
+        "YukioPlayer/Sources/YukioCore/DeepCodeParsers.swift": "c3bc58bd19cc05dd07951ee29548a07145647a34afd70efcd10ba19c18ce2941",
+        "YukioPlayer/Sources/YukioCore/DemoScript.swift": "b87987ec2360e0cba902cfa01825ba5e6fe0ad45cdbd51d8ea72541b84a4d34e",
+        "YukioPlayer/Sources/YukioCore/Events.swift": "84afad71d4caf91a1bdfe1c8ca053ae57908eff7874a0015e06ca11040e9fc4c",
+        "YukioPlayer/Sources/YukioCore/HangSwing.swift": "a7fc3594134de3e8cffe340451bbc1c40257f43bcd69e84e7464638e686133ac",
+        "YukioPlayer/Sources/YukioCore/HeldValue.swift": "44cd2047e7a753af81bbf9c07f9c1d3636381b0e063173fd2e47edbef4f5113f",
+        "YukioPlayer/Sources/YukioCore/L10n.swift": "570c56bd37ee5ae9ca76320685acc3396d8cb3982c8f2c686ad60e265716f2e9",
+        "YukioPlayer/Sources/YukioCore/LiveSources.swift": "73914b3d2adb44c7b6c7a4620012caffd067e37f6a364bfd064b7cc33d536530",
+        "YukioPlayer/Sources/YukioCore/PetQuestion.swift": "c30d52d29681e9213b68bfa98a8786de3458b662d6133de9af9e84079116b26a",
+        "YukioPlayer/Sources/YukioCore/PetSkin.swift": "22ff4cfa9d01c9da283f44864ff4b1f89bc2a420715034290d5e2ec2ba91959b",
+        "YukioPlayer/Sources/YukioCore/QuestionPresentationState.swift": "f10a6512f375820c0f955521b83b41cffe575df46a4751a564c9cfaf11cf5406",
+        "YukioPlayer/Sources/YukioCore/Reminders.swift": "e6f0d50f09d12a43e293dfcff1ffe1ea4abf0f774d9d5ec38c03539160f7cce9",
+        "YukioPlayer/Sources/YukioCore/SpriteTimeline.swift": "c4f56561f2e9e0f4e4b2f02221c72ae35e38d2d74a0c0b2789741d3c81d1c099",
+        "YukioPlayer/Sources/YukioCore/VisibleChat.swift": "e0a6d670daafa7c8247035998e39376a0c1e20b4418c38e8da6a655137a1df2f",
+        "YukioPlayer/Sources/YukioCore/VisibleChatTitle.swift": "37ff70a09512cdd9e5121783a37506c58af9ebe271a01822798bab8db9467f84"
+      },
+      "runs": [
+        {
+          "events": 0,
+          "fixture_bytes": 386,
+          "identity_and_order_passed": true,
+          "main_thread": true,
+          "mode": "idle",
+          "per_file_append": 0,
+          "polls": [
+            {
+              "claude_ms": 0.06183332880027592,
+              "codex_ms": 0.0777916720835492,
+              "events": 0,
+              "total_ms": 0.13962500088382512
+            },
+            {
+              "claude_ms": 0.058583333157002926,
+              "codex_ms": 0.069500005338341,
+              "events": 0,
+              "total_ms": 0.12808333849534392
+            },
+            {
+              "claude_ms": 0.057166675105690956,
+              "codex_ms": 0.06795833178330213,
+              "events": 0,
+              "total_ms": 0.12512500688899308
+            },
+            {
+              "claude_ms": 0.0567499955650419,
+              "codex_ms": 0.06879167631268501,
+              "events": 0,
+              "total_ms": 0.1255416718777269
+            },
+            {
+              "claude_ms": 0.05508333561010659,
+              "codex_ms": 0.06845833559054881,
+              "events": 0,
+              "total_ms": 0.1235416712006554
+            },
+            {
+              "claude_ms": 0.05520833656191826,
+              "codex_ms": 0.0661249941913411,
+              "events": 0,
+              "total_ms": 0.12133333075325936
+            }
+          ],
+          "source_chats": 4,
+          "repetition": 1,
+          "maximum_ms": 0.13962500088382512,
+          "passed": true
+        },
+        {
+          "events": 0,
+          "fixture_bytes": 386,
+          "identity_and_order_passed": true,
+          "main_thread": true,
+          "mode": "idle",
+          "per_file_append": 0,
+          "polls": [
+            {
+              "claude_ms": 0.053750001825392246,
+              "codex_ms": 0.06791666965000331,
+              "events": 0,
+              "total_ms": 0.12166667147539556
+            },
+            {
+              "claude_ms": 0.051958326366730034,
+              "codex_ms": 0.061666680267080665,
+              "events": 0,
+              "total_ms": 0.1136250066338107
+            },
+            {
+              "claude_ms": 0.05029166641179472,
+              "codex_ms": 0.06049999501556158,
+              "events": 0,
+              "total_ms": 0.1107916614273563
+            },
+            {
+              "claude_ms": 0.050208342145197093,
+              "codex_ms": 0.059333324315957725,
+              "events": 0,
+              "total_ms": 0.10954166646115482
+            },
+            {
+              "claude_ms": 0.04908333357889205,
+              "codex_ms": 0.06054167170077562,
+              "events": 0,
+              "total_ms": 0.10962500527966768
+            },
+            {
+              "claude_ms": 0.04895833262708038,
+              "codex_ms": 0.05854167102370411,
+              "events": 0,
+              "total_ms": 0.10750000365078449
+            }
+          ],
+          "source_chats": 4,
+          "repetition": 2,
+          "maximum_ms": 0.12166667147539556,
+          "passed": true
+        },
+        {
+          "events": 0,
+          "fixture_bytes": 386,
+          "identity_and_order_passed": true,
+          "main_thread": true,
+          "mode": "idle",
+          "per_file_append": 0,
+          "polls": [
+            {
+              "claude_ms": 0.047583336709067225,
+              "codex_ms": 0.05708332173526287,
+              "events": 0,
+              "total_ms": 0.1046666584443301
+            },
+            {
+              "claude_ms": 0.043374995584599674,
+              "codex_ms": 0.053708325140178204,
+              "events": 0,
+              "total_ms": 0.09708332072477788
+            },
+            {
+              "claude_ms": 0.04287500632926822,
+              "codex_ms": 0.050541668315418065,
+              "events": 0,
+              "total_ms": 0.09341667464468628
+            },
+            {
+              "claude_ms": 0.04216667730361223,
+              "codex_ms": 0.04991666355635971,
+              "events": 0,
+              "total_ms": 0.09208334085997194
+            },
+            {
+              "claude_ms": 0.041749997762963176,
+              "codex_ms": 0.05137499829288572,
+              "events": 0,
+              "total_ms": 0.0931249960558489
+            },
+            {
+              "claude_ms": 0.04149999585933983,
+              "codex_ms": 0.04929165879730135,
+              "events": 0,
+              "total_ms": 0.09079165465664119
+            }
+          ],
+          "source_chats": 4,
+          "repetition": 3,
+          "maximum_ms": 0.1046666584443301,
+          "passed": true
+        },
+        {
+          "events": 240,
+          "fixture_bytes": 46106,
+          "identity_and_order_passed": true,
+          "main_thread": true,
+          "mode": "normal",
+          "per_file_append": 10,
+          "polls": [
+            {
+              "claude_ms": 0.46549999387934804,
+              "codex_ms": 0.42137500713579357,
+              "events": 40,
+              "total_ms": 0.8868750010151416
+            },
+            {
+              "claude_ms": 0.3554166614776477,
+              "codex_ms": 0.36862499837297946,
+              "events": 40,
+              "total_ms": 0.7240416598506272
+            },
+            {
+              "claude_ms": 0.3435416583670303,
+              "codex_ms": 0.36066667234990746,
+              "events": 40,
+              "total_ms": 0.7042083307169378
+            },
+            {
+              "claude_ms": 0.33712499134708196,
+              "codex_ms": 0.35091667086817324,
+              "events": 40,
+              "total_ms": 0.6880416622152552
+            },
+            {
+              "claude_ms": 0.32954166817944497,
+              "codex_ms": 0.3553749993443489,
+              "events": 40,
+              "total_ms": 0.6849166675237939
+            },
+            {
+              "claude_ms": 0.3380833368282765,
+              "codex_ms": 0.3451666561886668,
+              "events": 40,
+              "total_ms": 0.6832499930169433
+            }
+          ],
+          "source_chats": 4,
+          "repetition": 1,
+          "maximum_ms": 0.8868750010151416,
+          "passed": true
+        },
+        {
+          "events": 240,
+          "fixture_bytes": 46106,
+          "identity_and_order_passed": true,
+          "main_thread": true,
+          "mode": "normal",
+          "per_file_append": 10,
+          "polls": [
+            {
+              "claude_ms": 0.3897916612913832,
+              "codex_ms": 0.38662500446662307,
+              "events": 40,
+              "total_ms": 0.7764166657580063
+            },
+            {
+              "claude_ms": 0.3305833233753219,
+              "codex_ms": 0.367041677236557,
+              "events": 40,
+              "total_ms": 0.6976250006118789
+            },
+            {
+              "claude_ms": 0.33062500006053597,
+              "codex_ms": 0.3415000101085752,
+              "events": 40,
+              "total_ms": 0.6721250101691112
+            },
+            {
+              "claude_ms": 0.3254166658734903,
+              "codex_ms": 0.33549999352544546,
+              "events": 40,
+              "total_ms": 0.6609166593989357
+            },
+            {
+              "claude_ms": 0.3159583284286782,
+              "codex_ms": 0.3355416702106595,
+              "events": 40,
+              "total_ms": 0.6514999986393377
+            },
+            {
+              "claude_ms": 0.31599999056197703,
+              "codex_ms": 0.3236250049667433,
+              "events": 40,
+              "total_ms": 0.6396249955287203
+            }
+          ],
+          "source_chats": 4,
+          "repetition": 2,
+          "maximum_ms": 0.7764166657580063,
+          "passed": true
+        },
+        {
+          "events": 240,
+          "fixture_bytes": 46106,
+          "identity_and_order_passed": true,
+          "main_thread": true,
+          "mode": "normal",
+          "per_file_append": 10,
+          "polls": [
+            {
+              "claude_ms": 0.40008334326557815,
+              "codex_ms": 0.38287499046418816,
+              "events": 40,
+              "total_ms": 0.7829583337297663
+            },
+            {
+              "claude_ms": 0.33812499896157533,
+              "codex_ms": 0.34783333831001073,
+              "events": 40,
+              "total_ms": 0.6859583372715861
+            },
+            {
+              "claude_ms": 0.3314583300380036,
+              "codex_ms": 0.3409583441680297,
+              "events": 40,
+              "total_ms": 0.6724166742060333
+            },
+            {
+              "claude_ms": 0.32645833562128246,
+              "codex_ms": 0.34270832838956267,
+              "events": 40,
+              "total_ms": 0.6691666640108451
+            },
+            {
+              "claude_ms": 0.32933332840912044,
+              "codex_ms": 0.3505000058794394,
+              "events": 40,
+              "total_ms": 0.6798333342885599
+            },
+            {
+              "claude_ms": 0.3269166627433151,
+              "codex_ms": 0.3321249969303608,
+              "events": 40,
+              "total_ms": 0.6590416596736759
+            }
+          ],
+          "source_chats": 4,
+          "repetition": 3,
+          "maximum_ms": 0.7829583337297663,
+          "passed": true
+        },
+        {
+          "events": 4000,
+          "fixture_bytes": 769946,
+          "identity_and_order_passed": true,
+          "main_thread": true,
+          "mode": "burst",
+          "per_file_append": 1000,
+          "polls": [
+            {
+              "claude_ms": 22.8789583343314,
+              "codex_ms": 23.481208336306736,
+              "events": 4000,
+              "total_ms": 46.36016667063814
+            },
+            {
+              "claude_ms": 0.04854166763834655,
+              "codex_ms": 0.04429166438058019,
+              "events": 0,
+              "total_ms": 0.09283333201892674
+            },
+            {
+              "claude_ms": 0.03300000389572233,
+              "codex_ms": 0.05124999734107405,
+              "events": 0,
+              "total_ms": 0.08425000123679638
+            },
+            {
+              "claude_ms": 0.032291660318151116,
+              "codex_ms": 0.03983333590440452,
+              "events": 0,
+              "total_ms": 0.07212499622255564
+            },
+            {
+              "claude_ms": 0.031958334147930145,
+              "codex_ms": 0.039000005926936865,
+              "events": 0,
+              "total_ms": 0.07095834007486701
+            },
+            {
+              "claude_ms": 0.03154166915919632,
+              "codex_ms": 0.038666665204800665,
+              "events": 0,
+              "total_ms": 0.07020833436399698
+            }
+          ],
+          "source_chats": 4,
+          "repetition": 1,
+          "maximum_ms": 46.36016667063814,
+          "passed": true
+        },
+        {
+          "events": 4000,
+          "fixture_bytes": 769946,
+          "identity_and_order_passed": true,
+          "main_thread": true,
+          "mode": "burst",
+          "per_file_append": 1000,
+          "polls": [
+            {
+              "claude_ms": 23.924124994664453,
+              "codex_ms": 24.320833341334946,
+              "events": 4000,
+              "total_ms": 48.2449583359994
+            },
+            {
+              "claude_ms": 0.04112500755582005,
+              "codex_ms": 0.044041662476956844,
+              "events": 0,
+              "total_ms": 0.08516667003277689
+            },
+            {
+              "claude_ms": 0.034041659091599286,
+              "codex_ms": 0.04225000157020986,
+              "events": 0,
+              "total_ms": 0.07629166066180915
+            },
+            {
+              "claude_ms": 0.03312499029561877,
+              "codex_ms": 0.04062500374857336,
+              "events": 0,
+              "total_ms": 0.07374999404419214
+            },
+            {
+              "claude_ms": 0.0327916641253978,
+              "codex_ms": 0.040208338759839535,
+              "events": 0,
+              "total_ms": 0.07300000288523734
+            },
+            {
+              "claude_ms": 0.03245833795517683,
+              "codex_ms": 0.03991666017100215,
+              "events": 0,
+              "total_ms": 0.07237499812617898
+            }
+          ],
+          "source_chats": 4,
+          "repetition": 2,
+          "maximum_ms": 48.2449583359994,
+          "passed": true
+        },
+        {
+          "events": 4000,
+          "fixture_bytes": 769946,
+          "identity_and_order_passed": true,
+          "main_thread": true,
+          "mode": "burst",
+          "per_file_append": 1000,
+          "polls": [
+            {
+              "claude_ms": 23.374875003355555,
+              "codex_ms": 24.130208330461755,
+              "events": 4000,
+              "total_ms": 47.50508333381731
+            },
+            {
+              "claude_ms": 0.05062500713393092,
+              "codex_ms": 0.050083326641470194,
+              "events": 0,
+              "total_ms": 0.10070833377540112
+            },
+            {
+              "claude_ms": 0.036999990697950125,
+              "codex_ms": 0.04425000224728137,
+              "events": 0,
+              "total_ms": 0.0812499929452315
+            },
+            {
+              "claude_ms": 0.035291668609716,
+              "codex_ms": 0.042833329644054174,
+              "events": 0,
+              "total_ms": 0.07812499825377017
+            },
+            {
+              "claude_ms": 0.034291675547137856,
+              "codex_ms": 0.04158333467785269,
+              "events": 0,
+              "total_ms": 0.07587501022499055
+            },
+            {
+              "claude_ms": 0.03354166983626783,
+              "codex_ms": 0.04091666778549552,
+              "events": 0,
+              "total_ms": 0.07445833762176335
+            }
+          ],
+          "source_chats": 4,
+          "repetition": 3,
+          "maximum_ms": 47.50508333381731,
+          "passed": true
+        }
+      ],
+      "compile_exit": 0
+    }
+  }
+}

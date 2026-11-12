@@ -1,6 +1,6 @@
 # Yukio · 让 AI 的工作看得见
 
-[English](MAC-USER-GUIDE.md) · [下载](https://github.com/leo-zhang-source/yukio-desktop-pet/releases/tag/v5.4-preview.2)
+[English](MAC-USER-GUIDE.md) · [下载](https://github.com/leo-zhang-source/yukio-desktop-pet/releases/tag/v5.4-preview.3)
 
 Yukio 是一款 Mac 桌面伙伴。它把 AI 编程助手的工作变成角色动作，用工作台解释进展，并在需要你回答时提醒你。
 
@@ -28,10 +28,10 @@ Yukio 是一款 Mac 桌面伙伴。它把 AI 编程助手的工作变成角色�
 | --- | --- |
 | 播放演示，再拖动角色 | 十二种动作、独立眨眼和拖动反馈；演示为模拟状态 |
 | 让本机助手执行一个小任务 | 角色是否随真实活动变化，完成后如何提醒 |
-| 右键角色，在工作台选择该聊天 | 查看正在发生的事、历史和解释依据 |
+| 右键角色，在工作台选择该聊天 | 展开 Claude／Codex 分类后直接选聊天，查看当前活动、历史和解释依据 |
 
 <a id="explain"></a>
-**可选：AI 解释。** 按 [Codex](https://learn.chatgpt.com/docs/codex/cli) 或 [Claude Code](https://code.claude.com/docs/en/setup) 官方说明，在本机安装并登录自己的账号。在工作台顶部“解释交给”选择助手，再点“开启解释”。
+**可选：AI 解释。** 按 [Codex](https://learn.chatgpt.com/docs/codex/cli) 或 [Claude Code](https://code.claude.com/docs/en/setup) 官方说明，在本机安装并登录自己的账号。在工作台顶部“解释交给”选择助手，选择会立即保存；尚未开启时再点“开启解释”。
 
 <a id="privacy"></a>
 解释会发送聊天短摘录，并使用所选助手的账号额度；不启用也能查看本机活动。
@@ -44,6 +44,6 @@ Yukio 是一款 Mac 桌面伙伴。它把 AI 编程助手的工作变成角色�
 <a id="verification"></a>
 ---
 
-适用于 Apple 芯片 Mac。本指南对应 5.4 Preview 2（56），仍在测试。Windows 与云端 Cowork 暂不在本次体验范围。
+适用于 Apple 芯片 Mac。本指南对应 5.4 Preview 3（63），仍在测试。Windows 与云端 Cowork 暂不在本次体验范围。
 
 [安装与排错](MAC-HELP.zh-CN.md) · [更新方法](MANUAL-UPDATES.md#zh) · [开发与验证记录](../DEVELOPMENT.md)

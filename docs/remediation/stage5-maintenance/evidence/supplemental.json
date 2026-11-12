@@ -1,0 +1,18 @@
+{
+  "release-python": {
+    "exit_code": 0,
+    "timed_out": false,
+    "seconds": 2.41,
+    "log": "release-python.log",
+    "tests": 14,
+    "skipped": 0
+  },
+  "settings-repro": {
+    "exit_code": 1,
+    "timed_out": false,
+    "seconds": 1.55,
+    "log": "settings-repro.log",
+    "tests": 1,
+    "skipped": 0
+  }
+}

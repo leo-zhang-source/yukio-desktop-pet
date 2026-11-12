@@ -4,6 +4,7 @@ Users: follow the **[English Mac guide](MAC-USER-GUIDE.md#explain)** or **[中�
 
 ## Current behavior / 当前行为
 
+- Local maintenance build 62 saves a provider selection immediately without changing whether explanations are enabled. Failed or busy changes explicitly retain the active selection. Codex's explicitly configured high or greater reasoning effort is capped at medium for each bounded explanation only; the user's model, account and global configuration stay intact. / 本地维护版 62 选择来源即保存，并保持解释开关；失败或忙碌时明确保留实际来源。Codex 明确设置的 high 及更高推理强度仅在本次短解释中限制为 medium，保留用户模型、账号及全局配置。见[本轮记录](remediation/CODEX-EXPLANATION-20261111.md)。
 - Each user installs and signs in to their own Codex or Claude Code. Ordinary users see automatic selection, Codex and Claude Code; the author's private Qwen option is excluded from normal installations. / 每位用户使用自己的客户端与账号；普通安装只显示自动、Codex 和 Claude Code，不显示作者私人千问选项。
 - Checks read client capabilities and sign-in status without generation. Automatic selection may try the other client before sending if readiness fails; an explicit selection or a failed generation does not silently switch services. / 检查不生成回答；自动模式可在发送前选择另一家已就绪助手，指定来源或实际调用失败不偷偷换服务。
 - Explanations run independently, using bounded excerpts and the user's own account/service configuration. They do not continue or send messages to the source chat. Local records remain available on failure. / 解释独立运行，只使用有限摘录与用户自己的服务配置，不续接或发消息到原聊天；失败保留本机记录。

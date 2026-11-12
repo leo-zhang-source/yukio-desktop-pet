@@ -12,7 +12,7 @@ import sys
 import zipfile
 
 ROOT=Path(__file__).resolve().parent
-RUNTIME=('agent_setup.py','agent_explanation.py','chat_catalog.py','work_understanding.py','history_review.py','reading_view.py','page_explanation_policy.py','plain_language.py','task_summary.py','project_context.py','handoff_view.py','source_context.py','glance_view.py','glance_automation.py','server.py','history_view.py','context_view.py','explanation.py','runtime_identity.py','localization.py','collector_status.py','launcher.py','start-macos.command','start-windows.cmd')
+RUNTIME=('agent_setup.py','agent_explanation.py','chat_catalog.py','claude_desktop.py','conversation_text.py','work_understanding.py','history_review.py','reading_view.py','page_explanation_policy.py','plain_language.py','task_summary.py','project_context.py','handoff_view.py','source_context.py','glance_view.py','glance_automation.py','server.py','history_view.py','context_view.py','explanation.py','runtime_identity.py','localization.py','collector_status.py','launcher.py','start-macos.command','start-windows.cmd')
 
 def build(destination,macos=False):
     if destination.exists():raise ValueError('Use a new output directory')

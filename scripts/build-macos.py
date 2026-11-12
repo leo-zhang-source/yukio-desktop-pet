@@ -21,6 +21,7 @@ import tarfile
 import time
 import urllib.request
 from update_channel import validate_update_channel, apply_update_settings
+from maintenance_lib import source_fingerprint
 
 ROOT = Path(__file__).resolve().parents[1]
 PRIVATE_NAMES = {'local-explanation-options.json', 'auth.json', 'credentials.json', 'lan-model.json', 'work-context.json',
@@ -212,6 +213,7 @@ def build(args):
     if config.get('release_tag'): info['YukioReleaseTag'] = config['release_tag']
     (contents / 'Info.plist').write_bytes(plistlib.dumps(info))
     inputs = {'source_revision': commit, 'source_tree': git('rev-parse', commit + '^{tree}'), 'configuration': config,
+              'maintenance_source_sha256': source_fingerprint(snapshot, source_before),
               'dependency_lock_sha256': sha(snapshot / 'scripts/macos-build-requirements.txt'),
               'swift_package_lock_sha256': sha(snapshot / 'YukioPlayer/Package.resolved'), 'original_assets': source_assets}
     write(resources / 'BUILD-PROVENANCE.json', inputs)

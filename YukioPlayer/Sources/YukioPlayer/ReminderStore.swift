@@ -7,6 +7,8 @@ final class ReminderStore: ObservableObject {
     @Published private(set) var book = ReminderBook()
     @Published var error: String?
     @Published private(set) var available = true
+    private let defaults: UserDefaults
+    var soundEnabled: Bool { defaults.object(forKey: "assistantReminderSound") as? Bool ?? true }
     private let repository: ReminderRepository
     private var timer: Timer?
     var onRing: (() -> Void)?
@@ -15,7 +17,8 @@ final class ReminderStore: ObservableObject {
     var ringing: [Reminder] { book.items.filter { $0.status == .ringing }.sorted { $0.dueAt < $1.dueAt } }
     var completed: [Reminder] { book.items.filter { $0.status == .completed }.sorted { $0.dueAt > $1.dueAt } }
 
-    init(url: URL? = nil) {
+    init(url: URL? = nil, defaults: UserDefaults = .standard) {
+        self.defaults = defaults
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         repository = ReminderRepository(url: url ?? base.appendingPathComponent("Yukio/reminders.json"))
         do { book = try repository.load() }
@@ -62,7 +65,7 @@ final class ReminderStore: ObservableObject {
     private func tick() {
         guard available, scheduled.first.map({ $0.dueAt <= Date() }) == true else { return }
         if commit({ $0.advance(now: Date()) }) {
-            if UserDefaults.standard.object(forKey: "assistantReminderSound") as? Bool ?? true {
+            if soundEnabled {
                 NSSound(named: "Glass")?.play()
             }
             onRing?()

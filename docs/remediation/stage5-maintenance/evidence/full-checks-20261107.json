@@ -1,0 +1,200 @@
+{
+  "schema_version": 2,
+  "git_head": "7cf565b28739d4be4976daa4ae4337e06bc0ddc9",
+  "source_sha256": "b328c08c8b6c7fed27afe62ae85ebc9f3303cea92767ea604d4830c0e6e776a0",
+  "system": "macOS-27.2-arm64-arm-64bit-Mach-O",
+  "architecture": "arm64",
+  "python": "3.13.2",
+  "swift": "Apple Swift version 6.1.2 (swiftlang-6.1.2.1.2 clang-1700.0.13.5)\nTarget: arm64-apple-macosx18.0",
+  "node": "v25.8.0",
+  "scope": [
+    "macOS",
+    "workbench"
+  ],
+  "windows": "deferred_by_user",
+  "independent_installation_tested": false,
+  "full_suite": true,
+  "gate_passed": true,
+  "product_acceptance_passed": false,
+  "repeat_consistent": true,
+  "inventory_errors": [],
+  "evidence_hashes": {
+    "run-1/mac-observations.json": "52e3ebcb60a2653dc8c670af19db856d44c588a6c4bdc100b90e602a4b66a001",
+    "run-1/node.log": "549baf2b01706bd4e5dadf3f2c804e6189f278eb70090dc78dd2d57ac78d17a6",
+    "run-1/progress_python.log": "5ed39a9f42d40cb29c9d960c0f9893420a3873d004a0a6f6fe392246dd5882bc",
+    "run-1/python.log": "bcfbc251d52cd2f1a0edc26f80d53898e76265ff13deea3b865de7279b65aa1d",
+    "run-1/release_python.log": "55d047b8536ec60e9fc0306bf395916dc7b7034bd6fa1fb3158e56ea2867acf0",
+    "run-1/shared.json": "d4636476fd48a15758117bd731ee7552554316d3ee99c6da7f1fcfd27fa32ef3",
+    "run-1/shared.log": "ec9d9d172fc281ca78a79e16a2d8d7682a8ec91df2c3c69553e37644ca41daf9",
+    "run-1/swift.log": "561d1ad7028d869202b06bb95d0653f1c24387b71e1e47b6bd9a2004f60726af",
+    "run-2/mac-observations.json": "52e3ebcb60a2653dc8c670af19db856d44c588a6c4bdc100b90e602a4b66a001",
+    "run-2/node.log": "ff6a79e817eec8cebf206361a16796a480178b2398fb0c973dfc406277d86aab",
+    "run-2/progress_python.log": "5ed39a9f42d40cb29c9d960c0f9893420a3873d004a0a6f6fe392246dd5882bc",
+    "run-2/python.log": "9c49bc3361a7964b9e091bedaecee585f5116cd5a1684c5d1992e2db4b289cad",
+    "run-2/release_python.log": "4fe5d6886516404c1d8763196a76195186c57b6d3ded0b0e26c71dccba21aea0",
+    "run-2/shared.json": "d4636476fd48a15758117bd731ee7552554316d3ee99c6da7f1fcfd27fa32ef3",
+    "run-2/shared.log": "ec9d9d172fc281ca78a79e16a2d8d7682a8ec91df2c3c69553e37644ca41daf9",
+    "run-2/swift.log": "9644ad8e50d55c15457e430633a8a836ab574a0708ac9be49d8f61397b8ba0c0",
+    "run-1/negative-controls/failure.json": "90f5848f40d2436c9b3629a11dc5f4bb7aefb247da2b6b1e3bfcd4cd5220e53a",
+    "run-1/negative-controls/failure.log": "a22b31b3e8cd6271bd3426deffe6cb7f60a9b6bcc1f61a8fd299e0ca44a67328",
+    "run-1/negative-controls/fixed-observation.json": "9d7c1ece45cd236e7d836e552f42fa5bf31aa2a6b00695878e89563e24052f2b",
+    "run-1/negative-controls/summary.json": "45a7f651c9057e32dcb01f719b1459bf8a1a4d0bd86e771dc9ec35838c37b15c",
+    "run-1/negative-controls/temporary-known-issues.json": "09cfe7927ee59deefb01552399d185cd60a2a8f2e259acd7d49b668de4aafbc3",
+    "run-1/negative-controls/unexpected-pass.json": "089d7d96b229239abcfa9a30e0cf581951e5f9eb5f84a9df133e163cd63b73d4",
+    "run-1/negative-controls/unexpected-pass.log": "aba53cbf81db74ba0d491f3cae60804de49080635029b2c96f9356d9fa71e941",
+    "run-1/negative-controls/wrong-expectation.json": "e355c21d463568cd9be5701e489b74a53e2e080eec63a11426403d0299ef89f3",
+    "run-2/negative-controls/failure.json": "90f5848f40d2436c9b3629a11dc5f4bb7aefb247da2b6b1e3bfcd4cd5220e53a",
+    "run-2/negative-controls/failure.log": "a22b31b3e8cd6271bd3426deffe6cb7f60a9b6bcc1f61a8fd299e0ca44a67328",
+    "run-2/negative-controls/fixed-observation.json": "9d7c1ece45cd236e7d836e552f42fa5bf31aa2a6b00695878e89563e24052f2b",
+    "run-2/negative-controls/summary.json": "45a7f651c9057e32dcb01f719b1459bf8a1a4d0bd86e771dc9ec35838c37b15c",
+    "run-2/negative-controls/temporary-known-issues.json": "09cfe7927ee59deefb01552399d185cd60a2a8f2e259acd7d49b668de4aafbc3",
+    "run-2/negative-controls/unexpected-pass.json": "089d7d96b229239abcfa9a30e0cf581951e5f9eb5f84a9df133e163cd63b73d4",
+    "run-2/negative-controls/unexpected-pass.log": "aba53cbf81db74ba0d491f3cae60804de49080635029b2c96f9356d9fa71e941",
+    "run-2/negative-controls/wrong-expectation.json": "e355c21d463568cd9be5701e489b74a53e2e080eec63a11426403d0299ef89f3"
+  },
+  "runs": [
+    {
+      "run": 1,
+      "shared_exit": 0,
+      "shared_counts": {
+        "PASS": 230,
+        "KNOWN_FAIL": 0,
+        "UNEXPECTED_FAIL": 0,
+        "UNEXPECTED_PASS": 0
+      },
+      "negative_controls": {
+        "wrong_assertion_exit": 1,
+        "wrong_assertion_detected": true,
+        "unexpected_pass_exit": 1,
+        "unexpected_pass_detected": true,
+        "passed": true
+      },
+      "source_unchanged": true,
+      "gate_passed": true,
+      "suites": {
+        "swift": {
+          "exit_code": 0,
+          "timed_out": false,
+          "seconds": 21.78,
+          "log": "swift.log",
+          "tests": 266,
+          "skipped": 0,
+          "todo": 0,
+          "summary_passed": true
+        },
+        "python": {
+          "exit_code": 0,
+          "timed_out": false,
+          "seconds": 18.67,
+          "log": "python.log",
+          "tests": 334,
+          "skipped": 0,
+          "todo": 0,
+          "summary_passed": true
+        },
+        "release_python": {
+          "exit_code": 0,
+          "timed_out": false,
+          "seconds": 1.2,
+          "log": "release_python.log",
+          "tests": 28,
+          "skipped": 0,
+          "todo": 0,
+          "summary_passed": true
+        },
+        "progress_python": {
+          "exit_code": 0,
+          "timed_out": false,
+          "seconds": 0.09,
+          "log": "progress_python.log",
+          "tests": 8,
+          "skipped": 0,
+          "todo": 0,
+          "summary_passed": true
+        },
+        "node": {
+          "exit_code": 0,
+          "timed_out": false,
+          "seconds": 0.26,
+          "log": "node.log",
+          "tests": 55,
+          "skipped": 0,
+          "todo": 0,
+          "summary_passed": true
+        }
+      }
+    },
+    {
+      "run": 2,
+      "shared_exit": 0,
+      "shared_counts": {
+        "PASS": 230,
+        "KNOWN_FAIL": 0,
+        "UNEXPECTED_FAIL": 0,
+        "UNEXPECTED_PASS": 0
+      },
+      "negative_controls": {
+        "wrong_assertion_exit": 1,
+        "wrong_assertion_detected": true,
+        "unexpected_pass_exit": 1,
+        "unexpected_pass_detected": true,
+        "passed": true
+      },
+      "source_unchanged": true,
+      "gate_passed": true,
+      "suites": {
+        "swift": {
+          "exit_code": 0,
+          "timed_out": false,
+          "seconds": 21.72,
+          "log": "swift.log",
+          "tests": 266,
+          "skipped": 0,
+          "todo": 0,
+          "summary_passed": true
+        },
+        "python": {
+          "exit_code": 0,
+          "timed_out": false,
+          "seconds": 18.69,
+          "log": "python.log",
+          "tests": 334,
+          "skipped": 0,
+          "todo": 0,
+          "summary_passed": true
+        },
+        "release_python": {
+          "exit_code": 0,
+          "timed_out": false,
+          "seconds": 1.43,
+          "log": "release_python.log",
+          "tests": 28,
+          "skipped": 0,
+          "todo": 0,
+          "summary_passed": true
+        },
+        "progress_python": {
+          "exit_code": 0,
+          "timed_out": false,
+          "seconds": 0.09,
+          "log": "progress_python.log",
+          "tests": 8,
+          "skipped": 0,
+          "todo": 0,
+          "summary_passed": true
+        },
+        "node": {
+          "exit_code": 0,
+          "timed_out": false,
+          "seconds": 0.26,
+          "log": "node.log",
+          "tests": 55,
+          "skipped": 0,
+          "todo": 0,
+          "summary_passed": true
+        }
+      }
+    }
+  ],
+  "raw_evidence": "Local private evidence folder full-checks-final; machine hashes are retained here, not a substitute for those logs"
+}

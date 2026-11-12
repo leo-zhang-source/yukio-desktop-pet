@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "id": "mac-arm64-current",
+      "platform": "macOS 27.2 arm64",
+      "status": "independent_not_run",
+      "scope": "Source automatic checks separately recorded in TEST_RESULTS; no independent installation claim"
+    },
+    {
+      "id": "mac-independent-first-use",
+      "platform": "Mac",
+      "status": "paused_by_user",
+      "scope": "Actual candidate package, clean machine/profile, own credentials; requires explicit resumption"
+    },
+    {
+      "id": "codex-native-concurrency",
+      "platform": "Mac",
+      "status": "not_run_current_candidate",
+      "scope": "Client version, 4 chats, source IDs, answer targets, 30-minute GUI run require actual package evidence"
+    },
+    {
+      "id": "claude-code-concurrency",
+      "platform": "Mac",
+      "status": "not_run_current_candidate",
+      "scope": "Local Code only; transcript/hook alias and real callback acceptance tracked separately"
+    },
+    {
+      "id": "deepcode-concurrency",
+      "platform": "Mac",
+      "status": "not_run_current_candidate",
+      "scope": "User-configured client; no inherited credentials"
+    },
+    {
+      "id": "mac-minimum-os",
+      "platform": "macOS 13 arm64",
+      "status": "not_run",
+      "scope": "Build target only; native minimum-version inspection is not actual OS validation"
+    },
+    {
+      "id": "mac-intel",
+      "platform": "macOS x86_64",
+      "status": "not_supported_by_current_candidate",
+      "scope": "arm64-only build pipeline"
+    },
+    {
+      "id": "windows",
+      "platform": "Windows",
+      "status": "deferred_by_user",
+      "scope": "No build, test or delivery planned"
+    },
+    {
+      "id": "cloud-cowork",
+      "platform": "Claude cloud Cowork",
+      "status": "deferred_by_user",
+      "scope": "Retained as late optional scope"
+    }
+  ]
+}

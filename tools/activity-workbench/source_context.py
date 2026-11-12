@@ -14,6 +14,8 @@ import stat
 from contextlib import closing
 import threading
 import time
+from conversation_text import conversation_text
+from claude_desktop import ClaudeDesktopIndex, default_directory as desktop_directory
 
 MAX_LINE = 256 * 1024
 MAX_READ = 2 * 1024 * 1024
@@ -57,7 +59,7 @@ def user_text(text):
         return clean('；'.join(a['answer'] for a in answers[:3] if isinstance(a,dict) and isinstance(a.get('answer'),str) and a['answer'] not in consent_choices),480)
     if '## My request:' in text:text=text.rsplit('## My request:',1)[1]
     elif text.lstrip().startswith(('# AGENTS.md instructions','<environment_context>','<send_user_message_question_reply>','<external_codex_apps_open_page>')):return ''
-    text=re.sub(r'<(?:in-app-browser-context|environment_context|app-context|INSTRUCTIONS)\b[^>]*>.*?</(?:in-app-browser-context|environment_context|app-context|INSTRUCTIONS)>','',text,flags=re.S)
+    text=conversation_text(text)
     # App mentions are visible labels; their installation URLs are not the
     # user's goal and must not consume the short request shown on the homepage.
     text=re.sub(r'\[(@[^\]\n]+)\]\(plugin://[^\s)]+\)',r'\1',text)
@@ -192,12 +194,12 @@ def extract(client, obj):
         if kind=='message' and phase in (None,'','commentary','final','final_answer'):
             text=text_blocks(p.get('content'))
             if role=='user':text=user_text(text)
-            elif role=='assistant':text=clean(text,400)
+            elif role=='assistant':text=clean(conversation_text(text),400)
             else:text=''
             if text:out.append((role,text))
         elif kind in ('user_message','agent_message') and phase in (None,'','commentary','final','final_answer'):
             role='user' if kind=='user_message' else 'assistant'
-            text=user_text(p.get('message')) if role=='user' else clean(p.get('message'),400)
+            text=user_text(p.get('message')) if role=='user' else clean(conversation_text(p.get('message')),400)
             if text:out.append((role,text))
         elif kind in ('function_call','custom_tool_call'):
             name=p.get('name');namespace=p.get('namespace')
@@ -209,7 +211,7 @@ def extract(client, obj):
         if obj.get('isMeta') or obj.get('isCompactSummary') or not isinstance(msg,dict):return []
         if role not in ('user','assistant') or msg.get('role',role)!=role:return []
         content=msg.get('content');text=text_blocks(content)
-        text=user_text(text) if role=='user' else clean(text,400)
+        text=user_text(text) if role=='user' else clean(conversation_text(text),400)
         if text:out.append((role,text))
         for block in content[:100] if isinstance(content,list) else []:
             if isinstance(block,dict) and block.get('type')=='tool_use':
@@ -220,7 +222,7 @@ def extract(client, obj):
         if obj.get('compacted') or isinstance(meta,dict) and meta.get('isSummary'):return []
         if role in ('user','assistant'):
             text=text_blocks(obj.get('content'))
-            text=user_text(text) if role=='user' else clean(text,400)
+            text=user_text(text) if role=='user' else clean(conversation_text(text),400)
             if text:out.append((role,text))
         if role=='assistant' and isinstance(params,dict):
             for call in (params['tool_calls'][:50] if isinstance(params.get('tool_calls'),list) else []):
@@ -317,9 +319,10 @@ def handoff_material(obj):
 
 
 class SourceContext:
-    def __init__(self,roots=None):
+    def __init__(self,roots=None,*,claude_desktop_root=None):
         self.roots={k:Path(v).resolve() for k,v in (default_roots() if roots is None else roots).items()}
-        self.paths={};self.scan_at={};self.lock=threading.Lock()
+        self.paths={};self.scan_at={};self.lock=threading.Lock();self.title_cache={}
+        self.claude_desktop=ClaudeDesktopIndex(claude_desktop_root if claude_desktop_root is not None else desktop_directory(self.roots.get('claude')))
 
     def permitted(self,path,client,source):
         root=self.roots.get(client)
@@ -332,6 +335,12 @@ class SourceContext:
     def title_and_path(self,client,session,source):
         title='';path=None;root=self.roots.get(client)
         if root is None:return title,path
+        desktop=self.claude_desktop.snapshot().get(session) if client=='claude' else None
+        if desktop:
+            # Desktop rewinds create a new UUID transcript. Resolve that exact
+            # saved source immediately instead of waiting for the broad scan's
+            # 30-second cache. The source digest still binds the chosen file.
+            path=self.claude_session_path(root,session,source)
         if client=='codex':
             # The local index is already used by Yukio's existing Codex source.
             index=root.parent/'session_index.jsonl'
@@ -342,7 +351,7 @@ class SourceContext:
                     for line in raw.splitlines():
                         try:row=json.loads(line)
                         except ValueError:continue
-                        if isinstance(row,dict) and row.get('id')==session and isinstance(row.get('thread_name'),str):title=clean(row['thread_name'],100)
+                        if isinstance(row,dict) and row.get('id')==session and isinstance(row.get('thread_name'),str):title=clean(user_text(row['thread_name']),100)
             except OSError:pass
             state=root.parent/'state_5.sqlite'
             try:
@@ -371,7 +380,73 @@ class SourceContext:
                             digest=hashlib.sha256(str(p.resolve()).encode()).hexdigest();self.paths[(client,digest)]=p
                         if count>6000 or time.monotonic()>deadline:break
                     self.scan_at[client]=time.monotonic();path=self.paths.get((client,source))
+        if client=='claude':
+            if desktop:title=clean(user_text(desktop['title']),100)
+            if not title and path is not None:title=self.claude_title(path,session,source)
         return title,path
+
+    def claude_session_path(self,root,session,source):
+        def exact(directory):
+            path=directory/(session+'.jsonl')
+            return path if self.permitted(path,'claude',source) and path.is_file() else None
+        path=exact(root)
+        if path is not None:return path
+        try:
+            with os.scandir(root) as entries:
+                for index,entry in enumerate(entries):
+                    if index>=1024:break
+                    if entry.is_dir(follow_symlinks=False):
+                        path=exact(Path(entry.path))
+                        if path is not None:return path
+        except OSError:pass
+        return None
+
+    def claude_title(self,path,session,source):
+        """Read bounded header/tail metadata, scoped to the exact local session.
+
+        Claude saves custom-title / ai-title records without timestamps. They
+        are metadata, not speech. Recent renames can be near the file's end.
+        Cache against file identity and content changes, never against title.
+        """
+        if not self.permitted(path,'claude',source):return ''
+        descriptor=None
+        try:
+            descriptor=os.open(path,os.O_RDONLY|getattr(os,'O_NOFOLLOW',0)|getattr(os,'O_NONBLOCK',0))
+            with os.fdopen(descriptor,'rb') as stream:
+                descriptor=None;info=os.fstat(stream.fileno())
+                if not stat.S_ISREG(info.st_mode):return ''
+                key=(source,session);signature=(info.st_dev,info.st_ino,info.st_size,info.st_mtime_ns,info.st_ctime_ns)
+                with self.lock:
+                    cached=self.title_cache.get(key)
+                if cached and cached[0]==signature:return cached[1]
+                window=MAX_LINE
+                chunks=[stream.read(window)]
+                if info.st_size>window:
+                    stream.seek(max(window,info.st_size-window)-1)
+                    tail=stream.read(window+1)
+                    # Drop the first partial line, but keep a line starting
+                    # exactly at the boundary (the preceding byte is newline).
+                    chunks.append(tail.partition(b'\n')[2])
+                titles={}
+                for chunk in chunks:
+                    for raw in chunk.splitlines(keepends=True):
+                        if not raw.endswith(b'\n') or len(raw)>MAX_LINE:continue
+                        try:row=json.loads(raw)
+                        except (ValueError,RecursionError):continue
+                        if not isinstance(row,dict) or row.get('sessionId')!=session or row.get('isSidechain') is True or row.get('agentId'):continue
+                        kind=row.get('type')
+                        field={'custom-title':'customTitle','ai-title':'aiTitle'}.get(kind) if isinstance(kind,str) else None
+                        if field:
+                            title=clean(user_text(row.get(field)),100)
+                            if title:titles[field]=title
+                title=titles.get('customTitle') or titles.get('aiTitle','')
+                with self.lock:
+                    if len(self.title_cache)>=256:self.title_cache.pop(next(iter(self.title_cache)))
+                    self.title_cache[key]=(signature,title)
+                return title
+        except (OSError,ValueError):return ''
+        finally:
+            if descriptor is not None:os.close(descriptor)
 
     def read(self,client,parts,state,rows):
         title,path=self.title_and_path(client,parts[2],parts[0]);out=[];missing=0;used=0;requests=[];receipts=[];handoffs=[];workspace=''

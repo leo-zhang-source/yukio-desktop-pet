@@ -12,7 +12,7 @@ from handoff_view import HandoffView
 from task_summary import recap
 from plain_language import plain_words,readable_fragment
 from explanation import add_object_names
-from chat_catalog import activity_state, readable_title, catalog_card, codex_project
+from chat_catalog import activity_state, readable_title, opening_title, catalog_card, codex_project, claude_desktop_groups
 from localization import current_language
 
 IGNORED={'reasoning_record_observed','inherited_context_record','context_record_observed','identity_conflict','foreign_session_record','identity_scope_unresolved'}
@@ -120,8 +120,8 @@ def local_story(user,activity,reason,step,fragment):
 
 
 class GlanceView:
-    def __init__(self,history,roots=None,clock=time.time):
-        self.history=history;self.reader=SourceContext(roots);self.clock=clock;self.project_context=None
+    def __init__(self,history,roots=None,clock=time.time,*,claude_desktop_root=None):
+        self.history=history;self.reader=SourceContext(roots,claude_desktop_root=claude_desktop_root);self.clock=clock;self.project_context=None
 
     def detail(self,client,key):
         parts=key_parts(key)
@@ -215,7 +215,7 @@ class GlanceView:
                 snippets=[r for r in material.get('receipts',[]) if r['sequence']==receipt['sequence'] and r['call_id']==call]
                 if len(snippets)==1:
                     fragment=dict(snippets[0],material_kind='tool_output' if output else 'file_read',display=clean(snippets[0]['text'],100),text=reqs[0]['target']+(' 的工具返回短片段：' if output else ' 的读取返回短片段：')+snippets[0]['text']+('（工具实际返回的这小段文字；未单独确认脚本内各步骤，不代表完整文件或任务结果；' if output else '（仅这段返回，不代表完整文件；')+op['status_label']+'）')
-        title=readable_title(source['title'] or clean((user or {}).get('text',''),62))
+        title=readable_title(source['title'] or (opening_title(self.history,self.reader,client,parts,state) if not source['unavailable'] else ''))
         status='最近的工作';tone='quiet';needs='暂未看到明确需要你处理的请求。'
         markers=[(seq,r) for seq,r in selected if r.get('kind') in ('turn_started','turn_ended','turn_cancelled')]
         latest_marker=markers[0][1]['kind'] if markers else None
@@ -285,7 +285,7 @@ class GlanceView:
         meaning['turn']=[newest_user,latest_start];meaning['speech']=(speech or {}).get('text')
         detail['revision']=hashlib.sha256(json.dumps(meaning,sort_keys=True,ensure_ascii=False).encode()).hexdigest()
         # Story prose uses object roles; exact excerpts remain in folded proof.
-        for part in ('content','explanation','reason'):
+        for part in ('content','explanation','reason','goal','goal_short'):
             detail[part]=plain_words(detail[part],current_language())
         detail['activity_state']=activity_state(detail)
         return detail
@@ -299,23 +299,31 @@ class GlanceView:
         cards=[];unavailable=[];limited=False
         for client in self.history.databases:
             try:
-                groups=self.history.groups(client,limit=50)['groups']
+                page=self.history.groups(client,limit=50);groups=page['groups']
+                # Empty records and rewind files must not consume all slots.
+                while page['has_more'] and len(groups)<200:
+                    page=self.history.groups(client,limit=50,offset=page['next_offset'],snapshot=page['snapshot'])
+                    groups+=page['groups']
+                limited=limited or page['has_more']
+                if client=='claude':
+                    groups=claude_desktop_groups(self.history,self.reader,groups)
                 with self.history.connect(client) as db:
                     headers=db.execute('SELECT e.record'+FROM+f" WHERE {CLIENT}=? AND {GENERATION}=json_extract(s.state,'$.generation') AND json_extract(e.record,'$.kind')='session_observed' ORDER BY sequence DESC LIMIT 200",[client]).fetchall()
                     helpers={(r.get('source_id'),r.get('generation'),r.get('session_id')) for raw, in headers for r in [json.loads(raw)] if any(link.get('kind')=='spawned_from' and link.get('status')=='reported_by_client' for link in r.get('relationships',[]))}
             except (ValueError,OSError,sqlite3.Error):
                 unavailable.append(client);continue
             groups.sort(key=lambda g:((g['source_id'],g['generation'],g['session_id']) in helpers,-g['last_sequence']))
-            seen=set()
+            seen=set();visible=0
             for group in groups:
                 if not group['session_id'] or group['session_id'].startswith('source-') or group['is_sidechain'] or group['agent_id']:continue
                 if group['session_id'] in seen:continue
                 seen.add(group['session_id'])
                 try:card=catalog_card(self.history,self.reader,client,group,self.clock)
                 except (ValueError,OSError,sqlite3.Error):continue
+                if card['source_unavailable'] or not card['has_content']:continue
                 card['is_helper']=(group['source_id'],group['generation'],group['session_id']) in helpers
-                cards.append(card)
-                if len(seen)>=20:
+                cards.append(card);visible+=1
+                if visible>=20:
                     limited=True;break
         cards.sort(key=lambda c:(c['is_helper'],-(c['last_activity_ms'] or 0)))
         return dict(cards=cards[:60],unavailable=unavailable,limited=limited or len(cards)>60)

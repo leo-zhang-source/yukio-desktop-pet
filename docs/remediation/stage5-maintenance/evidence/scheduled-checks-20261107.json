@@ -1,0 +1,41 @@
+{
+  "configured_on": "2026-11-07",
+  "automation": {
+    "id": "yukio",
+    "kind": "heartbeat",
+    "name": "Yukio 长期维护检查",
+    "status": "ACTIVE",
+    "notification_policy": "failed_runs_only",
+    "target_thread": "private local maintenance chat; identifier omitted"
+  },
+  "schedule": {
+    "daily_time": "09:00",
+    "timezone": "America/Los_Angeles",
+    "interval_days": {
+      "daily": 1,
+      "weekly": 7,
+      "monthly": 30,
+      "quarterly": 90
+    }
+  },
+  "manual_preflight": {
+    "maintenance_check_passed": true,
+    "dependency_audit_complete": true,
+    "python_build_dependencies": 10,
+    "known_advisory_records": 0,
+    "auditor_pinned_versions_verified": 27,
+    "actions_lock_offline_passed": true,
+    "baseline_source_logs_package_bound": true,
+    "nas_port": 1529,
+    "nas_existing_archive_sha256_passed": true,
+    "product_source_unchanged": true
+  },
+  "source_sha256": "b328c08c8b6c7fed27afe62ae85ebc9f3303cea92767ea604d4830c0e6e776a0",
+  "state_file": "~/.codex/backups/yukio-maintenance-scheduled/state.json",
+  "setup_evidence": "~/.codex/backups/yukio-maintenance-scheduled/setup-20261107-165528",
+  "scheduled_execution_tested": false,
+  "notification_delivery_tested": false,
+  "automatic_upgrade_allowed": false,
+  "automatic_release_allowed": false,
+  "github_upload_allowed": false
+}

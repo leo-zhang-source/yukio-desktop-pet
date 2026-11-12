@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   pull_request:
   push:
-    branches: ['codex/remediation-checks', 'codex/remediation-checks/**']
+    branches: ['main', 'codex/stage5-maintenance', 'codex/remediation-checks', 'codex/remediation-checks/**']
 
 permissions:
   contents: read
@@ -21,15 +21,25 @@ jobs:
     env:
       DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.4.0
         with:
           persist-credentials: false
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5.6.0
         with:
           python-version: '3.13'
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4.4.0
         with:
           node-version: '22'
+      - name: Verify action lock with the pinned official tool
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh extension install github/gh-actions-lock --pin v0.4.1
+          gh actions-lock .github/workflows/remediation-checks.yml --verify-local
+      - name: Check maintenance records and synthetic recovery
+        run: |
+          python scripts/maintenance.py check --out "$RUNNER_TEMP/yukio-maintenance"
+          python scripts/maintenance_recovery.py drill --out "$RUNNER_TEMP/yukio-recovery"
       - name: Repeat baseline and prove failure detection
         run: python scripts/run-remediation-checks.py --repeat 2 --out "$RUNNER_TEMP/yukio-remediation"
       - name: Explain the actual scope
@@ -52,7 +62,7 @@ jobs:
           PY
       - name: Upload only synthetic check evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.6.2
         with:
           name: mac-workbench-check-evidence
           retention-days: 14
@@ -63,3 +73,6 @@ jobs:
             ${{ runner.temp }}/yukio-remediation/run-*/mac-observations.json
             ${{ runner.temp }}/yukio-remediation/run-*/negative-controls/*.json
             ${{ runner.temp }}/yukio-remediation/run-*/negative-controls/*.log
+            ${{ runner.temp }}/yukio-maintenance/*.json
+            ${{ runner.temp }}/yukio-maintenance/report.md
+            ${{ runner.temp }}/yukio-recovery/summary.json

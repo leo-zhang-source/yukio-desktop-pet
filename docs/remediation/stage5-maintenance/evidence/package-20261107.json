@@ -1,0 +1,33 @@
+{
+  "source_revision": "7cf565b28739d4be4976daa4ae4337e06bc0ddc9",
+  "source_sha256": "b328c08c8b6c7fed27afe62ae85ebc9f3303cea92767ea604d4830c0e6e776a0",
+  "version": "5.4",
+  "build": "57",
+  "archives": {
+    "Yukio-5.4-maintenance.1-macOS-arm64.dmg": {
+      "bytes": 77258491,
+      "sha256": "17d10ec867b4495f6c085d468a6b114a452f0f835a09df5aae44b687274e8078"
+    },
+    "Yukio-5.4-maintenance.1-macOS-arm64.zip": {
+      "bytes": 76845317,
+      "sha256": "9ca6242d073ed658179584f7b3d8f73f801509c2afd56965ef9a6b2700e6d728"
+    }
+  },
+  "checks": {
+    "zip_manifest_matches": true,
+    "zip_signature_verified": true,
+    "version_and_source_match": true,
+    "native_packaged_assets_checked": true,
+    "native_settings_snapshot_generated": true,
+    "dmg_verified": true,
+    "dmg_manifest_matches": true,
+    "zip_source_evidence_bound": true,
+    "dmg_source_evidence_bound": true
+  },
+  "passed": true,
+  "scope": "local package contents/signature/resource checks, not independent installation",
+  "independent_installation_verified": false,
+  "public_release_ready": false,
+  "signing": "ad_hoc_not_notarized",
+  "files": 491
+}

@@ -1,0 +1,376 @@
+{
+  "schema_version": 1,
+  "scope": "local_research_only",
+  "published": {
+    "head": "2701916b9c471d34dc11ff421b27d90cbb801248",
+    "branch": "codex/mac-54-preview-release",
+    "release_configuration": {
+      "version": "5.4",
+      "build": "56",
+      "upgrade_baseline_build": "55",
+      "workbench_version": "0.4.8",
+      "architecture": "arm64",
+      "minimum_macos": "13.0",
+      "bundle_identifier": "local.yukio.player",
+      "update_feed": "https://raw.githubusercontent.com/leo-zhang-source/yukio-desktop-pet/main/updates/preview.xml",
+      "update_public_key": "UuIYaOS2mImMarKEoskVy22Juxl1pQeAL5s+mPnqHFg=",
+      "python": {
+        "version": "3.12.14",
+        "url": "https://github.com/astral-sh/python-build-standalone/releases/download/20260901/cpython-3.12.14%2B20260901-aarch64-apple-darwin-install_only.tar.gz",
+        "sha256": "3ee3ee547cedfeb7c2b16b2b7156039f7b470bb8f857e226fd3d2eb11db83c76"
+      },
+      "release_repository": "leo-zhang-source/yukio-desktop-pet",
+      "release_channel": "preview",
+      "release_tag": "v5.4-preview.2"
+    },
+    "runner_sha256": "611ecc427beb1129e5f01a80d2525c90925af764a1b25860483ea3e11bfa70ef",
+    "runner_commands": [
+      "suites['swift'] = run(command, ROOT / 'YukioPlayer', env, directory / 'swift.log', 900)",
+      "suites['python'] = run([sys.executable, '-m', 'unittest', 'discover', '-s', 'tools/activity-workbench', '-p', 'test_*.py', '-v'],",
+      "                                       ROOT, env, directory / 'python.log', 600)",
+      "suites['node'] = run([node, '--test', '--test-reporter=tap', 'tools/activity-workbench/test_glance_ui.cjs', 'tools/activity-workbench/test_language_ui.cjs'],",
+      "                                     ROOT, env, directory / 'node.log', 120)"
+    ],
+    "web_test_files": [
+      "test_glance_ui.cjs",
+      "test_language_ui.cjs"
+    ],
+    "existing_web_files_not_selected": [],
+    "release_test_files": [
+      "test_macos_build.py",
+      "test_macos_test_launcher.py",
+      "test_make_appcast.py"
+    ],
+    "runner_selects_release_tests": false,
+    "synthetic_skip_experiment": {
+      "suite": {
+        "exit_code": 0,
+        "tests": 2,
+        "skipped": 1
+      },
+      "existing_gate_accepts_skipped_test": true,
+      "predicate": "all(s['exit_code'] == 0 and s['tests'] is not None and s['tests'] > 0 for s in suites.values())\n                      and shared['exit_code'] == 0 and controls['passed'] and unchanged",
+      "scope": "synthetic predicate evaluation; no actual skipped test claimed"
+    },
+    "actions_lock_present": false,
+    "action_references": [
+      {
+        "file": ".github/workflows/agent-portability.yml",
+        "line": 25,
+        "reference": "actions/checkout@v4",
+        "full_sha": false
+      },
+      {
+        "file": ".github/workflows/agent-portability.yml",
+        "line": 26,
+        "reference": "actions/setup-python@v5",
+        "full_sha": false
+      },
+      {
+        "file": ".github/workflows/agent-portability.yml",
+        "line": 29,
+        "reference": "actions/setup-node@v4",
+        "full_sha": false
+      },
+      {
+        "file": ".github/workflows/agent-portability.yml",
+        "line": 51,
+        "reference": "actions/upload-artifact@v4",
+        "full_sha": false
+      },
+      {
+        "file": ".github/workflows/agent-portability.yml",
+        "line": 61,
+        "reference": "actions/upload-artifact@v4",
+        "full_sha": false
+      },
+      {
+        "file": ".github/workflows/build-windows.yml",
+        "line": 26,
+        "reference": "actions/checkout@v4",
+        "full_sha": false
+      },
+      {
+        "file": ".github/workflows/build-windows.yml",
+        "line": 27,
+        "reference": "actions/setup-python@v5",
+        "full_sha": false
+      },
+      {
+        "file": ".github/workflows/build-windows.yml",
+        "line": 31,
+        "reference": "actions/setup-dotnet@v4",
+        "full_sha": false
+      },
+      {
+        "file": ".github/workflows/build-windows.yml",
+        "line": 117,
+        "reference": "actions/upload-artifact@v4",
+        "full_sha": false
+      },
+      {
+        "file": ".github/workflows/build-windows.yml",
+        "line": 133,
+        "reference": "actions/upload-artifact@v4",
+        "full_sha": false
+      },
+      {
+        "file": ".github/workflows/build-windows.yml",
+        "line": 146,
+        "reference": "softprops/action-gh-release@v2",
+        "full_sha": false
+      },
+      {
+        "file": ".github/workflows/remediation-checks.yml",
+        "line": 24,
+        "reference": "actions/checkout@v4",
+        "full_sha": false
+      },
+      {
+        "file": ".github/workflows/remediation-checks.yml",
+        "line": 27,
+        "reference": "actions/setup-python@v5",
+        "full_sha": false
+      },
+      {
+        "file": ".github/workflows/remediation-checks.yml",
+        "line": 30,
+        "reference": "actions/setup-node@v4",
+        "full_sha": false
+      },
+      {
+        "file": ".github/workflows/remediation-checks.yml",
+        "line": 55,
+        "reference": "actions/upload-artifact@v4",
+        "full_sha": false
+      },
+      {
+        "file": ".github/workflows/verify-windows-release.yml",
+        "line": 34,
+        "reference": "actions/checkout@v4",
+        "full_sha": false
+      },
+      {
+        "file": ".github/workflows/verify-windows-release.yml",
+        "line": 52,
+        "reference": "actions/setup-python@v5",
+        "full_sha": false
+      },
+      {
+        "file": ".github/workflows/verify-windows-release.yml",
+        "line": 118,
+        "reference": "actions/upload-artifact@v4",
+        "full_sha": false
+      }
+    ],
+    "portability_workflow_contains_windows_runner": true,
+    "portability_workflow_uses_floating_pyinstaller": true,
+    "modules": {
+      "YukioPlayer/Sources/YukioPlayer/main.swift": {
+        "lines": 2566,
+        "sha256": "84cf08282e51e60b46d976dd9d0e72e3985dbdd94f29ce8affa9018513f7b008"
+      },
+      "YukioPlayer/Sources/YukioCore/ActivityRouter.swift": {
+        "lines": 816,
+        "sha256": "0dc2cef6552102813b6359b70ad2146fd27759fcb8ed41c02fd7491959cf7362"
+      },
+      "tools/activity-workbench/server.py": {
+        "lines": 274,
+        "sha256": "ce0e3db607f5c12d6e22489116c87ee4bd8c0cf3b01724ae2a783e8f387fdf61"
+      },
+      "tools/activity-workbench/core/yukio/activity_history.py": {
+        "lines": 383,
+        "sha256": "34dd86a6889476bd02e96b7078713bd2957120d690c33302e55cbde998b57cbf"
+      }
+    }
+  },
+  "remediation": {
+    "head": "c344bcfc33b67705a71eef77d8c0bfcbad4d5da1",
+    "branch": "codex/remediation-baseline",
+    "release_configuration": {
+      "version": "5.4",
+      "build": "54",
+      "upgrade_baseline_build": "40",
+      "workbench_version": "0.5.6",
+      "architecture": "arm64",
+      "minimum_macos": "13.0",
+      "bundle_identifier": "local.yukio.player",
+      "release_repository": "leo-zhang-source/yukio-desktop-pet",
+      "update_feed": "https://github.com/leo-zhang-source/yukio-desktop-pet/releases/latest/download/appcast.xml",
+      "update_public_key": "UuIYaOS2mImMarKEoskVy22Juxl1pQeAL5s+mPnqHFg=",
+      "python": {
+        "version": "3.12.14",
+        "url": "https://github.com/astral-sh/python-build-standalone/releases/download/20260901/cpython-3.12.14%2B20260901-aarch64-apple-darwin-install_only.tar.gz",
+        "sha256": "3ee3ee547cedfeb7c2b16b2b7156039f7b470bb8f857e226fd3d2eb11db83c76"
+      }
+    },
+    "runner_sha256": "187152db135a77d8db098404031bda22c38bfdcd06b06e2fd21f2b063584bf60",
+    "runner_commands": [
+      "suites['swift'] = run(command, ROOT / 'YukioPlayer', env, directory / 'swift.log', 900)",
+      "suites['python'] = run([sys.executable, '-m', 'unittest', 'discover', '-s', 'tools/activity-workbench', '-p', 'test_*.py', '-v'],",
+      "                                       ROOT, env, directory / 'python.log', 600)",
+      "suites['release_python'] = run([sys.executable, '-m', 'unittest', 'discover', '-s', 'scripts', '-p', 'test_*.py', '-v'],",
+      "                                       ROOT, env, directory / 'release-python.log', 300)",
+      "suites['node'] = run([node, '--test', '--test-reporter=tap', *ui_tests],",
+      "                                     ROOT, env, directory / 'node.log', 120)"
+    ],
+    "web_test_files": [
+      "test_agent_setup_ui.cjs",
+      "test_explanation_ui.cjs",
+      "test_glance_ui.cjs",
+      "test_language_ui.cjs"
+    ],
+    "existing_web_files_not_selected": [],
+    "release_test_files": [
+      "test_macos_build.py",
+      "test_macos_test_launcher.py",
+      "test_make_appcast.py"
+    ],
+    "runner_selects_release_tests": true,
+    "synthetic_skip_experiment": {
+      "suite": {
+        "exit_code": 0,
+        "tests": 2,
+        "skipped": 1
+      },
+      "existing_gate_accepts_skipped_test": true,
+      "predicate": "all(s['exit_code'] == 0 and s['tests'] is not None and s['tests'] > 0 for s in suites.values())\n                      and shared['exit_code'] == 0 and controls['passed'] and unchanged",
+      "scope": "synthetic predicate evaluation; no actual skipped test claimed"
+    },
+    "actions_lock_present": false,
+    "action_references": [
+      {
+        "file": ".github/workflows/agent-portability.yml",
+        "line": 25,
+        "reference": "actions/checkout@v4",
+        "full_sha": false
+      },
+      {
+        "file": ".github/workflows/agent-portability.yml",
+        "line": 26,
+        "reference": "actions/setup-python@v5",
+        "full_sha": false
+      },
+      {
+        "file": ".github/workflows/agent-portability.yml",
+        "line": 29,
+        "reference": "actions/setup-node@v4",
+        "full_sha": false
+      },
+      {
+        "file": ".github/workflows/agent-portability.yml",
+        "line": 51,
+        "reference": "actions/upload-artifact@v4",
+        "full_sha": false
+      },
+      {
+        "file": ".github/workflows/agent-portability.yml",
+        "line": 61,
+        "reference": "actions/upload-artifact@v4",
+        "full_sha": false
+      },
+      {
+        "file": ".github/workflows/build-windows.yml",
+        "line": 26,
+        "reference": "actions/checkout@v4",
+        "full_sha": false
+      },
+      {
+        "file": ".github/workflows/build-windows.yml",
+        "line": 27,
+        "reference": "actions/setup-python@v5",
+        "full_sha": false
+      },
+      {
+        "file": ".github/workflows/build-windows.yml",
+        "line": 31,
+        "reference": "actions/setup-dotnet@v4",
+        "full_sha": false
+      },
+      {
+        "file": ".github/workflows/build-windows.yml",
+        "line": 117,
+        "reference": "actions/upload-artifact@v4",
+        "full_sha": false
+      },
+      {
+        "file": ".github/workflows/build-windows.yml",
+        "line": 133,
+        "reference": "actions/upload-artifact@v4",
+        "full_sha": false
+      },
+      {
+        "file": ".github/workflows/build-windows.yml",
+        "line": 146,
+        "reference": "softprops/action-gh-release@v2",
+        "full_sha": false
+      },
+      {
+        "file": ".github/workflows/remediation-checks.yml",
+        "line": 24,
+        "reference": "actions/checkout@v4",
+        "full_sha": false
+      },
+      {
+        "file": ".github/workflows/remediation-checks.yml",
+        "line": 27,
+        "reference": "actions/setup-python@v5",
+        "full_sha": false
+      },
+      {
+        "file": ".github/workflows/remediation-checks.yml",
+        "line": 30,
+        "reference": "actions/setup-node@v4",
+        "full_sha": false
+      },
+      {
+        "file": ".github/workflows/remediation-checks.yml",
+        "line": 55,
+        "reference": "actions/upload-artifact@v4",
+        "full_sha": false
+      },
+      {
+        "file": ".github/workflows/verify-windows-release.yml",
+        "line": 34,
+        "reference": "actions/checkout@v4",
+        "full_sha": false
+      },
+      {
+        "file": ".github/workflows/verify-windows-release.yml",
+        "line": 52,
+        "reference": "actions/setup-python@v5",
+        "full_sha": false
+      },
+      {
+        "file": ".github/workflows/verify-windows-release.yml",
+        "line": 118,
+        "reference": "actions/upload-artifact@v4",
+        "full_sha": false
+      }
+    ],
+    "portability_workflow_contains_windows_runner": true,
+    "portability_workflow_uses_floating_pyinstaller": true,
+    "modules": {
+      "YukioPlayer/Sources/YukioPlayer/main.swift": {
+        "lines": 2638,
+        "sha256": "52d605fac17a87d355eb9c093c6bcd70418f8d78a9bcc2781c9a1500c2226ea2"
+      },
+      "YukioPlayer/Sources/YukioCore/ActivityRouter.swift": {
+        "lines": 903,
+        "sha256": "5b333cc6c591606bcc6dc74f43cea8f9b964dc2018bf68a4f3829973480f6d65"
+      },
+      "tools/activity-workbench/server.py": {
+        "lines": 264,
+        "sha256": "d2ac0ab209caaa9d580847441da3b67899bc54bc49da5d08282efad5925f6299"
+      },
+      "tools/activity-workbench/core/yukio/activity_history.py": {
+        "lines": 383,
+        "sha256": "34dd86a6889476bd02e96b7078713bd2957120d690c33302e55cbde998b57cbf"
+      }
+    }
+  },
+  "web_tests_only_in_remediation": [
+    "test_agent_setup_ui.cjs",
+    "test_explanation_ui.cjs"
+  ]
+}
