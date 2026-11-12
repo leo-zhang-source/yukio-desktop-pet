@@ -1,6 +1,6 @@
 # 当前集中交付（2026-11-11）
 
-用户本次明确要求整理全部更新并推送 GitHub。按第五阶段维护计划，基于本维护线整理 Mac 5.4 Preview 3（63）／工作台 0.4.14，汇集维护机制与 57–62 版修复，补充 Python 3.12.16 安全更新。交付目标为 `leo-zhang-source/yukio-desktop-pet` 的 `main` 与 `codex/stage5-maintenance`；具体提交、包、远端与实际运行结果见[集中交付记录](docs/remediation/RELEASE-54-PREVIEW3.md)。完整独立首次使用验收仍暂停；Windows／云端 Cowork 仍暂缓。下面各次“仅本地／不上传”描述保留为当时记录，本次上传以新记录为准；下一次修改仍需新的明确上传授权。
+用户本次明确要求整理全部更新并推送 GitHub。按第五阶段维护计划，Mac 5.4 Preview 3（63）／工作台 0.4.14 已发布，产品源码 `d7ae5cb9af57cd4db887ede55ea5e91126fc9d77`，汇集维护机制与 57–62 版修复，补充 Python 3.12.16 安全更新。最终产品两遍检查每遍 728 项测试与 230 条共享断言通过；6 个附件匿名下载验签完成，桌面已从公开包更新并启动，旧版与用户配置保留。源码、双语文档与签名预览源集中同步 `leo-zhang-source/yukio-desktop-pet` 的 `main` 与 `codex/stage5-maintenance`；具体证据、远端状态与 NAS 归档见[集中交付记录](docs/remediation/RELEASE-54-PREVIEW3.md)。完整独立首次使用验收仍暂停；Windows／云端 Cowork 仍暂缓。下面各次“仅本地／不上传”描述保留为当时记录，本次上传以新记录为准；下一次修改仍需新的明确上传授权。
 
 # 当前修复（2026-11-11，Codex 解释，本地）
 

@@ -25,13 +25,50 @@
 
 ## 本轮证据
 
-初始维护检查通过，登记复核未到期；开放项已逐项阅读。NAS 已确认可达、可写并有可用容量，后续候选与证据按任务目录归档。后续完整测试、构建、上传、下载、安装和归档结果将在本页记录；当前这段准备记录不构成已经发布或验收完成的结论。
+产品源码固定为 [`d7ae5cb9af57cd4db887ede55ea5e91126fc9d77`](https://github.com/leo-zhang-source/yukio-desktop-pet/commit/d7ae5cb9af57cd4db887ede55ea5e91126fc9d77)，对应标签 `v5.4-preview.3`、5.4（63）／工作台 0.4.14。后续汇总证据和签名更新源的提交只更新文档与 feed，不改变包内产品。最终产品指纹为 `1272a5da6e3605fdc97f5f21f16bbdf1ae9c8654b4ab6b4e3deabac1e297c404`。
+
+| 核对范围 | 实际结果 |
+| --- | --- |
+| 完整本机回归 | 最终产品提交重新运行两遍；每遍 Swift 266、工作台 Python 361、发布 Python 28、进度 Python 8、Node 65，共 728 项测试，另有 230 条共享断言；失败、跳过、todo 均为 0。两遍来源指纹不变，失败反例均被正确拒绝 |
+| 本机环境 | macOS 27.2 arm64、Swift 6.1.2、Python 3.13.2、Node 25.8.0；包内实际 Python 3.12.16 另运行工作台 361 项测试通过 |
+| 依赖 | 10 项固定 Python 依赖审计无已知发现；CPython／原生库另按[官方来源复核](PREVIEW3-DEPENDENCIES-20261111.md)，不能由 pip 审计推导全部依赖安全；官方 Actions 锁在线及离线核对通过 |
+| 最终包 | 实际解包 ZIP、只读挂载 DMG，495 个 App 清单条目及签名一致；8 个原生二进制检查完成，269 个角色资源与原 62 版一致 |
+| 包内工作台 | 隔离 HOME 且 PATH 不提供开发环境 Python／Node，实际冻结入口启动；三次服务重启核对解释来源保存及关闭状态。Codex／Claude 离线客户端核对接收方身份、预览、发送前复核和只生成一次，包含中文及空格路径；没有借用真实账号，也没有声明真实模型调用通过 |
+| 公开下载 | 6 个 Release 附件均匿名重新下载，大小／SHA-256 与准备文件相同；下载 ZIP 解出全部 495 条目并验签，签名更新源与 ZIP 签名通过；公开指南、包外指南、App 内指南内容相同 |
+| 本机实际 App | 从匿名下载 ZIP 安装到用户 Applications，经桌面现有入口启动；实际进程为 5.4（63），源码 d7ae5cb9，工作台 0.4.14，495 条目一致。五份配置及 Codex 全局配置启动后哈希保持；桌面别名仍指向实际 App |
+
+机器可读摘要见 [preview3-validation.json](preview3-validation.json)。完整原始日志、首次失败及本机回退包保存在本机 `~/.codex/backups/yukio-preview3-publish-20261111/`，不是 App 的运行依赖。原生工作台 GUI 未作为本轮通过项，隔离 HOME 和离线客户端也不等于独立首次使用验收。
+
+## GitHub 与下载
+
+[5.4 Preview 3 发布页](https://github.com/leo-zhang-source/yukio-desktop-pet/releases/tag/v5.4-preview.3)保留为 prerelease，稳定版 latest 仍为 5.3。发布页提供 DMG、ZIP、SHA256SUMS.txt、签名 preview.xml、mac-guide.html 与 release-manifest.json。README、双语指南和本页随汇总提交同步 main 与维护分支；预览 feed 使用已经匿名下载、验签的相同字节，稳定 feed 不变。
+
+| 包 | 字节数 | SHA-256 |
+| --- | ---: | --- |
+| `Yukio-5.4-preview.3-macOS-arm64.zip` | 76,902,195 | `6a199d5d713c9e175522246e02fddb1b0517f33d2df8e5a669d4de31885522a3` |
+| `Yukio-5.4-preview.3-macOS-arm64.dmg` | 77,319,783 | `d61b487fee355b2e03139a469c906775895f1470d23585e487f94a02b0e96d3e` |
+
+远端 Mac 检查正在复核，结果在本页收尾时记录。Windows 自动任务保持暂停。`maintenance/action-pins.json` 的 `remote_enforcement: not_enabled` 是产品冻结时的历史状态，当前服务器权限与实际运行必须分别以下面的远端证据为准，不能只凭该文件判断。
+
+## 回退与 NAS 归档
+
+62 版完整 App 保存在本机上述证据目录的 `installed-before/Yukio.app.archived`，替换前的原 App 另保留为 `Yukio.app.retired`；只替换应用，未恢复旧数据库覆盖新记录。其他历史工作树和未提交资料保留，不将其整体合入公开版本。
+
+NAS 在传输前确认可达、可写且容量充足。以下两份归档均已核对远端与回读 SHA-256，证据包另逐文件复原核对；没有删除本地原件。源码归档从已审查的产品树直接流式写入 NAS，不包含私人本地提交历史。
+
+| 内容与路径 | 字节数 | SHA-256 |
+| --- | ---: | --- |
+| `nas:/volume1/leo/yukio/maintenance/preview3-20261111/source.tar.gz` | 78,539,571 | `39e754a7b0d824cf3609136c6a8fb707c3b2eb32b4f026b2b0103a25b152babe` |
+| `nas:/volume1/leo/yukio/maintenance/preview3-20261111/evidence/evidence.tar.gz` | 153,737,183 | `84d3bd9c2ea37c823d05fd369b302252a78654a4e0c270514eb61eb252966675` |
+
+证据归档显式选取 126 个文件，包含最终公开附件、构建／测试／下载／安装摘要、原始测试日志和首次失败。用户数据库、凭据、私人配置内容、旧版 App 和本地私人历史不进入公共附件。远端启用与最后一次 main 同步发生在该归档之后，单独保留收尾记录，不声称原归档已包含后续状态。
 
 ## 首次失败与处理
 
 - 首次证据校验误在第二遍测试结束前启动，校验器拒绝不完整输出。两遍结束后使用新目录复验通过，首次失败保留。
-- 旧 `check_agent_runtime.py` 将返回名称固定为旧的 Codex／Claude Code 短名，当前产品带“终端入口”后检查失败。已改为核对预览中明确的 provider 身份、实际返回名称与已确认接收方一致，同时保留真实子进程调用及内容断言；两家离线客户端复验通过。没有放宽失败为成功或借用真实账号。检查器修复后再按最终提交完整检查和构建。
+- 旧 `check_agent_runtime.py` 有两处过期契约：返回名称仍固定为旧短名，调用序列也没有计入发送前再次核验同一接收方。逐次失败和诊断保留。已核对源码调用链，改为检查明确 provider、返回名称与预览接收方一致，并严格断言预览只有 help/auth、同意发送后再次 help/auth 且只生成一次；两家离线客户端实际复验通过。中途完整检查已停止并保留，不用于放行；最终修订后重新检查和构建。未使用真实账号，也没有取消身份、次数或内容断言。
 - 整理前的候选和汇总后、检查器修复前的候选均只作本地证据；实际上传只用最终交付包。
+- 首次远端任务提交时仓库关闭了 Actions，未实际启动；启用后，版本标签白名单拒绝了由 Actions 锁解析出的固定提交。已按核对过的四个完整提交设置精确白名单，保留启动失败记录并复跑，未放宽为任意 Action。
 
 ## 保留的限制
 

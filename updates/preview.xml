@@ -5,6 +5,17 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
     <title>Yukio updates</title>
     <item>
       <title>Yukio 5.4</title>
+      <link>https://github.com/leo-zhang-source/yukio-desktop-pet/releases/tag/v5.4-preview.3</link>
+      <description sparkle:format="markdown" xml:lang="en">Mac 5.4 Preview 3 (build 63): clearer assistant/chat navigation, Claude chat identity fixes, immediately saved explanation providers, faster Codex short explanations, maintenance safeguards and Python 3.12.16. Full independent first-run acceptance remains paused and incomplete. Apple silicon; ad-hoc signed, not notarized. Windows and cloud Cowork deferred.
+</description>
+      <description sparkle:format="markdown" xml:lang="zh">Mac 5.4 Preview 3（构建 63）：整理助手与聊天列表，修复 Claude 聊天重复、解释来源保存和 Codex 短解释超时，补充维护机制及 Python 3.12.16。完整独立首次使用验收仍暂停且未完成。Apple 芯片专用，临时签名、未公证；Windows 与云端 Cowork 暂缓。
+</description>
+      <sparkle:minimumSystemVersion>13.0.0</sparkle:minimumSystemVersion>
+      <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
+      <enclosure url="https://github.com/leo-zhang-source/yukio-desktop-pet/releases/download/v5.4-preview.3/Yukio-5.4-preview.3-macOS-arm64.zip" length="76902195" type="application/octet-stream" sparkle:version="63" sparkle:shortVersionString="5.4" sparkle:edSignature="xRl7pJOE0IS2LwL9CIAnrOBKAOX0Imb79weZh4FBRPQs8OLGyV0I/qf2TUOCmRIA3528UKHcY8kgfppP5OF4BA=="></enclosure>
+    </item>
+    <item>
+      <title>Yukio 5.4</title>
       <link>https://github.com/leo-zhang-source/yukio-desktop-pet/releases/tag/v5.4-preview.2</link>
       <description sparkle:format="markdown" xml:lang="en">Mac 5.4 Preview 2 (build 56): fixes first-launch access, assistant installation/sign-in checks, empty-chat status and the Tahoe installer. Includes updated bilingual guides. Full first-run acceptance is incomplete; revised-package and signed-in real-task checks remain pending. Apple silicon; ad-hoc signed, not notarized. Windows and cloud Cowork deferred.
 </description>
@@ -16,6 +27,6 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
     </item>
   </channel>
 </rss><!-- sparkle-signatures:
-edSignature: jnh7qaMhhGY+0ZLXV86j5AmJUYw13HPEl83PrdykbyBCuhvI4LSg6Xgvby4ts+xAFUcQcUCjwWHQeqeSU3v0BA==
-length: 1958
+edSignature: cCZpE1ODceG9e01xocW9jer0BYirRFs7/EgRya2NcjhKdG551ZR3aUyxP+6AgF5Dt8h3IFatKZu/wMzsqLklCQ==
+length: 3457
 -->

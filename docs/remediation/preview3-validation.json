@@ -1,0 +1,200 @@
+{
+  "schema_version": 1,
+  "release": "v5.4-preview.3",
+  "version": "5.4",
+  "build": "63",
+  "workbench_version": "0.4.14",
+  "source_revision": "d7ae5cb9af57cd4db887ede55ea5e91126fc9d77",
+  "source_sha256": "1272a5da6e3605fdc97f5f21f16bbdf1ae9c8654b4ab6b4e3deabac1e297c404",
+  "local_environment": {
+    "system": "macOS-27.2-arm64-arm-64bit-Mach-O",
+    "architecture": "arm64",
+    "python": "3.13.2",
+    "swift": "Apple Swift version 6.1.2 (swiftlang-6.1.2.1.2 clang-1700.0.13.5)\nTarget: arm64-apple-macosx18.0",
+    "node": "v25.8.0"
+  },
+  "local_regression": {
+    "passes": 2,
+    "each_pass": {
+      "swift": 266,
+      "python": 361,
+      "release_python": 28,
+      "progress_python": 8,
+      "node": 65
+    },
+    "shared_assertions_per_pass": 230,
+    "failures": 0,
+    "skipped": 0,
+    "todo": 0,
+    "gate_passed": true,
+    "repeat_consistent": true,
+    "negative_controls_passed": true
+  },
+  "packaged_python": "3.12.16",
+  "package_checks": {
+    "build": "63",
+    "source_revision": "d7ae5cb9af57cd4db887ede55ea5e91126fc9d77",
+    "files_verified": 495,
+    "zip_and_dmg_match": true,
+    "signature_valid": true,
+    "isolated_home": true,
+    "development_runtime_unavailable_on_path": true,
+    "client_checks_use_fixture": true,
+    "real_model_calls": 0,
+    "independent_acceptance": false,
+    "preference_restart_runs": [
+      {
+        "start": 0,
+        "provider": "claude",
+        "automatic_on_open": false
+      },
+      {
+        "start": 1,
+        "provider": "codex",
+        "automatic_on_open": false
+      },
+      {
+        "start": 2,
+        "provider": "codex",
+        "automatic_on_open": true
+      }
+    ]
+  },
+  "offline_clients": {
+    "platform": "macOS-27.2-arm64-arm-64bit-Mach-O",
+    "native_platform": "darwin",
+    "runtime_sha256": "2c4dba700d063c6c3fbf2cf75668845df82df837d99c7aafbcdd671c5555d278",
+    "offline_clients": true,
+    "real_generation_verified": false,
+    "checks": [
+      {
+        "provider": "codex",
+        "help_login_and_generation_protocol": true,
+        "recipient_matches_selected_provider": true,
+        "result_matches_reviewed_recipient": true,
+        "model": "Codex（终端入口）",
+        "unicode_space_paths": true,
+        "python_and_node_removed_from_path": true,
+        "real_account_used": false
+      },
+      {
+        "provider": "claude",
+        "help_login_and_generation_protocol": true,
+        "recipient_matches_selected_provider": true,
+        "result_matches_reviewed_recipient": true,
+        "model": "Claude Code（终端入口）",
+        "unicode_space_paths": true,
+        "python_and_node_removed_from_path": true,
+        "real_account_used": false
+      }
+    ]
+  },
+  "anonymous_downloads": {
+    "passed": true,
+    "source_revision": "d7ae5cb9af57cd4db887ede55ea5e91126fc9d77",
+    "build": "63",
+    "files": {
+      "SHA256SUMS.txt": {
+        "url": "https://github.com/leo-zhang-source/yukio-desktop-pet/releases/download/v5.4-preview.3/SHA256SUMS.txt",
+        "bytes": 451,
+        "sha256": "f7fd8d6d290512d6a013897b94684fc36c3fed6234251763e906c227753f1b80",
+        "anonymous_download": true
+      },
+      "Yukio-5.4-preview.3-macOS-arm64.dmg": {
+        "url": "https://github.com/leo-zhang-source/yukio-desktop-pet/releases/download/v5.4-preview.3/Yukio-5.4-preview.3-macOS-arm64.dmg",
+        "bytes": 77319783,
+        "sha256": "d61b487fee355b2e03139a469c906775895f1470d23585e487f94a02b0e96d3e",
+        "anonymous_download": true
+      },
+      "Yukio-5.4-preview.3-macOS-arm64.zip": {
+        "url": "https://github.com/leo-zhang-source/yukio-desktop-pet/releases/download/v5.4-preview.3/Yukio-5.4-preview.3-macOS-arm64.zip",
+        "bytes": 76902195,
+        "sha256": "6a199d5d713c9e175522246e02fddb1b0517f33d2df8e5a669d4de31885522a3",
+        "anonymous_download": true
+      },
+      "mac-guide.html": {
+        "url": "https://github.com/leo-zhang-source/yukio-desktop-pet/releases/download/v5.4-preview.3/mac-guide.html",
+        "bytes": 7224,
+        "sha256": "5e6335777cbdc641c97c83388db3c19841f2c2e6034f392c088aa60f90ffefc8",
+        "anonymous_download": true
+      },
+      "preview.xml": {
+        "url": "https://github.com/leo-zhang-source/yukio-desktop-pet/releases/download/v5.4-preview.3/preview.xml",
+        "bytes": 3601,
+        "sha256": "86918902162643b6298717a09046d6d24201e134c9352f4be6f2694c50b524f2",
+        "anonymous_download": true
+      },
+      "release-manifest.json": {
+        "url": "https://github.com/leo-zhang-source/yukio-desktop-pet/releases/download/v5.4-preview.3/release-manifest.json",
+        "bytes": 113613,
+        "sha256": "0ee6c0d6314873f6456a25ffd0089e11e3561dbd4c4dedf5676f81ceeef8b889",
+        "anonymous_download": true
+      }
+    },
+    "manifest_entries": 495,
+    "all_assets_match_prepared_files": true,
+    "guide_matches_archive_and_app": true,
+    "feed_and_zip_signatures_valid": true,
+    "independent_acceptance": false
+  },
+  "installed": {
+    "previous_build": "62",
+    "build": "63",
+    "source_revision": "d7ae5cb9af57cd4db887ede55ea5e91126fc9d77",
+    "workbench_version": "0.4.14",
+    "files_verified": 495,
+    "settings_hashes_unchanged": true,
+    "profile_modified_by_installer": false,
+    "launch_verified": true,
+    "signature_valid": true,
+    "global_codex_config_unchanged": true,
+    "settings_verified_after_launch": 5,
+    "independent_acceptance": false,
+    "native_workbench_ui_verified": false
+  },
+  "nas_source": {
+    "source_revision": "d7ae5cb9af57cd4db887ede55ea5e91126fc9d77",
+    "remote": "nas:/volume1/leo/yukio/maintenance/preview3-20261111/source.tar.gz",
+    "bytes": 78539571,
+    "sha256": "39e754a7b0d824cf3609136c6a8fb707c3b2eb32b4f026b2b0103a25b152babe",
+    "direct_to_nas": true,
+    "remote_hash_matches": true,
+    "readback_hash_matches": true,
+    "source": "git archive of the sanitized product tree; no local-only commit history"
+  },
+  "nas_evidence": {
+    "scope": "explicit_archive_NAS_readback",
+    "remote": "nas:/volume1/leo/yukio/maintenance/preview3-20261111/evidence/evidence.tar.gz",
+    "checks": {
+      "remote_hash_matches": true,
+      "restored_manifest_matches": true,
+      "original_unchanged": true
+    },
+    "passed": true,
+    "sha256": "84d3bd9c2ea37c823d05fd369b302252a78654a4e0c270514eb61eb252966675",
+    "remote_sha256": "84d3bd9c2ea37c823d05fd369b302252a78654a4e0c270514eb61eb252966675",
+    "readback_sha256": "84d3bd9c2ea37c823d05fd369b302252a78654a4e0c270514eb61eb252966675",
+    "bytes": 153737183,
+    "files": 126,
+    "seconds": 31.53
+  },
+  "github_actions": {
+    "state": "verification_in_progress",
+    "run": "https://github.com/leo-zhang-source/yukio-desktop-pet/actions/runs/43134012562",
+    "allowed_actions": {
+      "github_owned_allowed": false,
+      "patterns_allowed": [
+        "actions/checkout@11d5960a326750d5838078e36cf38b85af677262",
+        "actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+        "actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065",
+        "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+      ],
+      "verified_allowed": false
+    }
+  },
+  "independent_acceptance": "paused_by_user",
+  "windows": "deferred_by_user",
+  "cloud_cowork": "deferred_by_user",
+  "notarized": false,
+  "public_release_ready": false
+}
