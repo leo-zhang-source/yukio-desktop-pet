@@ -93,13 +93,25 @@ else{
                     assert info['explanation']['provider']==provider
                     assert not info['explanation']['automatic_on_open']
                     preview=api('explanation-preview',dict(client='codex',key=key_for(['file-a',2,'demo-chat-a','',0]),sequence=2))
+                    assert preview['recipient']['provider']==provider,preview['recipient']
+                    assert (data/'invocations.txt').read_text().splitlines()==['help','auth']
                     result=api('explanation-generate',dict(token=preview['token'],consent=True))
                     assert result['mode']=='model',result
-                    assert result['model']==('Codex' if provider=='codex' else 'Claude Code')
+                    # Display labels include the entry point and may be localized.
+                    # Bind the result to the reviewed recipient's stable provider
+                    # identity and advertised label, not a historical short name.
+                    assert preview['recipient']['model'] and result['model']==preview['recipient']['model'],result
                     assert result['explanations'][0]['text']=='这是一条测试客户端返回的说明。'
-                    assert (data/'invocations.txt').read_text().splitlines()==['help','auth','generate']
+                    invocations=(data/'invocations.txt').read_text().splitlines()
+                    (output/(provider+'-observed.json')).write_text(json.dumps(dict(
+                        recipient=preview['recipient'],model=result['model'],invocations=invocations),
+                        ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+                    # The preview probes readiness without sending excerpts;
+                    # generation rechecks the same recipient before one send.
+                    assert invocations==['help','auth','help','auth','generate'],invocations
                     results.append(dict(provider=provider,help_login_and_generation_protocol=True,
-                        unicode_space_paths=True,python_and_node_removed_from_path=True,real_account_used=False))
+                        recipient_matches_selected_provider=True,result_matches_reviewed_recipient=True,
+                        model=result['model'],unicode_space_paths=True,python_and_node_removed_from_path=True,real_account_used=False))
                 finally:
                     process.terminate();process.wait(timeout=10)
     report=dict(platform=platform.platform(),native_platform=__import__('sys').platform,
