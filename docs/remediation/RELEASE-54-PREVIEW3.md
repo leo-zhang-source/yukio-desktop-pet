@@ -48,7 +48,17 @@
 | `Yukio-5.4-preview.3-macOS-arm64.zip` | 76,902,195 | `6a199d5d713c9e175522246e02fddb1b0517f33d2df8e5a669d4de31885522a3` |
 | `Yukio-5.4-preview.3-macOS-arm64.dmg` | 77,319,783 | `d61b487fee355b2e03139a469c906775895f1470d23585e487f94a02b0e96d3e` |
 
-远端 Mac 检查正在复核，结果在本页收尾时记录。Windows 自动任务保持暂停。`maintenance/action-pins.json` 的 `remote_enforcement: not_enabled` 是产品冻结时的历史状态，当前服务器权限与实际运行必须分别以下面的远端证据为准，不能只凭该文件判断。
+源码与首批交付记录已集中同步 main、`codex/stage5-maintenance` 至 `b3e0270bc11dae92c2bdb5cd08f06211a42a2448`；两分支、标签指向及 GitHub raw README／文档／feed 已回读核对。预览 feed SHA-256 为 `86918902162643b6298717a09046d6d24201e134c9352f4be6f2694c50b524f2`，回读后验签通过。
+
+远端 [main 检查](https://github.com/leo-zhang-source/yukio-desktop-pet/actions/runs/43134512536)与[维护分支检查](https://github.com/leo-zhang-source/yukio-desktop-pet/actions/runs/43134511963)均通过。GitHub runner 为 macOS 15.8.2 arm64、Swift 6.1.2、Python 3.13.17、Node 22.23.4；每个任务各跑两遍，每遍 728 项测试与 230 条共享断言通过。两份原始 artifact 已下载，经证据校验器核对提交、源码指纹、日志和失败探针通过；来源指纹与实际发布产品完全相同。这是另一台 Mac 的源码回归，未安装公开包完成普通用户首次使用，不能替代暂停的 M6。
+
+Actions 已启用，权限只允许锁文件中四个经过核对的完整 Action 提交；Windows 自动任务保持暂停。main 要求 `Mac and workbench baseline` 检查成功且分支保持最新，检查来源限定 GitHub Actions（App 15368），管理员同样受约束，禁止强制推送和删除。收尾文档先进入维护分支，通过相同检查后再同步受保护的 main，不绕过检查门槛。
+
+GitHub 对四个锁定 Action 给出 Node 20 运行时弃用提示，实际强制使用 Node 24 且全部步骤通过。Action 主版本迁移保留为后续维护复核；这不影响工作台按 Node 22 的本轮实际测试结论。
+
+[实际失败探针 PR #1](https://github.com/leo-zhang-source/yukio-desktop-pet/pull/1)只把测试分支中的一个依赖校验值故意设错，[Mac 任务](https://github.com/leo-zhang-source/yukio-desktop-pet/actions/runs/43134772972)在维护检查处按预期失败。该 PR 无冲突且不是草稿，GitHub 明确显示 `mergeStateStatus: BLOCKED`；未尝试合并，随后关闭 PR 并删除临时远端分支。main 和发布包未混入故意错误。该证据验证了真实失败会阻止合并，不只依赖保护规则的配置回读。
+
+`maintenance/action-pins.json` 与本地维护命令中的 `remote_enforcement: not_enabled` 是产品冻结时的历史状态，不是实时 GitHub 查询。当前服务器权限、分支保护和实际运行以本页及机器摘要的远端证据为准。
 
 ## 回退与 NAS 归档
 
@@ -69,6 +79,8 @@ NAS 在传输前确认可达、可写且容量充足。以下两份归档均已�
 - 旧 `check_agent_runtime.py` 有两处过期契约：返回名称仍固定为旧短名，调用序列也没有计入发送前再次核验同一接收方。逐次失败和诊断保留。已核对源码调用链，改为检查明确 provider、返回名称与预览接收方一致，并严格断言预览只有 help/auth、同意发送后再次 help/auth 且只生成一次；两家离线客户端实际复验通过。中途完整检查已停止并保留，不用于放行；最终修订后重新检查和构建。未使用真实账号，也没有取消身份、次数或内容断言。
 - 整理前的候选和汇总后、检查器修复前的候选均只作本地证据；实际上传只用最终交付包。
 - 首次远端任务提交时仓库关闭了 Actions，未实际启动；启用后，版本标签白名单拒绝了由 Actions 锁解析出的固定提交。已按核对过的四个完整提交设置精确白名单，保留启动失败记录并复跑，未放宽为任意 Action。
+- 两次早期标签任务仍显示无 job 的 queued，GitHub 的取消／强制取消接口拒绝，分别表示任务或重跑尚未进入队列；没有把它们记为通过或已取消。后续分支 push 已实际分配 Mac runner，完整结果单独记录。
+- 设置分支保护时 API 拒绝同时传入旧 `contexts` 与新 `checks` 字段；保留原请求，改为仅传明确来源的 `checks` 后配置与回读成功。未降低保护要求。
 
 ## 保留的限制
 

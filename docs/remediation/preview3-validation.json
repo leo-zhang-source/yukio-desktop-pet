@@ -179,8 +179,48 @@
     "seconds": 31.53
   },
   "github_actions": {
-    "state": "verification_in_progress",
-    "run": "https://github.com/leo-zhang-source/yukio-desktop-pet/actions/runs/43134012562",
+    "state": "passed",
+    "enabled": true,
+    "runs": [
+      {
+        "branch": "main",
+        "url": "https://github.com/leo-zhang-source/yukio-desktop-pet/actions/runs/43134512536",
+        "conclusion": "success",
+        "checked_revision": "b3e0270bc11dae92c2bdb5cd08f06211a42a2448",
+        "source_sha256": "1272a5da6e3605fdc97f5f21f16bbdf1ae9c8654b4ab6b4e3deabac1e297c404",
+        "environment": {
+          "system": "macOS-15.8.2-arm64-arm-64bit-Mach-O",
+          "architecture": "arm64",
+          "python": "3.13.17",
+          "swift": "Apple Swift version 6.1.2 (swiftlang-6.1.2.1.2 clang-1700.0.13.5)\nTarget: arm64-apple-macosx15.0",
+          "node": "v22.23.4"
+        },
+        "two_passes": true,
+        "tests_per_pass": 728,
+        "shared_assertions_per_pass": 230,
+        "evidence_downloaded_and_verified": true,
+        "independent_installation_tested": false
+      },
+      {
+        "branch": "codex/stage5-maintenance",
+        "url": "https://github.com/leo-zhang-source/yukio-desktop-pet/actions/runs/43134511963",
+        "conclusion": "success",
+        "checked_revision": "b3e0270bc11dae92c2bdb5cd08f06211a42a2448",
+        "source_sha256": "1272a5da6e3605fdc97f5f21f16bbdf1ae9c8654b4ab6b4e3deabac1e297c404",
+        "environment": {
+          "system": "macOS-15.8.2-arm64-arm-64bit-Mach-O",
+          "architecture": "arm64",
+          "python": "3.13.17",
+          "swift": "Apple Swift version 6.1.2 (swiftlang-6.1.2.1.2 clang-1700.0.13.5)\nTarget: arm64-apple-macosx15.0",
+          "node": "v22.23.4"
+        },
+        "two_passes": true,
+        "tests_per_pass": 728,
+        "shared_assertions_per_pass": 230,
+        "evidence_downloaded_and_verified": true,
+        "independent_installation_tested": false
+      }
+    ],
     "allowed_actions": {
       "github_owned_allowed": false,
       "patterns_allowed": [
@@ -190,11 +230,83 @@
         "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
       ],
       "verified_allowed": false
-    }
+    },
+    "main_protection": {
+      "strict": true,
+      "required_check": "Mac and workbench baseline",
+      "github_app_id": 15368,
+      "enforce_admins": true,
+      "allow_force_pushes": false,
+      "allow_deletions": false
+    },
+    "negative_test": {
+      "passed": true,
+      "pull_request": {
+        "headRefOid": "4a22e1c584f488ad7481f0ed7b89f68c83f65820",
+        "isDraft": false,
+        "mergeStateStatus": "BLOCKED",
+        "mergeable": "MERGEABLE",
+        "state": "OPEN",
+        "statusCheckRollup": [
+          {
+            "__typename": "CheckRun",
+            "completedAt": "2026-11-12T01:29:06Z",
+            "conclusion": "FAILURE",
+            "detailsUrl": "https://github.com/leo-zhang-source/yukio-desktop-pet/actions/runs/43134772972/job/130907368448",
+            "name": "Mac and workbench baseline",
+            "startedAt": "2026-11-12T01:28:50Z",
+            "status": "COMPLETED",
+            "workflowName": "Remediation checks (Mac and workbench)"
+          }
+        ],
+        "url": "https://github.com/leo-zhang-source/yukio-desktop-pet/pull/1"
+      },
+      "failure_run": "https://github.com/leo-zhang-source/yukio-desktop-pet/actions/runs/43134772972",
+      "failure_reason": "intentionally incorrect dependency lock hash",
+      "merge_attempted": false,
+      "main_source_unchanged": true,
+      "cleanup": {
+        "mergedAt": null,
+        "state": "CLOSED",
+        "url": "https://github.com/leo-zhang-source/yukio-desktop-pet/pull/1"
+      },
+      "remote_branch_deleted": true
+    },
+    "early_tag_runs": [
+      {
+        "id": 43132314185,
+        "state": "queued_without_jobs",
+        "cancellation": "GitHub rejected cancellation as not yet queued"
+      },
+      {
+        "id": 43134012562,
+        "initial_conclusion": "startup_failure",
+        "cause": "tag-only allowlist rejected lock-resolved commits",
+        "rerun_state": "queued_without_jobs",
+        "cancellation": "GitHub rejected cancellation as not yet queued"
+      }
+    ],
+    "warnings": [
+      "Pinned actions target deprecated Node 20; GitHub forced Node 24 and all steps passed. Review action major-version migration separately."
+    ]
   },
   "independent_acceptance": "paused_by_user",
   "windows": "deferred_by_user",
   "cloud_cowork": "deferred_by_user",
   "notarized": false,
-  "public_release_ready": false
+  "public_release_ready": false,
+  "remote_source_verified": {
+    "head": "b3e0270bc11dae92c2bdb5cd08f06211a42a2448",
+    "refs": {
+      "refs/heads/codex/stage5-maintenance": "b3e0270bc11dae92c2bdb5cd08f06211a42a2448",
+      "refs/heads/main": "b3e0270bc11dae92c2bdb5cd08f06211a42a2448",
+      "refs/tags/v5.4-preview.3^{}": "d7ae5cb9af57cd4db887ede55ea5e91126fc9d77"
+    },
+    "stable_latest": "v5.3",
+    "release_url": "https://github.com/leo-zhang-source/yukio-desktop-pet/releases/tag/v5.4-preview.3",
+    "prerelease": true,
+    "assets": 6,
+    "passed": true
+  },
+  "other_worktrees_unchanged": true
 }
