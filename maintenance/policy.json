@@ -34,7 +34,7 @@
     }
   },
   "input_locks": {
-    "scripts/macos-build-requirements.txt": "041c754c4a3c02fe76209b1ce961defe61652e665a412714874c16dcd8277fe8",
+    "scripts/macos-build-requirements.txt": "0000000000000000000000000000000000000000000000000000000000000000",
     "scripts/maintenance-tools-requirements.txt": "74f812895c5fd4515ffc34ddfc35d436c92e5336428c467300e53e94e0c42a5b",
     "YukioPlayer/Package.resolved": "44370a704a00901a505e56fe2542eee70322f33ca1812a2d72a85544d1e8da74",
     "scripts/macos-release.json": "7f400faaf1dcc48ea46e75d409cc04eaa4e64e47b31d68a84833a1c289445a75",
@@ -53,7 +53,7 @@
     {
       "id": "S5-05-agent-setup",
       "status": "not_in_current_product",
-      "summary": "The older branch’s separate assistant setup component is absent from Preview 2; its 4 tests cannot validate this product. Existing onboarding remains covered separately."
+      "summary": "The older branch\u2019s separate assistant setup component is absent from Preview 2; its 4 tests cannot validate this product. Existing onboarding remains covered separately."
     },
     {
       "id": "S5-06-remote",
