@@ -41,7 +41,7 @@ AI 同时处理多个任务时，用户往往需要反复切换聊天，才能�
 
 ## 下载与使用范围
 
-面向 **Apple 芯片 Mac，macOS 13+**，支持中英文。本次提供 **5.4 Preview 4（66）**，修复 Claude 完成状态与工作台内容滞后的问题。完整首次使用验收尚未完成；Windows 与云端 Cowork 暂缓。
+面向 **Apple 芯片 Mac，macOS 13+**，支持中英文。本次提供 **5.4 Preview 4（66）**，修复 Claude 完成状态与工作台内容滞后的问题。本次完成状态与内容更新的专项独立 Mac 虚拟机检查通过；完整首次使用验收尚未完成；Windows 与云端 Cowork 暂缓。
 
 当前包尚未公证，首次打开方法见[安装说明](docs/MAC-HELP.zh-CN.md#install)。旧版需手动安装一次；更新请看[当前方法](docs/MANUAL-UPDATES.md#zh)。
 

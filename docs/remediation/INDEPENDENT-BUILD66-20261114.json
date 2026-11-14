@@ -1,0 +1,158 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "scope": "Mac build 66 upgrade: Claude completion and current-work freshness regression only",
+  "tested_on": "2026-11-14",
+  "source_revision": "206eeb4a4b211cf102851aabdd7160ed1283d8d6",
+  "build": "66",
+  "workbench_version": "0.4.17",
+  "package_name": "Yukio-5.4-preview.4-macOS-arm64.dmg",
+  "package_sha256": "27cec94e45620839eab6a53a649c800147d3d26355b2d4e1e354fe5c44386e0a",
+  "environment": {
+    "system": "macOS 26.6.2 (25G83)",
+    "architecture": "arm64",
+    "type": "Tart virtual machine with independent disk and guest user",
+    "initial_application": "Yukio 65; backed up before upgrade",
+    "claude_code": "2.1.318",
+    "codex": "0.166.0",
+    "development_python_or_node_required": false
+  },
+  "isolation": {
+    "independent_app_data_and_client_login": true,
+    "host_credentials_copied": false,
+    "host_folders_shared": false,
+    "clipboard_shared": false,
+    "shared_components": [
+      "physical Mac",
+      "NAT network"
+    ]
+  },
+  "steps": [
+    "Downloaded the actual final DMG in the guest browser; verified hash and quarantine.",
+    "Installed through Finder into Applications; verified all 495 App entries and signature.",
+    "User approved Open Anyway for this build only; Gatekeeper remained enabled.",
+    "After a later VM restart, launched the authorized installed app again through Finder.",
+    "Ran two Claude and two Codex tasks concurrently using synthetic CSV files and guest-owned client logins.",
+    "Ran a simple Claude print task and two turns in one ordinary Claude interactive chat.",
+    "Observed native workbench, real local-agent explanation, new goal and new result replacing the old explanation.",
+    "Stopped test automatic explanation and exited the interactive client normally; preserved VM and test records."
+  ],
+  "results": {
+    "four_task_overlap_seconds": 92,
+    "cases": [
+      {
+        "case": "CA66A",
+        "client": "Codex",
+        "exit_code": 0,
+        "expected_quantity": 9,
+        "expected_amount": 29,
+        "result_verified": true,
+        "workbench_end_observed_ms": 2315,
+        "workbench_states": [
+          "working",
+          "inactive"
+        ]
+      },
+      {
+        "case": "CA66B",
+        "client": "Codex",
+        "exit_code": 0,
+        "expected_quantity": 3,
+        "expected_amount": 17,
+        "result_verified": true,
+        "workbench_end_observed_ms": 2959,
+        "workbench_states": [
+          "working",
+          "inactive"
+        ]
+      },
+      {
+        "case": "CL66A",
+        "client": "Claude Code",
+        "exit_code": 0,
+        "expected_quantity": 4,
+        "expected_amount": 26,
+        "result_verified": true,
+        "native_end_detection_ms": 91,
+        "native_end_count": 1,
+        "workbench_end_observed_ms": 2559,
+        "workbench_states": [
+          "working",
+          "inactive"
+        ]
+      },
+      {
+        "case": "CL66B",
+        "client": "Claude Code",
+        "exit_code": 0,
+        "expected_quantity": 6,
+        "expected_amount": 28,
+        "result_verified": true,
+        "native_end_detection_ms": 86,
+        "native_end_count": 1,
+        "workbench_end_observed_ms": 1285,
+        "workbench_states": [
+          "working",
+          "inactive"
+        ]
+      },
+      {
+        "case": "CL66C",
+        "client": "Claude Code",
+        "exit_code": 0,
+        "expected_quantity": 4,
+        "expected_amount": 26,
+        "result_verified": true,
+        "native_end_detection_ms": 70,
+        "native_end_count": 1,
+        "workbench_end_observed_ms": 4763,
+        "workbench_states": [
+          "inactive"
+        ]
+      }
+    ],
+    "interactive": {
+      "rounds": 2,
+      "same_chat": true,
+      "first_goal": "quantity and amount",
+      "second_goal": "highest unit price only",
+      "second_result": "item1, 7",
+      "native_end_count": 2,
+      "native_end_detection_ms": [
+        156,
+        165
+      ],
+      "second_workbench_end_observed_ms": 1515,
+      "latest_goal_and_strategy_verified": true,
+      "old_model_explanation_replaced_by_latest_local_record_in_native_UI": true,
+      "model_explanation_for_first_round_verified_in_native_UI": true,
+      "model_explanation_for_second_round": "not awaited; the latest local result was visible during the configured model interval"
+    },
+    "no_premature_claude_completion_during_background_waits": true,
+    "no_duplicate_claude_completion": true,
+    "installed_regular_file_hashes_unchanged_after_tests": 486,
+    "full_install_manifest_entries": 495,
+    "gatekeeper_enabled_after_tests": true
+  },
+  "evidence": {
+    "installed-verification.json": "451037d56be281a09a2a0d9a2ee83de988001ab52f3ea1e099abc48af3dc62ea",
+    "installed-files-after.txt": "5fcb96a78b19dcf9655f6a3f2c8921cc4b01f35a6b8194b35abc88e2ef5fb96e",
+    "environment-final.txt": "ea21ab144a50b8da04b4df08a369767f34e72598b431dd916c8415fb903b50a1",
+    "current-poll.jsonl": "e4fac911cfee01cd2b89eeddbbad8d22855ec4d442089050a31bfc7407ff2f2f",
+    "interactive-poll.jsonl": "78c4601b889a1ef6e77355b50a4579349e61e0ba5efec1bad0acfe2abebec4b8",
+    "interactive-first.json": "db245017fde9ceebb92a3af2d5e71c47e1b9596833eef2c60d3313a2934456c4",
+    "interactive-second-running.json": "591d8674abe90e5694ba5144256847cb46bb51401014d025c121817b167bca0d",
+    "interactive-second-ended.json": "e1e7f2364d2331d47edcc3fe4ce90b168c378a406a30280960f7f5f175f297af",
+    "interactive-ui-observations.json": "b1a18308ac93833fb1bc8383a0c2a2a24c3323fe4391fa2dd467041aec806019",
+    "final-logs/evidence/native-four.log": "7cc059c33539b1442837510ff34e856bfca3f2f2ff04110f95665421a5c2935a",
+    "final-logs/evidence/native-interactive.log": "b1503a0361332d3f8c943484bffdbaa108e9bfce5b0e9dc3519a2e414ca8b295"
+  },
+  "limitations": [
+    "This verifies the defined upgrade/regression scope, not full M6 acceptance.",
+    "A completely new user setup, complete question/multi-client matrix and 30-minute GUI interaction acceptance remain incomplete.",
+    "Native detection latency and sampled workbench API latency are different measures; neither is a universal responsiveness guarantee.",
+    "The first model explanation and the latest local fallback were observed; second-round model generation was not awaited.",
+    "Ad-hoc signed and not Apple notarized.",
+    "Windows and cloud Cowork remain deferred by user decision."
+  ]
+}

@@ -41,7 +41,7 @@ To try explanations or answer delivery, connect your own assistant using the [qu
 
 ## Downloads and scope
 
-For **Apple silicon Macs, macOS 13+**, with English and Chinese interfaces. **5.4 Preview 4 (66)** fixes Claude completion detection and keeps current workbench content in step with new messages. Full first-run acceptance is still incomplete. Windows and cloud Cowork are deferred.
+For **Apple silicon Macs, macOS 13+**, with English and Chinese interfaces. **5.4 Preview 4 (66)** fixes Claude completion detection and keeps current workbench content in step with new messages. This update passed its completion/freshness checks in an independent Mac VM. Full first-run acceptance is still incomplete. Windows and cloud Cowork are deferred.
 
 The package is not notarized; see [first-launch instructions](docs/MAC-HELP.md#install). Older versions need one manual installation; see the [current update instructions](docs/MANUAL-UPDATES.md#en).
 
