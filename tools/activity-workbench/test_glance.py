@@ -594,3 +594,115 @@ class GlanceTests(unittest.TestCase):
     def test_polite_acknowledgement_is_not_the_current_work_headline(self):
         self.rows.append(dict(type='response_item',payload=dict(type='message',role='assistant',phase='commentary',content=[dict(type='output_text',text='不会停。正在把前面的进展和当前步骤联系起来。')])));self.write();self.ingest()
         self.assertEqual(self.detail()['content'],'正在把前面的进展和当前步骤联系起来。')
+
+
+class ClaudeFreshnessTests(unittest.TestCase):
+    def setUp(self):
+        self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
+        self.root=Path(self.temp.name);self.path=self.root/'current.jsonl';self.db=self.root/'history.sqlite'
+        self.rows=[self.message('user','先调整旧图标。')]
+
+    @staticmethod
+    def message(role,text,*,image_bytes=0):
+        content=([dict(type='image',source=dict(type='base64',data='IMAGE_NOT_FOR_MODEL'+('A'*image_bytes)))] if image_bytes else [])
+        content.append(dict(type='text',text=text))
+        return dict(type=role,sessionId='current',isSidechain=False,timestamp='2026-11-11T20:00:00Z',message=dict(role=role,content=content))
+
+    def noise(self,count,*,bytes_each=0):
+        for i in range(count):
+            self.rows.append(dict(type='user',sessionId='current',isSidechain=False,
+                message=dict(role='user',content=[dict(type='tool_result',tool_use_id='call-'+str(i),content='TOOL_NOT_SPEECH'+('x'*bytes_each))])))
+
+    def prepare(self):
+        self.path.write_text(''.join(json.dumps(r,ensure_ascii=False)+'\n' for r in self.rows))
+        store=ActivityHistory(self.db)
+        try:
+            while True:
+                result=store.ingest(self.path,source_format='claude')
+                if result['offset']>=self.path.stat().st_size:break
+        finally:store.close()
+        self.history=HistoryView({'claude':self.db});self.view=GlanceView(self.history,{'claude':self.root})
+        self.key=self.history.groups('claude')['groups'][0]['key']
+        return self.view.detail('claude',self.key)
+
+    def test_image_attachment_does_not_hide_the_latest_request_from_model(self):
+        from work_understanding import WorkUnderstanding
+        self.rows.append(self.message('user','移除路边标志，给收集物增加声音。',image_bytes=330000))
+        self.rows.append(self.message('assistant','正在检查收集声音，稍后核对画面。'))
+        detail=self.prepare()
+        self.assertEqual(detail['goal_short'],'移除路边标志，给收集物增加声音。')
+        _,payload,_=WorkUnderstanding(self.view).prepared('claude',self.key)
+        self.assertIn('给收集物增加声音',encode(payload));self.assertNotIn('IMAGE_NOT_FOR_MODEL',encode(payload))
+        self.assertIn('正在检查收集声音',encode(payload))
+
+    def test_tool_receipts_cannot_evict_public_requests_and_progress(self):
+        from work_understanding import WorkUnderstanding
+        self.rows.extend(self.message('assistant','较早的公开进展 '+str(i)) for i in range(35))
+        self.rows.append(self.message('user','现在改为检查声音。'))
+        self.rows.append(self.message('assistant','已开始检查声音，结果尚未确认。'))
+        self.noise(420)
+        detail=self.prepare()
+        self.assertEqual(detail['goal_short'],'现在改为检查声音。')
+        self.assertIn('检查声音',detail['content'])
+        _,payload,_=WorkUnderstanding(self.view).prepared('claude',self.key)
+        self.assertIn('已开始检查声音',encode(payload));self.assertNotIn('TOOL_NOT_SPEECH',encode(payload))
+
+    def test_large_tool_records_do_not_spend_the_public_speech_budget(self):
+        self.rows.append(self.message('user','检查新的收集声音。',image_bytes=330000))
+        self.noise(30,bytes_each=180000)
+        self.assertEqual(self.prepare()['goal_short'],'检查新的收集声音。')
+
+    def test_changed_latest_request_cannot_fall_back_to_the_old_task(self):
+        from work_understanding import WorkUnderstanding
+        self.rows.append(self.message('user','现在检查收集声音。'))
+        self.prepare()
+        self.path.write_bytes(self.path.read_bytes().replace('现在检查收集声音。'.encode(),'现在修改收集声音。'.encode()))
+        detail=self.view.detail('claude',self.key)
+        self.assertTrue(detail['latest_request_unavailable'])
+        self.assertNotIn('旧图标',detail['goal_short']);self.assertNotIn('goal',detail['evidence'])
+        _,payload,_=WorkUnderstanding(self.view).prepared('claude',self.key)
+        self.assertTrue(all('旧图标' not in fact['excerpt'] for fact in payload['facts']))
+        self.assertIn('较新的要求',encode(payload))
+
+    def test_acknowledgement_cannot_recover_a_missing_request(self):
+        self.rows.append(self.message('user','现在检查收集声音。'))
+        self.rows.append(self.message('user','继续。'))
+        self.prepare()
+        self.path.write_bytes(self.path.read_bytes().replace('现在检查收集声音。'.encode(),'现在修改收集声音。'.encode()))
+        detail=self.view.detail('claude',self.key)
+        self.assertTrue(detail['latest_request_unavailable'])
+        self.assertEqual(detail['work_notes']['requests'],[])
+
+    def test_public_speech_budget_stays_bounded_and_missing_goal_is_explicit(self):
+        from unittest.mock import patch
+        from source_context import MAX_SPEECH_READ
+        self.rows.append(self.message('user','检查新的收集声音。',image_bytes=330000))
+        self.prepare()
+        # Exercise the real budget boundary without an enormous test fixture.
+        self.assertLessEqual(MAX_SPEECH_READ,8*1024*1024+1)
+        with patch('source_context.MAX_SPEECH_READ',300000):detail=self.view.detail('claude',self.key)
+        self.assertTrue(detail['latest_request_unavailable'])
+        self.assertTrue(detail['partial']);self.assertNotIn('goal',detail['evidence'])
+
+    def test_large_public_record_still_excludes_reasoning_and_images(self):
+        from work_understanding import WorkUnderstanding
+        self.rows.append(self.message('user','检查新的收集声音。',image_bytes=330000))
+        assistant=self.message('assistant','正在检查声音。')
+        assistant['message']['content'].insert(0,dict(type='thinking',thinking='PRIVATE_REASONING_NOT_FOR_MODEL'))
+        self.rows.append(assistant)
+        self.prepare()
+        _,payload,_=WorkUnderstanding(self.view).prepared('claude',self.key)
+        self.assertIn('正在检查声音',encode(payload))
+        self.assertNotIn('PRIVATE_REASONING_NOT_FOR_MODEL',encode(payload))
+        self.assertNotIn('IMAGE_NOT_FOR_MODEL',encode(payload))
+
+    def test_public_progress_invalidates_the_work_explanation(self):
+        from work_understanding import WorkUnderstanding
+        self.rows.append(self.message('user','检查收集声音。'));self.prepare()
+        before=WorkUnderstanding(self.view).detail('claude',self.key)['revision']
+        with self.path.open('a') as stream:stream.write(json.dumps(self.message('assistant','音效修改完成，正在检查音量。'),ensure_ascii=False)+'\n')
+        store=ActivityHistory(self.db)
+        try:store.ingest(self.path,source_format='claude')
+        finally:store.close()
+        after,payload,_=WorkUnderstanding(self.view).prepared('claude',self.key)
+        self.assertNotEqual(before,after['revision']);self.assertIn('正在检查音量',encode(payload))

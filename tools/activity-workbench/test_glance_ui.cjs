@@ -55,15 +55,28 @@ test('an untranslated local note does not promise a model call or invent an assi
  assert.doesNotMatch(f.elements.get('content').textContent,/being prepared|assistant has shared/i);
  assert.match(f.elements.get('contentBasis').textContent,/尚不清楚/);
 });
-test('a model answer stays readable while new work is marked for automatic update',()=>{
+test('new work immediately replaces a stale model answer with current local content',()=>{
  const f=setup();f.context.data=currentWork();f.run('model={configured:true,automatic_on_open:true};render(data)');
  f.context.result={mode:'model',explanations:['content','explanation','reason'].map(part=>({part,text:'模型'+part,basis:'inference',evidence_ids:[]}))};
  f.run('showAnswer(result,[],1,"r1")');assert.equal(f.elements.get('content').textContent,'模型content');
  assert.match(f.elements.get('modelNote').textContent,/模型说明.*自动跟进/);
- f.context.data=currentWork('r2');f.run('render(data)');assert.equal(f.elements.get('content').textContent,'模型content');
- assert.match(f.elements.get('modelNote').textContent,/稍早.*自动更新/);
+ f.context.data=currentWork('r2');f.run('render(data)');assert.match(f.elements.get('content').textContent,/本机内容$/);
+ assert.match(f.elements.get('modelNote').textContent,/过期.*最新本机记录/);
 });
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
+test('new evidence refreshes local work reading within the cache window, during a slow model call',async()=>{
+ const f=setup();enabledPage(f);f.context.work=understanding();
+ f.run('grant="page-only"');
+ const first=f.run('loadUnderstanding()');f.pending[0].resolve(understanding());await first;
+ await f.run('loadUnderstanding()');assert.equal(f.pending.length,1);
+ const generation=f.run('explainUnderstanding()');f.pending[1].resolve({...understanding(),token:'earlier'});await tick();
+ f.context.later=currentWork('r2');f.run('current=later');
+ const latest=f.run('loadUnderstanding()');assert.match(f.pending[3].url,/work-understanding/);
+ f.pending[3].resolve(understanding('chat','new-work'));await latest;
+ assert.equal(f.run('workData.revision'),'new-work');
+ f.pending[2].resolve({result:{mode:'model',explanations:[]},references:[]});await generation;
+ assert.equal(f.run('workData.revision'),'new-work');
+});
 function reviewData(section='overview'){
  const parts=section==='overview'?['goal','before','now','next']:['step1'];
  return {snapshot:42,next_before:21,has_more:true,note:'有限范围',references:[{evidence_id:'R1',title:'来源',quote:'RAW_SOURCE_NOT_A_RECAP'}],
@@ -234,6 +247,9 @@ test('failed work generation retains local evidence and later changes label an o
  f.context.answer={result:{mode:'model',explanations:[{part:'goal',text:'Earlier goal',basis:'inference',evidence_ids:['E1']}]},references:understanding().references,revision:'older',source:understanding()};
  f.run('workAnswer=answer;workMessage="";renderUnderstanding()');
  assert.match(f.elements.get('understandingNote').textContent,/较早.*变化/);
+ const shown=f.elements.get('understandingParts').querySelectorAll('*').map(e=>e.textContent).join('\n');
+ assert.match(shown,/chat goal/);assert.doesNotMatch(shown,/Earlier goal/);
+ assert.ok(!f.pending.slice(2).some(p=>p.url==='/api/reading-explain'));
 });
 test('reassigned project clears old narrative even when its display name is unchanged',async()=>{
  const f=setup();enabledPage(f);f.context.work=understanding('project');

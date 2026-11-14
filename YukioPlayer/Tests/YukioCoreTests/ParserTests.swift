@@ -92,8 +92,8 @@ import Testing
         #expect(end.map(\.kind) == [.activityEnd] && end[0].eventID == "tu_1")
     }
 
-    @Test func finalTextEndsTaskButCommentaryDoesNot() {
-        #expect(kinds(#"{"type":"assistant",\#(head),"message":{"stop_reason":"end_turn","content":[{"type":"text","text":"完成"}]}}"#) == [.finalAnswer, .taskEnd])
+    @Test func textAloneDoesNotConfirmClientCompletion() {
+        #expect(kinds(#"{"type":"assistant",\#(head),"message":{"stop_reason":"end_turn","content":[{"type":"text","text":"完成"}]}}"#) == [.thinking])
         #expect(kinds(#"{"type":"assistant",\#(head),"message":{"stop_reason":"tool_use","content":[{"type":"text","text":"先看看"}]}}"#) == [.thinking])
         #expect(kinds(#"{"type":"assistant",\#(head),"message":{"stop_reason":"end_turn","content":[{"type":"thinking","thinking":""}]}}"#) == [.thinking])
     }
@@ -134,10 +134,10 @@ import Testing
                                 "tool_response": ["is_error": true, "error": "The user doesn't want to proceed with this tool use."]], receivedAt: 6).map(\.kind) == [.activityEnd])
         #expect(p.events(from: ["hook_event_name": "PostToolUse", "session_id": "S", "tool_use_id": "t1",
                                 "tool_response": ["is_interrupt": true]], receivedAt: 6).map(\.kind) == [.activityEnd])
-        // Claude Code 并没有 PostToolUseFailure / StopFailure 这两个事件名。
-        #expect(p.events(from: ["hook_event_name": "PostToolUseFailure", "session_id": "S"], receivedAt: 6).isEmpty)
+        #expect(p.events(from: ["hook_event_name": "PostToolUseFailure", "session_id": "S"], receivedAt: 6).map(\.kind) == [.activityFailed])
+        #expect(p.events(from: ["hook_event_name": "StopFailure", "session_id": "S"], receivedAt: 6).map(\.kind) == [.taskFailed])
         #expect(p.events(from: ["hook_event_name": "UserPromptSubmit", "session_id": "S"], receivedAt: 1).map(\.kind) == [.taskStart])
-        #expect(p.events(from: ["hook_event_name": "Stop", "session_id": "S"], receivedAt: 9).map(\.kind) == [.finalAnswer, .taskEnd])
+        #expect(p.events(from: ["hook_event_name": "Stop", "session_id": "S"], receivedAt: 9).isEmpty)
         #expect(p.events(from: ["hook_event_name": "Notification", "session_id": "S"], receivedAt: 9).isEmpty)
     }
 }

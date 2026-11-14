@@ -967,5 +967,9 @@
   "选择尚未保存：正在生成一段说明，请等它结束后再切换。": "Selection not saved: an explanation is being generated. Wait for it to finish before switching.",
   "正在保存解释来源…": "Saving explanation provider…",
   "解释来源已保存。": "Explanation provider saved.",
-  "更改未保存，仍保留原解释来源。": "Change not saved. The previous explanation provider is still selected."
+  "更改未保存，仍保留原解释来源。": "Change not saved. The previous explanation provider is still selected.",
+  "有较新的要求尚未读到，请回原聊天查看。": "A newer request could not be read. Check the original chat.",
+  "最近公开进展（助手陈述，未独立核验）": "Recent public progress (assistant report, not independently verified)",
+  "较早的解读已过期 · 记录已有变化，现显示最新本机摘要；点击下方按钮重新解读。": "The earlier interpretation is out of date. Showing the latest local summary; use the button below to generate a new interpretation.",
+  "较早的说明已过期 · 当前显示最新本机记录": "The earlier explanation is out of date · Showing the latest local records"
 }

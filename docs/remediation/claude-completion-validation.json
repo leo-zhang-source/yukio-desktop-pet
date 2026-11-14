@@ -1,0 +1,193 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-11",
+  "status": "local_packaged_installed_independent_pending",
+  "product_commit": "a8fcfd236ddfdbe8bf3b15644f210a5dafef7b30",
+  "source_sha256": "66abbea18bb5cd041efa8df9b4b224b03a0833be9b64338414f811ed1724f275",
+  "system": "macOS-27.2-arm64-arm-64bit-Mach-O",
+  "architecture": "arm64",
+  "runs": [
+    {
+      "run": 1,
+      "tests": {
+        "swift": 288,
+        "python": 378,
+        "release_python": 28,
+        "progress_python": 8,
+        "node": 65
+      },
+      "total_tests": 767,
+      "shared_assertions": {
+        "PASS": 230,
+        "KNOWN_FAIL": 0,
+        "UNEXPECTED_FAIL": 0,
+        "UNEXPECTED_PASS": 0
+      },
+      "source_unchanged": true,
+      "negative_controls_passed": true,
+      "passed": true
+    },
+    {
+      "run": 2,
+      "tests": {
+        "swift": 288,
+        "python": 378,
+        "release_python": 28,
+        "progress_python": 8,
+        "node": 65
+      },
+      "total_tests": 767,
+      "shared_assertions": {
+        "PASS": 230,
+        "KNOWN_FAIL": 0,
+        "UNEXPECTED_FAIL": 0,
+        "UNEXPECTED_PASS": 0
+      },
+      "source_unchanged": true,
+      "negative_controls_passed": true,
+      "passed": true
+    }
+  ],
+  "gate_passed": true,
+  "native_metadata_replay": {
+    "passed": true,
+    "baseline_build": "64",
+    "package_build": "65",
+    "continuation_after_seconds": 3598.589,
+    "runs": [
+      {
+        "binary": "previous-64",
+        "scenario": "continuation",
+        "completed_count": 1,
+        "expected": 1,
+        "binary_sha256": "7c0fad8aabb6e6656cd236641970c5f81025f60d2e8d447b582b73c861aae97a",
+        "fixture_sha256": "11f6d17def8e9006b0f78314a827c38ca299230da19321fdc32960328d995e0b"
+      },
+      {
+        "binary": "previous-64",
+        "scenario": "confirmed",
+        "completed_count": 1,
+        "expected": 1,
+        "binary_sha256": "7c0fad8aabb6e6656cd236641970c5f81025f60d2e8d447b582b73c861aae97a",
+        "fixture_sha256": "4af2dcb0b3d38234b055a361ee6ccfcab873457a7ead5af4e32303c0ec9fe2c9"
+      },
+      {
+        "binary": "packaged-65",
+        "scenario": "continuation",
+        "completed_count": 0,
+        "expected": 0,
+        "binary_sha256": "13905dc1546c9e710faef2322e3e88c72a25cfbf8fa869c2b885c6493ef29be3",
+        "fixture_sha256": "11f6d17def8e9006b0f78314a827c38ca299230da19321fdc32960328d995e0b"
+      },
+      {
+        "binary": "packaged-65",
+        "scenario": "confirmed",
+        "completed_count": 1,
+        "expected": 1,
+        "binary_sha256": "13905dc1546c9e710faef2322e3e88c72a25cfbf8fa869c2b885c6493ef29be3",
+        "fixture_sha256": "4af2dcb0b3d38234b055a361ee6ccfcab873457a7ead5af4e32303c0ec9fe2c9"
+      }
+    ],
+    "scope": "Sanitized real lifecycle shapes with synthetic task start; actual package binary; no independent-environment claim."
+  },
+  "independent_acceptance": "not_run_for_this_change",
+  "package": {
+    "version": "5.4",
+    "build": "65",
+    "workbench_version": "0.4.16",
+    "archives": {
+      "Yukio-5.4-claude-completion.1-macOS-arm64.dmg": {
+        "bytes": 77346975,
+        "sha256": "5571687349c4a5738a95e8697b700fc506dc762689a1f63e69877198044bbaf4"
+      },
+      "Yukio-5.4-claude-completion.1-macOS-arm64.zip": {
+        "bytes": 76919892,
+        "sha256": "041b050d71f417673150be46d1af281cb67a28e30f6d1fd564dc1c0770579105"
+      }
+    },
+    "files_verified": 495,
+    "zip_and_dmg_match": true,
+    "signature": "ad_hoc_not_notarized",
+    "animation_entries_identical": 269,
+    "isolated_workbench_smoke_passed": true
+  },
+  "desktop_installation": {
+    "previous_build": "64",
+    "build": "65",
+    "source_revision": "a8fcfd236ddfdbe8bf3b15644f210a5dafef7b30",
+    "workbench_version": "0.4.16",
+    "files_verified": 495,
+    "launch_verified": true,
+    "loaded_executable_inode_matches": true,
+    "binary_sha256": "13905dc1546c9e710faef2322e3e88c72a25cfbf8fa869c2b885c6493ef29be3",
+    "desktop_alias_resolves_to_installed_app": true,
+    "settings_hashes_unchanged": true,
+    "configuration_files_preserved": 5,
+    "codex_global_configuration_unchanged": true,
+    "pet_native_window_visible": true,
+    "backup": "~/.codex/backups/yukio-claude-completion-install-20261111/installed-before/Yukio.app.archived"
+  },
+  "github_upload": "not_authorized_not_run",
+  "windows": "deferred_by_user",
+  "cloud_cowork": "deferred_by_user",
+  "source_evidence_root": "~/.codex/backups/yukio-claude-completion-install-20261111",
+  "first_false_lead_preserved": true,
+  "initial_source_verification": {
+    "product_commit": "7fec1bbb25f04a9cc10ce8cb286fc99f7f466f6b",
+    "source_sha256": "9abbcf8ce9b26c5050a605b49b44edce402ac74a920c6cdab450e0cfcba7b131",
+    "source_evidence_root": "~/.codex/backups/yukio-claude-reading-20261111",
+    "native_metadata_replay": {
+      "passed": true,
+      "baseline_build": "64",
+      "continuation_after_seconds": 3598.589,
+      "completion_sign_counts": [
+        {
+          "version": "installed_64",
+          "scenario": "continuation",
+          "count": 1,
+          "executable_sha256": "7c0fad8aabb6e6656cd236641970c5f81025f60d2e8d447b582b73c861aae97a"
+        },
+        {
+          "version": "installed_64",
+          "scenario": "confirmed",
+          "count": 1,
+          "executable_sha256": "7c0fad8aabb6e6656cd236641970c5f81025f60d2e8d447b582b73c861aae97a"
+        },
+        {
+          "version": "candidate",
+          "scenario": "continuation",
+          "count": 0,
+          "executable_sha256": "6a196cf275e2390992423aeb1296c240ebe0163ed4b6e087b73ca70a68c9d80f"
+        },
+        {
+          "version": "candidate",
+          "scenario": "confirmed",
+          "count": 1,
+          "executable_sha256": "6a196cf275e2390992423aeb1296c240ebe0163ed4b6e087b73ca70a68c9d80f"
+        }
+      ]
+    }
+  },
+  "source_fix_commit": "7fec1bbb25f04a9cc10ce8cb286fc99f7f466f6b",
+  "native_workbench_ui_opened": false,
+  "nas_source": {
+    "path": "nas:/volume1/leo/yukio/maintenance/claude-completion-20261111/source-a8fcfd236ddfdbe8bf3b15644f210a5dafef7b30.tar.gz",
+    "source_revision": "a8fcfd236ddfdbe8bf3b15644f210a5dafef7b30",
+    "sha256": "66a91532d97d2062cf323926fa6b212d35c488d028021906a48342f196668841",
+    "bytes": 78568289,
+    "remote_checksum_verified": true,
+    "streaming_readback_verified": true,
+    "source": "immutable git archive; no working-tree data",
+    "local_originals_retained": true
+  },
+  "nas_delivery": {
+    "path": "nas:/volume1/leo/yukio/maintenance/claude-completion-20261111/delivery.tar.gz",
+    "sha256": "c52bc9404d36d27ba9658e6957ebccdb48e6a3ba39b94ccd3402d14da0e17616",
+    "bytes": 153723434,
+    "files": 82,
+    "remote_checksum_verified": true,
+    "streaming_readback_verified": true,
+    "local_originals_retained": true,
+    "private_settings_and_original_chats_excluded": true
+  }
+}

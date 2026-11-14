@@ -98,6 +98,95 @@ import Testing
         #expect(source.status.directoryFound == false)
     }
 
+    private func jsonLine(_ row: [String: Any]) throws -> String {
+        String(data: try JSONSerialization.data(withJSONObject: row), encoding: .utf8)! + "\n"
+    }
+
+    private func completionRows(_ t: Double) -> [[String: Any]] {
+        [
+            ["type": "user", "sessionId": "S", "timestamp": stamp(t), "promptId": "prompt",
+             "message": ["content": "Go"]],
+            ["type": "assistant", "sessionId": "S", "timestamp": stamp(t + 1000), "uuid": "answer",
+             "message": ["stop_reason": "end_turn", "content": [["type": "text", "text": "Response"]]]],
+            ["type": "system", "sessionId": "S", "timestamp": stamp(t + 2000), "parentUuid": "answer",
+             "subtype": "stop_hook_summary", "preventedContinuation": false, "hasOutput": false,
+             "hookErrors": [String](), "hookAdditionalContext": [String](), "stopReason": ""]
+        ]
+    }
+
+    @Test func completionSurvivesPollingAndPartialWritesWithoutDuplicateSigns() throws {
+        defer { try? FileManager.default.removeItem(at: root) }
+        let t = now(), file = project.appendingPathComponent("S.jsonl")
+        let rows = completionRows(t)
+        try append(file, jsonLine(rows[0]) + jsonLine(rows[1]))
+        let source = ClaudeTranscriptSource(projectsDir: root.appendingPathComponent("projects"))
+        #expect(source.poll(now: t + 1000).map(\.kind) == [.taskStart, .thinking])
+        let line = try jsonLine(rows[2]), split = line.index(line.startIndex, offsetBy: 40)
+        try append(file, String(line[..<split]))
+        #expect(source.poll(now: t + 2000).isEmpty)
+        try append(file, String(line[split...]))
+        #expect(source.poll(now: t + 2500).map(\.kind) == [.finalAnswer, .taskEnd])
+        try append(file, jsonLine(rows[1]) + jsonLine(rows[2]))
+        #expect(source.poll(now: t + 3000).isEmpty)
+    }
+
+    @Test func startupReadsBackgroundVetoWithoutReplayingOldHookEvents() throws {
+        defer { try? FileManager.default.removeItem(at: root) }
+        let t = now(), file = project.appendingPathComponent("S.jsonl")
+        for row in completionRows(t - 4000) { try append(file, jsonLine(row)) }
+        let inbox = root.appendingPathComponent("hooks.jsonl")
+        try append(inbox, jsonLine(["hook_event_name": "Stop", "session_id": "S", "prompt_id": "prompt",
+            "background_tasks": [["status": "running", "type": "shell"]], "session_crons": [String]()]))
+        let source = ClaudeTranscriptSource(projectsDir: root.appendingPathComponent("projects"))
+        let hooks = HookInboxSource(url: inbox)
+        hooks.onStop = { row, receivedAt in source.observeStopHook(row, receivedAt: receivedAt) }
+        #expect(hooks.poll(now: t).isEmpty)
+        let events = source.poll(now: t)
+        #expect(!events.contains { $0.kind == .taskEnd || $0.kind == .finalAnswer })
+    }
+
+    @Test func delayedHookReceiptCannotRestartATurnAlreadyFinishedInTheTranscript() throws {
+        defer { try? FileManager.default.removeItem(at: root) }
+        let t = now(), file = project.appendingPathComponent("S.jsonl"), inbox = root.appendingPathComponent("hooks.jsonl")
+        try append(inbox, "")
+        let source = ClaudeTranscriptSource(projectsDir: root.appendingPathComponent("projects"))
+        let hooks = HookInboxSource(url: inbox)
+        hooks.prefersTranscript = { source.coversTranscript(at: $0) }
+        #expect(hooks.poll(now: t).isEmpty)
+        for row in completionRows(t) { try append(file, jsonLine(row)) }
+        try append(inbox, jsonLine(["hook_event_name": "UserPromptSubmit", "session_id": "S",
+            "transcript_path": file.path, "prompt": "Go"]))
+        try append(inbox, jsonLine(["hook_event_name": "PreToolUse", "session_id": "S",
+            "transcript_path": file.path, "tool_use_id": "already-finished", "tool_name": "Read"]))
+        #expect(hooks.poll(now: t + 4000).isEmpty)
+        let router = ActivityRouter(now: t)
+        for event in source.poll(now: t + 4000) { router.ingest(event, now: event.ts) }
+        router.settle(now: t + 6000)
+        #expect(router.completedSession == "S")
+        // A genuinely unavailable transcript still permits the optional hook fallback.
+        try append(inbox, jsonLine(["hook_event_name": "PreToolUse", "session_id": "other",
+            "transcript_path": root.appendingPathComponent("missing.jsonl").path,
+            "tool_use_id": "fallback", "tool_name": "Read"]))
+        #expect(hooks.poll(now: t + 5000).map(\.kind) == [.activityStart])
+    }
+
+    @Test func partialStopAtStartupStillDeliversItsVetoWhenCompleted() throws {
+        defer { try? FileManager.default.removeItem(at: root) }
+        let inbox = root.appendingPathComponent("hooks.jsonl")
+        let line = try jsonLine(["hook_event_name": "Stop", "session_id": "S", "prompt_id": "prompt",
+            "background_tasks": [["status": "running"]], "session_crons": [String]()])
+        let cut = line.index(line.startIndex, offsetBy: 30)
+        try append(inbox, String(line[..<cut]))
+        let hooks = HookInboxSource(url: inbox)
+        var observations = 0
+        hooks.onStop = { _, _ in observations += 1; return [] }
+        #expect(hooks.poll(now: 1000).isEmpty)
+        #expect(observations == 0)
+        try append(inbox, String(line[cut...]))
+        #expect(hooks.poll(now: 2000).isEmpty)
+        #expect(observations == 1)
+    }
+
     @Test func hookInboxReadsOnlyNewRecordsAndRotates() throws {
         let inbox = root.appendingPathComponent("hooks.jsonl")
         try append(inbox, #"{"hook_event_name":"UserPromptSubmit","session_id":"H"}"# + "\n")
@@ -111,6 +200,6 @@ import Testing
         let size = try FileManager.default.attributesOfItem(atPath: inbox.path)[.size] as? Int
         #expect(size == 0)
         try append(inbox, #"{"hook_event_name":"Stop","session_id":"H"}"# + "\n")
-        #expect(source.poll(now: 3).map(\.kind) == [.finalAnswer, .taskEnd])
+        #expect(source.poll(now: 3).isEmpty) // An attempted Stop alone cannot confirm completion.
     }
 }

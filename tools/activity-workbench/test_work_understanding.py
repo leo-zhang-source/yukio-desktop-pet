@@ -84,6 +84,10 @@ class WorkUnderstandingTests(unittest.TestCase):
         for text in ('让我一眼看懂','保留详细依据','先查看入口','把最近活动收在一起'):
             self.assertIn(text, raw)
         self.assertNotIn('HIDDEN_PRIVATE_REASONING', raw)
+        self.assertIn('保留详细依据',data['local']['goal']['text'])
+        self.assertNotIn('让我一眼看懂',data['local']['goal']['text'])
+        self.assertIn('把最近活动收在一起',data['local']['strategy']['text'])
+        self.assertNotIn('先查看入口',data['local']['strategy']['text'])
         self.assertEqual(set(data['local']), {'goal','strategy','effectiveness'})
         self.assertEqual(data['effectiveness_status'], '尚待验证')
         self.assertFalse(self.sent)

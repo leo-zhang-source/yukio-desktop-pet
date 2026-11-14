@@ -13,6 +13,7 @@ from explanation import ExplanationError,add_object_names
 from plain_language import plain_words
 from localization import current_language
 from work_understanding import WorkUnderstanding
+from source_context import speech_predicate
 
 
 class ReadingView:
@@ -80,7 +81,7 @@ class ReadingView:
         else:
             scope=f'{SESSION}=? AND {AGENT}=? AND {SIDECHAIN}=? AND {GENERATION}={CURRENT}'
             args=[parts[2],parts[3],parts[4]]
-        speech="json_extract(e.record,'$.source_kind') IN ('message','user_message','agent_message','user','assistant')"
+        speech=speech_predicate(client)
         with self.history.connect(client) as db:
             high=db.execute('SELECT coalesce(max(sequence),0) FROM events').fetchone()[0]
             snapshot=min(snapshot,high) if snapshot else high

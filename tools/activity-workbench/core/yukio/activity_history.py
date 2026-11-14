@@ -273,6 +273,9 @@ class ActivityHistory:
                     raise ValueError('Unsupported Codex history identity version')
             if old and source_format == 'codex' and (old.get('codex_handoff_version') is not None and (type(old['codex_handoff_version']) is not int or old['codex_handoff_version'] != 1)):
                 raise ValueError('Unsupported Codex handoff version')
+            if old and source_format == 'claude' and old.get('claude_lifecycle_version') is not None:
+                if type(old['claude_lifecycle_version']) is not int or old['claude_lifecycle_version'] != 1:
+                    raise ValueError('Unsupported Claude lifecycle version')
             with open_source(path) as stream:
                 info = os.fstat(stream.fileno())
                 if not stat.S_ISREG(info.st_mode):
@@ -307,6 +310,8 @@ class ActivityHistory:
                         reason = 'identity_model_upgraded'
                     elif source_format == 'codex' and old.get('codex_handoff_version') is None:
                         reason = 'handoff_model_upgraded'
+                    elif source_format == 'claude' and old.get('claude_lifecycle_version') != 1:
+                        reason = 'claude_lifecycle_model_upgraded'
                 if reason:
                     offset, line, generation = 0, 0, generation + 1
                 parser_type = {'claude': ClaudeHistoryParser, 'deepcode': DeepCodeHistoryParser, 'codex': CodexRolloutParser}[source_format]
@@ -371,6 +376,8 @@ class ActivityHistory:
                     state['codex_identity_version'] = 2
                     state['codex_handoff_version'] = 1
                     state['codex_scope'] = scope.checkpoint()
+                if source_format == 'claude':
+                    state['claude_lifecycle_version'] = 1
                 self.db.execute('INSERT INTO sources VALUES (?, ?) ON CONFLICT(source_id) DO UPDATE SET state=excluded.state',
                                 (source_id, compact(state)))
             self.db.execute('COMMIT')

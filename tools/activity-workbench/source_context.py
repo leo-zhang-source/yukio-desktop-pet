@@ -19,6 +19,33 @@ from claude_desktop import ClaudeDesktopIndex, default_directory as desktop_dire
 
 MAX_LINE = 256 * 1024
 MAX_READ = 2 * 1024 * 1024
+# A public message may include an image in the same JSON record. Give verified
+# speech its own bounded budget, matching the collector's record ceiling, so
+# tool output cannot consume the bytes needed to read a user's accompanying text.
+MAX_SPEECH_READ = (8 * 1024 * 1024) + 1
+
+
+def public_speech(client,row):
+    kind=row.get('source_kind')
+    if kind not in ('message','user_message','agent_message','user','assistant'):return False
+    if row.get('kind') in ('context_record_observed','identity_conflict','foreign_session_record','identity_scope_unresolved'):return False
+    if client=='claude' and 'blocks' in row:
+        blocks=row['blocks']
+        return isinstance(blocks,list) and any(b.get('kind')=='text_record_observed' for b in blocks if isinstance(b,dict))
+    return True
+
+
+def speech_predicate(client):
+    """Select public speech before applying the window limit, using saved metadata.
+
+    Claude also labels tool receipts and thinking-only messages user/assistant.
+    Their block kinds must not displace human requests or public progress. Older
+    string-form messages have no block list and remain eligible for verification.
+    """
+    query="json_extract(e.record,'$.source_kind') IN ('message','user_message','agent_message','user','assistant')"
+    if client=='claude':
+        query+=" AND json_extract(e.record,'$.kind')='message_observed' AND (json_type(e.record,'$.blocks') IS NULL OR EXISTS (SELECT 1 FROM json_each(e.record,'$.blocks') b WHERE json_extract(b.value,'$.kind')='text_record_observed'))"
+    return query
 
 
 def default_roots():
@@ -449,7 +476,11 @@ class SourceContext:
             if descriptor is not None:os.close(descriptor)
 
     def read(self,client,parts,state,rows):
-        title,path=self.title_and_path(client,parts[2],parts[0]);out=[];missing=0;used=0;requests=[];receipts=[];handoffs=[];workspace=''
+        title,path=self.title_and_path(client,parts[2],parts[0]);out=[];missing=0;used=0;speech_used=0;unread_users=[];requests=[];receipts=[];handoffs=[];workspace=''
+        def missed(seq,row,speech):
+            nonlocal missing
+            missing+=1
+            if speech and row.get('source_kind') in ('user','user_message'):unread_users.append(seq)
         if not path or not self.permitted(path,client,parts[0]):return dict(title=title,items=[],unavailable=True,missing=0)
         if state.get('generation')!=parts[1]:return dict(title=title,items=[],unavailable=True,missing=0)
         descriptor=None
@@ -460,15 +491,21 @@ class SourceContext:
                 if not stat.S_ISREG(info.st_mode) or state.get('file_identity')!='%s:%s'%(info.st_dev,info.st_ino):
                     return dict(title=title,items=[],unavailable=True,missing=0)
                 for seq,row in rows:
+                    speech=public_speech(client,row)
                     start,end=row.get('source_offset'),row.get('next_offset');expected=row.get('source_record_sha256')
-                    if type(start) is not int or type(end) is not int or not expected or not 0<=start<end<=info.st_size:continue
+                    if type(start) is not int or type(end) is not int or not expected or not 0<=start<end<=info.st_size:
+                        missed(seq,row,speech);continue
                     length=end-start
-                    if length>MAX_LINE or used+length>MAX_READ:missing+=1;continue
-                    stream.seek(start);raw=stream.read(length);used+=length
-                    if not raw.endswith(b'\n') or hashlib.sha256(raw[:-1]).hexdigest()!=expected:missing+=1;continue
+                    if (speech and speech_used+length>MAX_SPEECH_READ) or (not speech and (length>MAX_LINE or used+length>MAX_READ)):
+                        missed(seq,row,speech);continue
+                    stream.seek(start);raw=stream.read(length)
+                    if speech:speech_used+=length
+                    else:used+=length
+                    if not raw.endswith(b'\n') or hashlib.sha256(raw[:-1]).hexdigest()!=expected:
+                        missed(seq,row,speech);continue
                     try:obj=json.loads(raw)
-                    except (ValueError,RecursionError):missing+=1;continue
-                    if not isinstance(obj,dict):continue
+                    except (ValueError,RecursionError):missed(seq,row,speech);continue
+                    if not isinstance(obj,dict):missed(seq,row,speech);continue
                     if client=='claude' and not workspace and obj.get('sessionId')==parts[2] and isinstance(obj.get('cwd'),str):
                         workspace=obj['cwd']
                     if client=='codex' and row.get('handoff',{}).get('form') in ('request','receipt','native'):
@@ -488,4 +525,4 @@ class SourceContext:
             if descriptor is not None:os.close(descriptor)
         from chat_catalog import project_label
         project=project_label(workspace,client=client) if workspace else None
-        return dict(title=title,items=out,requests=requests,receipts=receipts,handoffs=handoffs,project=project,unavailable=False,missing=missing)
+        return dict(title=title,items=out,requests=requests,receipts=receipts,handoffs=handoffs,project=project,unavailable=False,missing=missing,unread_user_sequences=unread_users)

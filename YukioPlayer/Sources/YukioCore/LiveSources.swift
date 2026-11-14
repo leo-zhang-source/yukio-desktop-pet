@@ -74,6 +74,17 @@ public final class ClaudeTranscriptSource {
     private var lastScan: Double = -.infinity
     private let parser = ClaudeTranscriptParser()
 
+    func observeStopHook(_ obj: [String: Any], receivedAt: Double) -> [PetEvent] {
+        parser.observeStopHook(obj, receivedAt: receivedAt)
+    }
+
+    func coversTranscript(at path: String) -> Bool {
+        let file = URL(fileURLWithPath: path).standardizedFileURL
+        return file.pathExtension == "jsonl"
+            && file.deletingLastPathComponent().deletingLastPathComponent() == projectsDir.standardizedFileURL
+            && FileManager.default.isReadableFile(atPath: file.path)
+    }
+
     public init(projectsDir: URL = ClaudeTranscriptSource.defaultProjectsDir()) {
         self.projectsDir = projectsDir
     }
@@ -148,6 +159,8 @@ public final class HookInboxSource {
     public private(set) var eventsReceived = 0
     private var tail: TailedFile?
     private let parser = ClaudeHookParser()
+    var onStop: (([String: Any], Double) -> [PetEvent])?
+    var prefersTranscript: ((String) -> Bool)?
 
     public init(url: URL = HookInboxSource.defaultURL()) {
         self.url = url
@@ -164,7 +177,18 @@ public final class HookInboxSource {
         if tail == nil {
             guard let attrs = try? FileManager.default.attributesOfItem(atPath: url.path),
                   let size = (attrs[.size] as? NSNumber)?.uint64Value else { return [] }
-            tail = TailedFile(url: url, offset: size)
+            // Seed only scoped Stop vetoes. Old activity/completion events are
+            // never replayed, including when a recent transcript is bootstrapped.
+            let start = size > 1 << 20 ? size - (1 << 20) : 0
+            let bootstrap = TailedFile(url: url, offset: start, skipPartialLine: start > 0)
+            for data in bootstrap.readNew(maxBytes: 1 << 20) ?? [] {
+                guard let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+                      obj["hook_event_name"] as? String == "Stop" else { continue }
+                _ = onStop?(obj, (obj["yukio_ts_ms"] as? Double) ?? now)
+            }
+            // Retain a trailing partial object so a Stop being written at
+            // startup can still deliver its background-work veto next poll.
+            tail = bootstrap
             return []
         }
         guard let file = tail, let objects = file.readNew() else {
@@ -174,6 +198,12 @@ public final class HookInboxSource {
         var out: [PetEvent] = []
         for data in objects {
             guard let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else { continue }
+            if obj["hook_event_name"] as? String == "Stop" {
+                out += onStop?(obj, (obj["yukio_ts_ms"] as? Double) ?? now) ?? []
+            }
+            // Hooks have receipt time, not reliable occurrence time. When the
+            // exact transcript is readable, let it own activity/turn ordering.
+            if let path = obj["transcript_path"] as? String, prefersTranscript?(path) == true { continue }
             out += parser.events(from: obj, receivedAt: now)
         }
         eventsReceived += out.count

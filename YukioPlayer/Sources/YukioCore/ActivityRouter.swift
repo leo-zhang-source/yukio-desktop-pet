@@ -160,6 +160,7 @@ final class SessionModel {
     var taskActive = false
     var taskStartedAt: Double = -.infinity
     var taskStartedTs: Double = -.infinity
+    var latestWorkTs: Double = -.infinity
     var taskEndedAt: Double?
     var taskEndedTs: Double = -.infinity
     var lastEventAt: Double
@@ -197,6 +198,7 @@ final class SessionModel {
         taskActive = true
         taskStartedAt = now
         taskStartedTs = ts
+        latestWorkTs = ts
         taskEndedAt = nil
         open.removeAll()
         lastToolState = nil
@@ -346,27 +348,25 @@ public final class ActivityRouter {
             s = SessionModel(id: id, source: e.source, now: now, rawID: e.session)
             sessions[id] = s
         }
-        s.lastEventAt = max(s.lastEventAt, now)
-
         switch e.kind {
         case .taskStart:
-            guard e.ts >= s.taskStartedTs, e.ts >= s.taskEndedTs else { return }
+            guard e.ts >= s.taskStartedTs, e.ts >= s.taskEndedTs, e.ts >= s.latestWorkTs else { return }
             if let prompt = e.detail { s.prompt = prompt }
             if s.taskActive && now - s.taskStartedAt < config.duplicateTaskStartMs { return }
             s.beginTask(now: now, ts: e.ts)
 
         case .taskEnd:
-            guard s.taskActive, e.ts >= s.taskStartedTs else { return }
+            guard s.taskActive, e.ts >= s.taskStartedTs, e.ts >= s.latestWorkTs else { return }
             s.endTask(now: now, ts: e.ts, keepAnswer: true)
 
         case .taskAbort:
-            guard e.ts >= s.taskStartedTs else { return }
+            guard e.ts >= s.taskStartedTs, e.ts >= s.latestWorkTs else { return }
             guard s.taskActive || s.finalAnswerAt != nil else { return }
             s.endTask(now: now, ts: e.ts, keepAnswer: false)
             s.taskEndedAt = nil
 
         case .taskFailed:
-            guard s.taskActive, e.ts >= s.taskStartedTs else { return }
+            guard s.taskActive, e.ts >= s.taskStartedTs, e.ts >= s.latestWorkTs else { return }
             s.endTask(now: now, ts: e.ts, keepAnswer: false)
             s.failedAt = now
             s.failedDetail = nil
@@ -376,6 +376,7 @@ public final class ActivityRouter {
             if e.ts < s.taskStartedTs || e.ts < s.taskEndedTs { return }
             if let id = e.eventID, s.wasEnded(id) || s.open.contains(where: { $0.id == id }) { return }
             ensureActive(s, now: now, ts: e.ts)
+            s.latestWorkTs = max(s.latestWorkTs, e.ts)
             let state = e.activity ?? s.lastToolState ?? .default_work
             let id = e.eventID ?? nextAnonymousID()
             s.open.append(.init(id: id, generation: UUID().uuidString, state: state, at: now,
@@ -396,7 +397,9 @@ public final class ActivityRouter {
                 call = s.open.popLast()
             }
             // 重复的结束（两个适配器都报告）找不到未结束调用，不会再次触发沮丧。
-            guard let call, s.taskActive else { break }
+            guard let call, s.taskActive else { return }
+            s.latestWorkTs = max(s.latestWorkTs, e.ts)
+            s.lastEventAt = max(s.lastEventAt, now)
             // A received answer ends the question pose immediately. It must not
             // linger as the most recently completed tool during the grace period.
             s.lastToolState = call.state == .question_for_user ? nil : call.state
@@ -412,11 +415,13 @@ public final class ActivityRouter {
             }
 
         case .thinking:
-            if e.ts < s.taskEndedTs { return }
+            if e.ts < s.latestWorkTs || e.ts <= s.taskEndedTs { return }
             ensureActive(s, now: now, ts: e.ts)
+            s.latestWorkTs = max(s.latestWorkTs, e.ts)
+            s.finalAnswerAt = nil
 
         case .finalAnswer:
-            if e.ts < s.taskEndedTs { return }
+            if e.ts < s.latestWorkTs || e.ts <= s.taskEndedTs { return }
             ensureActive(s, now: now, ts: e.ts)
             s.finalAnswerAt = now
 
@@ -438,6 +443,8 @@ public final class ActivityRouter {
         case .sourceLost:
             break
         }
+        // Ignored late/duplicate records and title-only metadata are not heartbeats.
+        if e.kind != .sessionTitle { s.lastEventAt = max(s.lastEventAt, now) }
     }
 
     /// 在任务中途才开始跟随（或开始事件丢失）时，由其他事件隐式开启任务。

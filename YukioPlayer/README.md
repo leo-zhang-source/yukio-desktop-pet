@@ -316,6 +316,8 @@ Read only; nothing any of these tools owns is ever modified. At startup the tail
 
 Note: these are the session records each tool writes locally, **not a public API**, and the formats may change between versions; a parse failure only means fewer events, never a crash, and she returns to idle under the lost-contact rules. Subagent (sidechain) activity does not drive the main character.
 
+Claude completion requires a response matched to its client stop summary. A `stop_sequence`, an `end_turn` alone, or a `Stop` hook does not prove the work has ended. Background work, hook feedback and new API requests keep activity running. When a recognizable confirmation is missing, Yukio does not guess completion: some client versions or configurations that omit stop summaries may have no completion sign while activity tracking continues. This rule has been checked against local 2.1.317 records; other versions and installation acceptance are recorded separately.
+
 Codex writes two streams into the same file and both are used: `response_item` (what goes to the model) carries a tool call the moment it starts, so the motion keeps up, while `event_msg` (`item_completed`, `task_complete`, `turn_aborted`) arrives after the fact and fills in success or failure and the end of a turn. The desktop app runs almost everything through one `exec` tool whose argument is a piece of JavaScript, so what she is actually doing is read out of that text: `tools.exec_command({cmd:…})` goes through the same shell classifier as Claude's `Bash`, `tools.apply_patch` is editing a file, `tools.view_image` is looking at an image, and `tools.write_stdin` keeps the previous motion.
 
 ### Claude Code official hooks (enabled on this machine)
@@ -329,9 +331,9 @@ To enable it on another machine:
 
 To turn it off: just delete those hook entries from `settings.json`; the transcript source keeps working as usual.
 
-The script only appends the hook input to the inbox `~/Library/Application Support/YukioPlayer/claude-hooks.jsonl` (cleared automatically past 5 MB), prints nothing, and always exits 0; measured at about 0 ms per call, so it never blocks Claude. With both sources on, events are deduplicated by `tool_use_id`. Hooks carry no session title, so with hooks alone the bubble title uses the first line of the request.
+The script only appends the hook input to the inbox `~/Library/Application Support/YukioPlayer/claude-hooks.jsonl` (cleared automatically past 5 MB), prints nothing, and always exits 0; measured at about 0 ms per call, so it never blocks Claude. When the exact transcript is readable, its event timestamps own activity ordering and hooks supplement explicitly scoped background status. A delayed hook receipt cannot restart a finished turn. Hooks can still supply activity when that transcript is unavailable, but Stop alone does not raise a completion sign.
 
-Claude Code has only nine event names: `PreToolUse`, `PostToolUse`, `Notification`, `UserPromptSubmit`, `Stop`, `SubagentStop`, `SessionStart`, `SessionEnd`, and `PreCompact`. The `PostToolUseFailure` and `StopFailure` written in an earlier snapshot don't exist and have been removed. `PostToolUse` fires only after a tool succeeds, so tool failures and whole-turn API errors are still filled in from the session transcripts, which is also why both sources are kept.
+The current [official hooks reference](https://code.claude.com/docs/en/hooks) includes `PostToolUseFailure` and `StopFailure`; the parser supports these failure records when received, with transcripts providing additional coverage. `Stop` runs before the aggregate decision of other stop hooks and can include pending background work, so it cannot raise the completion sign on its own. Background status is scoped by explicit `session_id` / `prompt_id`, never by nearby timestamps. Updating the parser does not modify existing hook settings.
 
 ## Known limitations
 

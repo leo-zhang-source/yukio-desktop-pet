@@ -1,5 +1,7 @@
 # 本轮整改的开发入口
 
+2026-11-12 最新状态：用户此前明确说“那么改为继续”，Mac 独立环境验收（M6）已恢复；当前进行中、本轮验收失败，不是暂停。[65 版实测](docs/remediation/INDEPENDENT-BUILD65-20261111.md)已完成系统放行和真实四客户端并发，未复现 63 的提前完成，但发现 Claude Code 2.1.318 正常结束后未被识别为结束；[63 版失败记录](docs/remediation/INDEPENDENT-PREVIEW3-20261111.md)另存。下文及冻结产品政策中的“暂停”是历史状态，不再阻止已授权的交互验收；不因此恢复 Windows/云端 Cowork，也不构成新的上传、发布或替换宿主 App 授权。定时维护仍只做检查和证据记录，不自动操作测试账号或虚拟机。
+
 2026-11-07：用户已批准第五阶段在本地实施，当前入口为 Preview 2 产品线上的 `codex/stage5-maintenance`（本机 `yukio-54-release` 工作树）。`codex/remediation-baseline` 保留为历史整改与候选资料库，不再直接替换现用 App。先阅读 [DEVELOPMENT.md](DEVELOPMENT.md) 与 [长期维护入口](docs/remediation/stage5-maintenance/README.md)。2026-11-11 用户已明确授权本次集中上传，结果见 DEVELOPMENT.md；未来新改动仍需当次明确上传授权。独立首次使用验收仍按此前决定暂停。原桌面目录是保留历史和未核实工作的位置；不要用它整目录覆盖此处。已知问题、实验和候选保持各自的验收状态；未经独立环境验收不能宣布可向所有用户交付。
 
 

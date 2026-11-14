@@ -5,7 +5,7 @@ import re
 import sqlite3
 import time
 from history_view import CLIENTS, CLIENT, FROM, SOURCE, GENERATION, SESSION, HistoryView, key_parts
-from source_context import SourceContext, clean
+from source_context import SourceContext, clean, speech_predicate
 from collector_status import read_status
 from context_view import ContextView
 from handoff_view import HandoffView
@@ -142,20 +142,30 @@ class GlanceView:
                     if latest_stamp is None and type(row.get('timestamp_ms')) in (int,float):latest_stamp=row['timestamp_ms']
             # User requests can be far behind many tool bookkeeping rows. Fetch a
             # separate bounded speech window so operational noise cannot erase context.
-            speech_rows=db.execute('SELECT e.sequence,e.record'+FROM+f" WHERE {scope} AND {CLIENT}=? AND e.sequence<=? AND json_extract(e.record,'$.source_kind') IN ('message','user_message','agent_message','user','assistant') ORDER BY e.sequence DESC LIMIT 90",args+[client,high]).fetchall()
-            anchor_rows=db.execute('SELECT e.sequence,e.record'+FROM+f" WHERE {scope} AND {CLIENT}=? AND e.sequence<=? AND json_extract(e.record,'$.source_kind') IN ('message','user_message','agent_message','user','assistant') ORDER BY e.sequence ASC LIMIT 30",args+[client,high]).fetchall()
+            speech=speech_predicate(client)
+            speech_rows=db.execute('SELECT e.sequence,e.record'+FROM+f" WHERE {scope} AND {CLIENT}=? AND e.sequence<=? AND {speech} ORDER BY e.sequence DESC LIMIT 90",args+[client,high]).fetchall()
+            anchor_rows=db.execute('SELECT e.sequence,e.record'+FROM+f" WHERE {scope} AND {CLIENT}=? AND e.sequence<=? AND {speech} ORDER BY e.sequence ASC LIMIT 30",args+[client,high]).fetchall()
+            marker=db.execute('SELECT e.sequence,e.record'+FROM+f" WHERE {scope} AND {CLIENT}=? AND COALESCE(json_extract(e.record,'$.turn_marker'),json_extract(e.record,'$.kind')) IN ('turn_started','turn_ended','turn_cancelled') ORDER BY e.sequence DESC LIMIT 1",args+[client]).fetchone()
+            if marker and marker[0] not in {seq for seq,_ in selected}:
+                selected.append((marker[0],json.loads(marker[1])))
+                selected.sort(reverse=True,key=lambda item:item[0])
         content_rows={seq:row for seq,row in selected[:40]}
         for seq,raw in speech_rows+anchor_rows:
             row=json.loads(raw)
             if row.get('kind') not in IGNORED:content_rows[seq]=row
         source=self.reader.read(client,parts,state,sorted(content_rows.items(),reverse=True));items=source['items']
         users=[x for x in items if x['kind']=='user'];assistants=[x for x in items if x['kind']=='assistant']
+        unread_user=max(source.get('unread_user_sequences',[]),default=0)
+        # A later acknowledgement cannot recover the meaning of a missing
+        # request. Only a newer substantive request establishes a new goal.
+        latest_request_unavailable=unread_user>max((x['sequence'] for x in users if meaningful_request(x['text'])),default=0)
+        if latest_request_unavailable:users=[]
         user=next((x for x in users if meaningful_request(x['text'])),users[0] if users else None)
         origins=[x for x in reversed(users) if meaningful_request(x['text'])][:2]
         work_requests=[]
         for item in origins[:1]+([user] if user else []):
             if not any(old['text']==item['text'] for old in work_requests):work_requests.append(item)
-        method_notes=[x for x in assistants if re.search(
+        method_notes=[x for x in assistants if (not latest_request_unavailable or x['sequence']>unread_user) and re.search(
             r'^(?:我(?:们)?(?:会|先|将|计划|准备)|接下来|方案|策略|先|I(?: will|\x27ll)|We(?: will|\x27ll)|The (?:plan|approach))',x['text'],re.I)
             and not re.search(r'例如|比如|示例|模拟材料',x['text'])]
         # Preserve an earlier explicit approach as well as its latest revision.
@@ -166,13 +176,20 @@ class GlanceView:
         for item in users:
             if meaningful_request(item['text']) and item['text'] not in background:background.append(item['text'])
             if len(background)==3:break
-        goal='；后来补充：'.join(reversed(background)) if background else (user or {}).get('text','尚未读到这段聊天中的具体要求。')
-        newest_user=users[0]['sequence'] if users else 0
-        latest_start=next((seq for seq,r in selected if r.get('kind')=='turn_started'),0)
+        unavailable_request='有较新的要求尚未读到，请回原聊天查看。'
+        goal=unavailable_request if latest_request_unavailable else ('；后来补充：'.join(reversed(background)) if background else (user or {}).get('text','尚未读到这段聊天中的具体要求。'))
+        newest_user=max(users[0]['sequence'] if users else 0,unread_user)
+        latest_start=next((seq for seq,r in selected if r.get('turn_marker',r.get('kind'))=='turn_started'),0)
         current_start=max(newest_user,latest_start)
+        work_notes['background_requests']=[x for x in work_requests if user and x['sequence']<user['sequence']]
+        work_notes['requests']=[user] if user else []
+        work_notes['background_methods']=[x for x in method_notes if x['sequence']<current_start]
+        work_notes['methods']=[x for x in method_notes if x['sequence']>current_start]
+        work_notes['reports']=[x for x in assistants if x.get('phase')=='final' and x['sequence']>current_start][:1]
         previous=[x for x in assistants if x['sequence']<current_start]
         checkpoints=[x for x in previous if x.get('phase')=='final'][:2] or previous[:2]
         assistants=[x for x in assistants if x['sequence']>current_start]
+        work_notes['updates']=assistants[:2]
         speech=assistants[0] if assistants else None
         earlier_activity=[];earlier_texts={speech['text']} if speech else set()
         for item in assistants[1:]:
@@ -217,8 +234,8 @@ class GlanceView:
                     fragment=dict(snippets[0],material_kind='tool_output' if output else 'file_read',display=clean(snippets[0]['text'],100),text=reqs[0]['target']+(' 的工具返回短片段：' if output else ' 的读取返回短片段：')+snippets[0]['text']+('（工具实际返回的这小段文字；未单独确认脚本内各步骤，不代表完整文件或任务结果；' if output else '（仅这段返回，不代表完整文件；')+op['status_label']+'）')
         title=readable_title(source['title'] or (opening_title(self.history,self.reader,client,parts,state) if not source['unavailable'] else ''))
         status='最近的工作';tone='quiet';needs='暂未看到明确需要你处理的请求。'
-        markers=[(seq,r) for seq,r in selected if r.get('kind') in ('turn_started','turn_ended','turn_cancelled')]
-        latest_marker=markers[0][1]['kind'] if markers else None
+        markers=[(seq,r) for seq,r in selected if r.get('turn_marker',r.get('kind')) in ('turn_started','turn_ended','turn_cancelled')]
+        latest_marker=markers[0][1].get('turn_marker',markers[0][1]['kind']) if markers else None
         age=max(0,self.clock()-(latest_stamp or 0)/1000) if latest_stamp is not None else None
         last_marker_sequence=markers[0][0] if markers else 0
         later_work=any(seq>last_marker_sequence and r.get('kind') in ('tool_requested','tool_result','message_observed','text_record_observed') for seq,r in selected)
@@ -227,7 +244,7 @@ class GlanceView:
         elif age is not None and age<90:status='刚有新活动';tone='fresh'
         else:status='暂时没有新消息'
         # Do not keep an old waiting signal after a result, reply or closed turn.
-        closed=max((seq for seq,r in selected if r.get('kind') in ('turn_ended','turn_cancelled','context_boundary')),default=0)
+        closed=max((seq for seq,r in selected if r.get('turn_marker',r.get('kind')) in ('turn_ended','turn_cancelled','context_boundary')),default=0)
         attention=waiting_request(context['operations'],current_start,closed)
         if attention:
             status='有一项请求等你处理';tone='attention';needs='这次操作提到需要你回答。请回原聊天确认并处理。'
@@ -241,7 +258,8 @@ class GlanceView:
             status=status,tone=tone,last_activity_ms=latest_stamp,age_seconds=round(age) if age is not None else None,
             project=codex_project(self.reader,parts) if client=='codex' and not source['unavailable'] else source.get('project'),
             goal=goal,project_goals=origins,previous_progress=checkpoints,earlier_activity=earlier_activity,work_notes=work_notes,
-            goal_short=clean((user or {}).get('text','尚未读到具体要求。'),96),
+            goal_short=unavailable_request if latest_request_unavailable else clean((user or {}).get('text','尚未读到具体要求。'),96),
+            latest_request_unavailable=latest_request_unavailable,
             last_step=last_step,
             content=progress_headline((activity or {}).get('text','')) or '暂时没有可读的具体活动，请稍后查看。',
             content_basis='assistant' if activity and activity['kind'] in ('assistant','operation_note') else 'observed',

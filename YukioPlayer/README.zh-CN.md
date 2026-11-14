@@ -318,6 +318,8 @@ integrations/claude-hooks/   官方 hooks 接入（本机已启用，见下）
 
 注意：这些是各个工具在本地写的会话记录，**不是公开 API**，格式可能随版本变化；解析失败时只会少事件，不会崩溃，并按失联规则回空闲。子代理（sidechain）的活动不驱动主角色。
 
+Claude 的完成牌需要本轮回答和对应的客户端结束摘要相互匹配；`stop_sequence`、单独的 `end_turn` 或 `Stop` hook 都不能证明工作结束。读到后台任务、停止钩子要求继续或新的 API 请求时继续跟随活动。缺少可识别的确认记录时不会猜测完成，因此某些客户端版本或未写结束摘要的配置可能没有完成牌；活动读取仍可继续。此规则已按 2.1.317 的本地记录验证，其他版本与实际安装包验收另记。
+
 Codex 在同一个文件里写两套记录，两套都用：`response_item`（送给模型的那一份）在工具**开始**时就写下，动作跟得上；`event_msg`（`item_completed`、`task_complete`、`turn_aborted`）是事后的回执，用来补成败和「一轮结束」。桌面版几乎所有事都走一个 `exec` 工具，参数是一段 JavaScript，所以真正在干什么要从那段正文里读：`tools.exec_command({cmd:…})` 走与 Claude `Bash` 同一套命令分类，`tools.apply_patch` 是改文件，`tools.view_image` 是看图，`tools.write_stdin` 延续上一个动作。
 
 ### Claude Code 官方 hooks（本机已启用）
@@ -331,9 +333,9 @@ Codex 在同一个文件里写两套记录，两套都用：`response_item`（�
 
 关掉：删掉 `settings.json` 里这几段 hooks 即可，转录来源照常工作。
 
-脚本只把 hook 输入追加到收件箱 `~/Library/Application Support/YukioPlayer/claude-hooks.jsonl`（超过 5 MB 自动清空）、不输出、始终退出 0，实测每次约 0 ms，不会阻塞 Claude。两个来源同时开启时按 `tool_use_id` 去重。hooks 不带会话标题，只开 hooks 时气泡标题用请求的第一行。
+脚本只把 hook 输入追加到收件箱 `~/Library/Application Support/YukioPlayer/claude-hooks.jsonl`（超过 5 MB 自动清空）、不输出、始终退出 0，实测每次约 0 ms，不会阻塞 Claude。对应转录文件可读时，由转录的事件时间负责活动顺序，hooks 只补充明确关联的后台状态；不会把 hook 的接收时间当作新一轮开始。转录不可读时仍可用 hooks 补充活动，但单独的 Stop 不会举完成牌。
 
-Claude Code 的事件名只有九个：`PreToolUse`、`PostToolUse`、`Notification`、`UserPromptSubmit`、`Stop`、`SubagentStop`、`SessionStart`、`SessionEnd`、`PreCompact`。早先快照里写的 `PostToolUseFailure`、`StopFailure` 并不存在，已删除。`PostToolUse` 只在工具成功后触发，所以工具失败和整轮 API 报错仍由会话转录补上——这也是两个来源都留着的理由。
+当前[官方 hooks 文档](https://code.claude.com/docs/en/hooks)已包含 `PostToolUseFailure` 和 `StopFailure`，解析器支持收到的这两种失败记录；转录仍补充失败信息。`Stop` 发生在其他停止钩子的最终决定之前，也可能包含仍在运行的后台任务，不能单独触发完成牌。后台状态通过明确的 `session_id` / `prompt_id` 关联，不用时间相邻来猜所属任务。现有设置不因解析器更新而自动改写。
 
 ## 已知限制
 

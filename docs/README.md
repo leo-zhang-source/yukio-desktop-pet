@@ -7,7 +7,7 @@
 - [Updates and rollback](MANUAL-UPDATES.md#en)
 - [Background answers](../YukioPlayer/Resources/BACKGROUND-ANSWERS.md#en)
 
-- [5.4 Preview 3 · 更新 / Changes](releases/5.4-preview.3.md)
+- [5.4 Preview 4 · 更新 / Changes](releases/5.4-preview.4.md)
 - [长期维护 / Maintenance](remediation/stage5-maintenance/README.md)
 
 <details>

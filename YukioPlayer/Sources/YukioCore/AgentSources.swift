@@ -332,6 +332,12 @@ public final class AgentSources {
         let ids = provider.sourceIDs
         claude = ids.contains(ClaudeTranscriptParser.source) ? ClaudeTranscriptSource() : nil
         hooks = ids.contains(ClaudeHookParser.source) ? HookInboxSource() : nil
+        hooks?.onStop = { [weak claude] obj, receivedAt in
+            claude?.observeStopHook(obj, receivedAt: receivedAt) ?? []
+        }
+        hooks?.prefersTranscript = { [weak claude] path in
+            claude?.coversTranscript(at: path) == true
+        }
         deepcode = ids.contains(DeepCodeMessageParser.source) ? DeepCodeSource() : nil
         codex = ids.contains(CodexRolloutParser.source) ? CodexSessionsSource() : nil
     }
@@ -345,8 +351,9 @@ public final class AgentSources {
 
     public func poll(now: Double) -> [PetEvent] {
         var out: [PetEvent] = []
-        if let claude { out += claude.poll(now: now) }
+        // Read Stop's background-work veto before the transcript confirmation.
         if let hooks { out += hooks.poll(now: now) }
+        if let claude { out += claude.poll(now: now) }
         if let deepcode { out += deepcode.poll(now: now) }
         if let codex { out += codex.poll(now: now) }
         return out

@@ -8,6 +8,8 @@ import json
 import hashlib
 
 from .events import parse_timestamp
+from .events import Kind
+from .parsers_claude import ClaudeTranscriptParser
 
 CAPACITY = 4096
 
@@ -21,16 +23,19 @@ class ClaudeHistoryParser:
         self.fallback_session = fallback_session
         self.calls = OrderedDict()
         self.tracking_limited = False
+        self.lifecycle = ClaudeTranscriptParser()
 
     def history_checkpoint(self):
-        return dict(claude_history_version=1, fallback_session=self.fallback_session,
-                    tracking_limited=self.tracking_limited, calls=list(self.calls.values()))
+        return dict(claude_history_version=2, fallback_session=self.fallback_session,
+                    tracking_limited=self.tracking_limited, calls=list(self.calls.values()),
+                    lifecycle=self.lifecycle.history_checkpoint())
 
     @classmethod
     def from_history_checkpoint(cls, state):
-        if state.get('claude_history_version') != 1 or not identifier(state.get('fallback_session')):
+        if state.get('claude_history_version') != 2 or not identifier(state.get('fallback_session')):
             raise ValueError('Unsupported Claude history checkpoint')
         parser = cls(state['fallback_session'])
+        parser.lifecycle = ClaudeTranscriptParser.from_history_checkpoint(state['lifecycle'])
         if type(state.get('tracking_limited')) is not bool:
             raise ValueError('Invalid Claude history limit state')
         parser.tracking_limited = state['tracking_limited']
@@ -62,6 +67,7 @@ class ClaudeHistoryParser:
                 raise ValueError()
         except (ValueError, UnicodeError, RecursionError):
             self.calls.clear()
+            self.lifecycle = ClaudeTranscriptParser()
             return dict(kind='invalid_record', evidence_class='observed', timestamp_available=False,
                         session_id=self.fallback_session)
         kind = identifier(obj.get('type')) or ''
@@ -71,6 +77,20 @@ class ClaudeHistoryParser:
         row = dict(kind='message_observed' if kind in ('assistant', 'user') else 'unrecognized_record',
                    source_kind=kind, session_id=session or self.fallback_session,
                    evidence_class='observed', timestamp_available=False)
+        try:
+            lifecycle_events = self.lifecycle.events(obj)
+        except (TypeError, ValueError, AttributeError, OverflowError):
+            # A client record can contain malformed body fields. Preserve its
+            # independent metadata, but never carry a completion candidate
+            # across an unreadable lifecycle record.
+            self.lifecycle = ClaudeTranscriptParser()
+            lifecycle_events = []
+            row['lifecycle_unavailable'] = True
+        for event in lifecycle_events:
+            marker = {Kind.task_start: 'turn_started', Kind.task_end: 'turn_ended', Kind.task_abort: 'turn_cancelled'}.get(event.kind)
+            if marker:
+                row['turn_marker'] = marker
+                row['lifecycle_timestamp_ms'] = event.ts
         for field, name in (('uuid', 'reported_uuid'), ('parentUuid', 'reported_parent_uuid'), ('agentId', 'agent_id')):
             value = identifier(obj.get(field))
             if value is not None:

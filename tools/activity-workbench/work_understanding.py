@@ -46,7 +46,7 @@ def writing_instructions(language, focus=None):
             'Basis is inference or unknown. Use only each part\'s allowed IDs, including every required ID; '
             'IDs appear only in evidence_ids. Write 70–120 words per part, at most 1200 characters. '
             'Goal: explain the user problem, desired outcome and any stated completion criteria. '
-            'Distinguish earlier requests from later corrections; do not invent acceptance criteria. '
+            'Distinguish earlier requests from later corrections; background-only methods are not current progress. Do not invent acceptance criteria. '
             'Strategy: explain the proposed approach, why each step helps the goal, prerequisites and '
             'tradeoffs only where supported. Distinguish a proposal from observed execution. '
             'Effectiveness: relate actual results to that goal, explain what they support and what remains '
@@ -68,7 +68,7 @@ def writing_instructions(language, focus=None):
         'basis 只能为 inference 或 unknown；只引用对应 allowed 中的编号，必须包含 required 编号。编号不写入正文。'
         '每部分约120到220字，最多420字，写成有因果解释的完整段落，不堆叠日志。'
         'goal：说明用户遇到什么问题、想得到什么具体结果、记录明确提出了什么完成条件。'
-        '区分较早要求与后来修正，不把最近一句补充当全部目标，不编造验收标准。'
+        '区分较早要求与后来修正，不把最近一句补充当全部目标；标注为背景的旧做法不代表本轮正在采用，不编造验收标准。'
         'strategy：解释公开提出的方法、步骤如何服务于目标、为什么选择这样做，以及有依据的前提和取舍。'
         '计划与已执行分开；没有理由时说明理由尚不明确，不能把“为了完成任务”当解释。'
         'effectiveness：对照目标说明实际结果支持到哪一步，有哪些失败、冲突、局限和未验证事项；'
@@ -145,6 +145,12 @@ class WorkUnderstanding:
                               snapshot=data['snapshot'], last_activity_ms=data['last_activity_ms'],
                               source_unavailable=data['source_unavailable']))
             notes = data.get('work_notes', {})
+            # Earlier turns remain attributable background. They must not be
+            # presented as the method or result of the current request.
+            for item in notes.get('background_requests', [])[:1]:
+                goals.append(add(data, '较早轮次的要求（仅背景，不是本轮目标）', item['text'], 'user_request', item))
+            for item in notes.get('background_methods', [])[:2]:
+                methods.append(add(data, '较早轮次的做法（仅背景，不是本轮进展）', item['text'], 'assistant', item))
             requests = notes.get('requests', [])
             for index, item in enumerate(requests):
                 label = '较早的要求（不一定是最初目标）' if index == 0 and len(requests) > 1 else '最近明确的要求'
@@ -168,6 +174,16 @@ class WorkUnderstanding:
                 outcomes.append(alias)
                 outcome_anchor = alias
                 local_outcomes.append((data['title'], item['text'], alias))
+            recorded={item['sequence'] for item in notes.get('methods',[])+notes.get('reports',[]) if 'sequence' in item}
+            for item in notes.get('updates',[])[:2]:
+                if item['sequence'] in recorded:continue
+                alias=add(data,'最近公开进展（助手陈述，未独立核验）',item['text'],'assistant',item)
+                outcomes.append(alias)
+                outcome_anchor=outcome_anchor or alias
+                local_outcomes.append((data['title'],item['text'],alias))
+                if not notes.get('methods') and method_anchor is None:
+                    methods.append(alias);method_anchor=alias
+                    local_methods.append((data['title'],'本轮最新说明：'+item['text'],alias))
             for item in data.get('results', [])[-2:]:
                 if item['text'].startswith('一次工具操作；'):
                     continue
@@ -181,7 +197,10 @@ class WorkUnderstanding:
                 outcomes.append(alias)
             coverage_id = add(data, '这段聊天的观察范围', data['status'] + '；' +
                 ('原文暂时读不到。' if data['source_unavailable'] else '只读取开场与近期少量公开摘录。') +
+                ('有较新的要求尚未读到，请回原聊天查看。' if data.get('latest_request_unavailable') else '') +
                 ('部分记录缺失或超出查看范围。' if data['partial'] else ''), 'observed')
+            if data.get('latest_request_unavailable'):
+                goals.append(coverage_id);goal_anchor=coverage_id
             if goal_anchor:goal_anchors.append(goal_anchor)
             if method_anchor:method_anchors.append(method_anchor)
             outcomes.append(coverage_id)
@@ -195,6 +214,8 @@ class WorkUnderstanding:
 
         local_goal = ('记录中的要求：' + quotes(local_goals) if local_goals else
                       '还没有读到明确目标。请先在原聊天说明想得到什么结果，以及怎样算完成。')
+        if scope=='chat' and selected.get('latest_request_unavailable'):
+            local_goal='有较新的要求尚未读到，请回原聊天查看。'
         if scope == 'project':
             local_goal += ' 同一项目的聊天可能有不同任务，尚不能据此认定统一目标。'
         elif len(local_goals) > 1:
@@ -206,6 +227,8 @@ class WorkUnderstanding:
         if current_language() == 'en':
             local_goal = ('The earlier request and latest clarification are preserved in the supporting notes. Their relationship and completion criteria still need interpretation.' if local_goals else
                           'No explicit goal was available. Describe the intended outcome and how to judge completion in the original chat.')
+            if scope=='chat' and selected.get('latest_request_unavailable'):
+                local_goal='A newer request could not be read. Check the original chat.'
             if scope == 'project':
                 local_goal += ' Chats in the same project may have different goals; a shared project goal has not been established.'
             local_method = ('The assistant has publicly proposed an approach; see the original statements in the supporting notes. A proposal does not establish that the steps were carried out.' if local_methods else

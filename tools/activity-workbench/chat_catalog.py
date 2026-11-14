@@ -49,7 +49,7 @@ def catalog_card(history, reader, client, group, clock):
         state=json.loads(saved[0])
         if state.get('generation')!=parts[1]:raise ValueError('Old source')
         rows=[(seq,json.loads(raw)) for seq,raw in db.execute('SELECT e.sequence,e.record'+FROM+f' WHERE {scope} AND {CLIENT}=? ORDER BY e.sequence DESC LIMIT 80',args+[client])]
-        marker=db.execute('SELECT e.sequence,e.record'+FROM+f" WHERE {scope} AND {CLIENT}=? AND json_extract(e.record,'$.kind') IN ('turn_started','turn_ended','turn_cancelled') ORDER BY e.sequence DESC LIMIT 1",args+[client]).fetchone()
+        marker=db.execute('SELECT e.sequence,e.record'+FROM+f" WHERE {scope} AND {CLIENT}=? AND COALESCE(json_extract(e.record,'$.turn_marker'),json_extract(e.record,'$.kind')) IN ('turn_started','turn_ended','turn_cancelled') ORDER BY e.sequence DESC LIMIT 1",args+[client]).fetchone()
     title,path=reader.title_and_path(client,parts[2],parts[0])
     has_client_title=bool(title)
     available=False
@@ -66,7 +66,8 @@ def catalog_card(history, reader, client, group, clock):
     meaningful=[(seq,row) for seq,row in rows if row.get('kind') not in ('reasoning_record_observed','inherited_context_record','context_record_observed','identity_conflict','foreign_session_record','identity_scope_unresolved') and row.get('source_kind') not in ('token_count','token_usage_record','thread_settings_applied')]
     stamp=next((row['timestamp_ms'] for _,row in meaningful if type(row.get('timestamp_ms')) in (float,int)),None)
     age=max(0,clock()-(stamp or 0)/1000) if stamp is not None else None
-    marker_kind=json.loads(marker[1]).get('kind') if marker else None
+    marker_row=json.loads(marker[1]) if marker else {}
+    marker_kind=marker_row.get('turn_marker',marker_row.get('kind'))
     later=any(seq>(marker[0] if marker else 0) and row.get('kind') in ('tool_requested','tool_result','message_observed','text_record_observed') for seq,row in meaningful)
     status='刚有新活动' if age is not None and age<90 else '暂时没有新消息'
     if marker_kind=='turn_ended' and not later:status='这一轮已结束'
