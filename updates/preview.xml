@@ -5,6 +5,17 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
     <title>Yukio updates</title>
     <item>
       <title>Yukio 5.4</title>
+      <link>https://github.com/leo-zhang-source/yukio-desktop-pet/releases/tag/v5.4-preview.4</link>
+      <description sparkle:format="markdown" xml:lang="en">Mac 5.4 Preview 4 (66): fixes Claude completion detection and stale workbench content. New local evidence replaces outdated explanations while new explanations load. Full independent first-use and multi-client acceptance remain incomplete. Apple silicon; ad-hoc signed, not notarized. Windows and cloud Cowork deferred.
+</description>
+      <description sparkle:format="markdown" xml:lang="zh">Mac 5.4 Preview 4（66）：修复 Claude 完成状态和工作台内容滞后，新记录先显示，解释随后跟上。完整独立首次使用与多客户端验收仍未完成。Apple 芯片专用，临时签名、未公证；Windows 与云端 Cowork 暂缓。
+</description>
+      <sparkle:minimumSystemVersion>13.0.0</sparkle:minimumSystemVersion>
+      <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
+      <enclosure url="https://github.com/leo-zhang-source/yukio-desktop-pet/releases/download/v5.4-preview.4/Yukio-5.4-preview.4-macOS-arm64.zip" length="76938879" type="application/octet-stream" sparkle:version="66" sparkle:shortVersionString="5.4" sparkle:edSignature="OFwowolMCPCHk89mJ6ylisHlhgSLTtya2Oz8msyFbmit+fi1gg5wdZKKT/4xc/sp6w5ljxRfWRUFbtfRM74oBw=="></enclosure>
+    </item>
+    <item>
+      <title>Yukio 5.4</title>
       <link>https://github.com/leo-zhang-source/yukio-desktop-pet/releases/tag/v5.4-preview.3</link>
       <description sparkle:format="markdown" xml:lang="en">Mac 5.4 Preview 3 (build 63): clearer assistant/chat navigation, Claude chat identity fixes, immediately saved explanation providers, faster Codex short explanations, maintenance safeguards and Python 3.12.16. Full independent first-run acceptance remains paused and incomplete. Apple silicon; ad-hoc signed, not notarized. Windows and cloud Cowork deferred.
 </description>
@@ -27,6 +38,6 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
     </item>
   </channel>
 </rss><!-- sparkle-signatures:
-edSignature: cCZpE1ODceG9e01xocW9jer0BYirRFs7/EgRya2NcjhKdG551ZR3aUyxP+6AgF5Dt8h3IFatKZu/wMzsqLklCQ==
-length: 3457
+edSignature: 4pM+XDpibw4HRpshMoCrKm3sGBgKwXkJpeqTV79rb6N9szNxmefvTyw6hHs2wGiSb6Sx0FoMkZNDLGjCSys0Bw==
+length: 4867
 -->
