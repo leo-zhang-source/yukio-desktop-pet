@@ -1,0 +1,122 @@
+{
+  "date": "2026-11-21",
+  "release": "v5.4-preview.5",
+  "source_revision": "3451c000264b4c63a54abc5e892fd5a46c8da0c8",
+  "source_sha256": "b9bf31f4befa60c1a27a4fbb1dc25b7badc62babe2f3a6793dee5d69f9213044",
+  "version": "5.4",
+  "build": "66.8",
+  "workbench_version": "0.4.17",
+  "archives": {
+    "Yukio-5.4-preview.5-macOS-arm64.dmg": {
+      "bytes": 77379100,
+      "sha256": "9ff8e6e79db7d60fdf42c3da8e642b8141a1f18e6e3c9b91f7d6fc0c92a30607"
+    },
+    "Yukio-5.4-preview.5-macOS-arm64.zip": {
+      "bytes": 76974844,
+      "sha256": "31d3ebb40804ea0e30463abbd8b185faf1dccdfbc55cb176054995d4e1c705e3"
+    }
+  },
+  "local_background_checks": {
+    "repeats": 2,
+    "tests_each": 747,
+    "shared_assertions_each": 230,
+    "passed": true,
+    "full_suite": false
+  },
+  "release_source_ci": {
+    "url": "https://github.com/leo-zhang-source/yukio-desktop-pet/actions/runs/44976752392",
+    "repeats": 2,
+    "tests_each": 813,
+    "shared_assertions_each": 230,
+    "passed": true,
+    "raw_evidence_verified": true
+  },
+  "maintenance_source_ci": {
+    "url": "https://github.com/leo-zhang-source/yukio-desktop-pet/actions/runs/44976819805",
+    "source_revision": "c5989d13405160b200747ef6a0850fef57b3166e",
+    "repeats": 2,
+    "tests_each": 848,
+    "shared_assertions_each": 230,
+    "passed": true,
+    "raw_evidence_verified": true,
+    "included_in_release": false
+  },
+  "packages": {
+    "zip_dmg_entries": 495,
+    "signature_valid": true,
+    "original_assets_unchanged": true,
+    "isolated_runtime_and_offline_agents_passed": true,
+    "real_accounts_used": false
+  },
+  "downloads": {
+    "release": "https://github.com/leo-zhang-source/yukio-desktop-pet/releases/tag/v5.4-preview.5",
+    "source_revision": "3451c000264b4c63a54abc5e892fd5a46c8da0c8",
+    "assets": [
+      {
+        "name": "mac-guide.html",
+        "url": "https://github.com/leo-zhang-source/yukio-desktop-pet/releases/download/v5.4-preview.5/mac-guide.html",
+        "bytes": 8076,
+        "sha256": "0314c89294b9096b45cd5c984c4d0fc23cd38f445e4233efb49f6db860b844f4",
+        "anonymous": true
+      },
+      {
+        "name": "preview.xml",
+        "url": "https://github.com/leo-zhang-source/yukio-desktop-pet/releases/download/v5.4-preview.5/preview.xml",
+        "bytes": 6723,
+        "sha256": "5c2d003901278abf67e375293b27dd199600b673172b99192b927f92138353ba",
+        "anonymous": true
+      },
+      {
+        "name": "release-manifest.json",
+        "url": "https://github.com/leo-zhang-source/yukio-desktop-pet/releases/download/v5.4-preview.5/release-manifest.json",
+        "bytes": 100725,
+        "sha256": "4b310733803e7c801b74fc519be9fef32c7659e3b9c2b411813f66b0a8469217",
+        "anonymous": true
+      },
+      {
+        "name": "SHA256SUMS.txt",
+        "url": "https://github.com/leo-zhang-source/yukio-desktop-pet/releases/download/v5.4-preview.5/SHA256SUMS.txt",
+        "bytes": 451,
+        "sha256": "ff48bdad7a86a85efffcd8f57ea2b0b6685fb37752be0d543191adec377301d4",
+        "anonymous": true
+      },
+      {
+        "name": "Yukio-5.4-preview.5-macOS-arm64.dmg",
+        "url": "https://github.com/leo-zhang-source/yukio-desktop-pet/releases/download/v5.4-preview.5/Yukio-5.4-preview.5-macOS-arm64.dmg",
+        "bytes": 77379100,
+        "sha256": "9ff8e6e79db7d60fdf42c3da8e642b8141a1f18e6e3c9b91f7d6fc0c92a30607",
+        "anonymous": true
+      },
+      {
+        "name": "Yukio-5.4-preview.5-macOS-arm64.zip",
+        "url": "https://github.com/leo-zhang-source/yukio-desktop-pet/releases/download/v5.4-preview.5/Yukio-5.4-preview.5-macOS-arm64.zip",
+        "bytes": 76974844,
+        "sha256": "31d3ebb40804ea0e30463abbd8b185faf1dccdfbc55cb176054995d4e1c705e3",
+        "anonymous": true
+      }
+    ],
+    "entries": 495,
+    "zip_signature_verified": true,
+    "feed_signature_verified": true,
+    "guide_equal": true,
+    "passed": true
+  },
+  "installed": {
+    "version": "5.4",
+    "build": "66.8",
+    "source_revision": "3451c000264b4c63a54abc5e892fd5a46c8da0c8",
+    "workbench_version": "0.4.17",
+    "files_verified": 495,
+    "settings_unchanged": true,
+    "executable_sha256": "21b64ddb285b8668affb61625a53cdefb40f0e99e9298df80412fc230e237dfe"
+  },
+  "background_restart": {
+    "single_restart": true,
+    "foreground_unchanged": true
+  },
+  "independent_first_run_acceptance": false,
+  "foreground_interaction_acceptance": false,
+  "notarized": false,
+  "windows": "deferred_by_user",
+  "cloud_cowork": "deferred_by_user"
+}
