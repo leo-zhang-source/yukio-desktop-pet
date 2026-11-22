@@ -26,7 +26,35 @@ public final class CodexRolloutParser {
     private let results = CodexResultTracker()
     /// Metadata for the latest record only; contains no arguments or answer bodies.
     public private(set) var lastToolResults: [CodexToolResult] = []
-    private var asyncQuestions: Set<String> = []
+    private var asyncQuestions: [String: Set<Int>] = [:]
+    private var questionEvents: [String: PetEvent] = [:]
+    private var seenQuestionCalls: Set<String> = []
+    private var questionCallOrder: [String] = []
+    private var historyOwner: String?
+    private var ownHistoryStart: Double?
+    private var historyBoundaryUnresolved = false
+
+    var pendingQuestionEvents: [PetEvent] {
+        questionEvents.values.sorted { ($0.ts, $0.eventID ?? "") < ($1.ts, $1.eventID ?? "") }
+    }
+
+    /// Bootstrap restores only unresolved questions, never historical activity.
+    func restoreQuestions(_ events: [PetEvent]) {
+        for event in events {
+            guard let call = event.relatedCallID, let index = event.questionIndex, let id = event.eventID else { continue }
+            asyncQuestions[call, default: []].insert(index)
+            questionEvents[id] = event
+            rememberQuestion(call)
+        }
+    }
+
+    private func rememberQuestion(_ call: String) {
+        if seenQuestionCalls.insert(call).inserted { questionCallOrder.append(call) }
+        if questionCallOrder.count > 4096 {
+            let old = questionCallOrder.removeFirst()
+            seenQuestionCalls.remove(old)
+        }
+    }
 
     public init(session: String = "") {
         self.session = session
@@ -47,11 +75,27 @@ public final class CodexRolloutParser {
             ?? PetEvent.parseTimestamp(payload["timestamp"] as? String)
             ?? now
 
+        // A helper can include its parent's transcript as context. Its explicit
+        // ordinal boundary applies before copied headers, questions and replies.
+        if let owner = historyOwner {
+            guard !historyBoundaryUnresolved, let start = ownHistoryStart,
+                  let position = Self.historyOrdinal(obj["ordinal"]), position >= start else { return [] }
+            if kind == "session_meta", (payload["id"] ?? payload["session_id"]) as? String != owner {
+                historyBoundaryUnresolved = true
+                return []
+            }
+        } else if kind == "session_meta", let boundary = payload["subagent_history_start_ordinal"],
+                  let owner = CodexResultTracker.identifier(payload["id"] ?? payload["session_id"]) {
+            historyOwner = owner
+            ownHistoryStart = Self.historyOrdinal(boundary)
+            historyBoundaryUnresolved = ownHistoryStart == nil
+        }
+
         if kind == "session_meta" {
             originator = payload["originator"] as? String
             // A helper shares session_id with its parent; id identifies this worker.
             if let id = (payload["id"] ?? payload["session_id"]) as? String, !id.isEmpty {
-                if id != session { results.reset(); asyncQuestions.removeAll() }
+                if id != session { results.reset(); asyncQuestions.removeAll(); questionEvents.removeAll(); seenQuestionCalls.removeAll(); questionCallOrder.removeAll() }
                 session = id
             }
             let source = payload["source"] as? [String: Any]
@@ -68,15 +112,11 @@ public final class CodexRolloutParser {
         switch kind {
         // MARK: 一轮的开头与结尾（event_msg）
         case "task_started", "turn_context":
-            if let turn = CodexResultTracker.identifier(payload["turn_id"]), turn != results.turnID {
-                asyncQuestions.removeAll()
-            }
             results.beginTurn(payload["turn_id"], newWhenMissing: kind == "task_started")
             return kind == "task_started" ? [ev(ts, .taskStart)] : []
 
         case "task_complete":
             guard results.matchesTurn(payload["turn_id"]) else { return [] }
-            asyncQuestions.removeAll()
             results.closeTurn()
             // 有回答才算答完：没有 last_agent_message 的一轮（被压缩、被接管）只算结束。
             let answered = (payload["last_agent_message"] as? String)?.isEmpty == false
@@ -84,7 +124,6 @@ public final class CodexRolloutParser {
 
         case "turn_aborted":
             guard results.matchesTurn(payload["turn_id"]) else { return [] }
-            asyncQuestions.removeAll()
             results.closeTurn()
             // 用户按停、或被新一轮顶掉：都不算失败，不让她沮丧。
             let reason = (payload["reason"] as? String)?.lowercased() ?? ""
@@ -92,7 +131,6 @@ public final class CodexRolloutParser {
 
         case "error", "stream_error":
             guard results.matchesTurn(payload["turn_id"]) else { return [] }
-            asyncQuestions.removeAll()
             results.closeTurn()
             return [ev(ts, .taskFailed)]
 
@@ -104,11 +142,11 @@ public final class CodexRolloutParser {
             let role = (payload["role"] as? String) ?? ""
             let text = Self.text(fromContent: payload["content"])
             if role == "user" {
-                if let answered = Self.questionReplyCalls(text) {
+                if let answered = Self.questionReplies(text) {
                     return closeQuestions(answered, ts: ts)
                 }
                 guard let line = Self.promptLine(text) else { return [] }
-                return closeAsyncQuestions(ts: ts) + [ev(ts, .taskStart, detail: line)]
+                return [ev(ts, .taskStart, detail: line)]
             }
             if role == "assistant" {
                 // 中间的过程说明不是最终回答：一轮什么时候结束由 task_complete 说了算。
@@ -153,9 +191,9 @@ public final class CodexRolloutParser {
         case "UserMessage":
             guard completed else { return [] }
             let text = Self.text(fromContent: item["content"])
-            if let answered = Self.questionReplyCalls(text) { return closeQuestions(answered, ts: ts) }
+            if let answered = Self.questionReplies(text) { return closeQuestions(answered, ts: ts) }
             guard let line = Self.promptLine(text) else { return [] }
-            return closeAsyncQuestions(ts: ts) + [ev(ts, .taskStart, detail: line)]
+            return [ev(ts, .taskStart, detail: line)]
 
         case "AgentMessage":
             guard completed else { return [] }
@@ -192,7 +230,7 @@ public final class CodexRolloutParser {
     // MARK: 工具调用
 
     private func toolStart(_ payload: [String: Any], ts: Double) -> [PetEvent] {
-        let name = (payload["name"] as? String) ?? ""
+        let name = Self.toolName((payload["name"] as? String) ?? "")
         let namespace = payload["namespace"] as? String
         // function_call 的参数是一段 JSON 文本；custom_tool_call 的 input 是一段脚本或补丁正文。
         let arguments = Self.dictionary(payload["arguments"]) ?? [:]
@@ -207,7 +245,21 @@ public final class CodexRolloutParser {
         }
         guard payload["turn_id"] == nil || results.isCurrent(payload["turn_id"]) else { return [] }
         results.start(call)
-        if name.lowercased() == "request_user_input_async", let call { asyncQuestions.insert(call) }
+        if name.lowercased() == "request_user_input_async", let call,
+           let rows = arguments["questions"] as? [[String: Any]] {
+            guard !seenQuestionCalls.contains(call) else { return [] }
+            rememberQuestion(call)
+            let questions = rows.prefix(64).enumerated().compactMap { index, row -> PetEvent? in
+                guard let question = PetQuestion.from(input: row) else { return nil }
+                var event = ev(ts, .activityStart, id: Self.questionID(call: call, index: index),
+                    activity: .question_for_user, tool: name, detail: question.shortLabel, question: question)
+                event.persistentQuestion = true; event.questionIndex = index; event.relatedCallID = call
+                return event
+            }
+            asyncQuestions[call] = Set(questions.compactMap(\.questionIndex))
+            for event in questions { if let id = event.eventID { questionEvents[id] = event } }
+            return questions
+        }
         var out = [ev(ts, .activityStart, id: call, activity: activity, tool: name, detail: detail,
                       question: CodexToolClassifier.question(tool: name, arguments: arguments))]
         if let todos = CodexPlan.items(from: arguments["plan"] ?? arguments["items"] ?? arguments["todos"]) {
@@ -220,33 +272,55 @@ public final class CodexRolloutParser {
         let result = results.record(session: session, payload: payload,
                                     sourceKind: (payload["type"] as? String) ?? "tool_output", timestamp: ts)
         lastToolResults = [result]
-        guard result.projectionEligible, let call = result.callID else { return [] }
+        guard let call = result.callID else { return [] }
         // An async acknowledgement only confirms that the question was displayed.
-        // Keep it open until an answer/new user message or the turn ends.
-        if asyncQuestions.contains(call),
+        // Async cards remain answerable across turn ends and unrelated messages.
+        if asyncQuestions[call] != nil,
            let output = Self.dictionary(payload["output"]), output["accepted"] as? Bool == true {
             return []
         }
-        asyncQuestions.remove(call)
+        let wasQuestion = asyncQuestions.removeValue(forKey: call) != nil
+        questionEvents = questionEvents.filter { $0.value.relatedCallID != call }
+        guard result.projectionEligible || wasQuestion else { return [] }
         // End is a lifecycle receipt, not proof of success. Unknown stays unknown.
         return [ev(ts, result.callOutcome == .failed ? .activityFailed : .activityEnd, id: call)]
     }
 
-    private func closeAsyncQuestions(ts: Double) -> [PetEvent] {
-        let events = asyncQuestions.sorted().map { ev(ts, .activityEnd, id: $0) }
-        asyncQuestions.removeAll()
-        return events
+    public static func toolName(_ raw: String) -> String {
+        raw.hasPrefix("functions.") ? String(raw.dropFirst("functions.".count)) : raw
     }
 
-    private func closeQuestions(_ calls: Set<String>, ts: Double) -> [PetEvent] {
-        asyncQuestions.subtract(calls)
-        return calls.sorted().map { ev(ts, .activityEnd, id: $0) }
+    private static func historyOrdinal(_ value: Any?) -> Double? {
+        guard let number = value as? NSNumber, CFGetTypeID(number) != CFBooleanGetTypeID() else { return nil }
+        let value = number.doubleValue
+        return value >= 0 && value <= 9_007_199_254_740_991 && value.rounded(.down) == value ? value : nil
+    }
+
+    public static func questionID(call: String, index: Int) -> String {
+        index == 0 ? call : "codex-question:" + Data(call.utf8).base64EncodedString() + ":\(index)"
+    }
+
+    struct QuestionReply: Hashable { let call: String; let index: Int }
+
+    private func closeQuestions(_ replies: Set<QuestionReply>, ts: Double) -> [PetEvent] {
+        replies.sorted { ($0.call, $0.index) < ($1.call, $1.index) }.map { reply in
+            questionEvents.removeValue(forKey: Self.questionID(call: reply.call, index: reply.index))
+            asyncQuestions[reply.call]?.remove(reply.index)
+            if asyncQuestions[reply.call]?.isEmpty == true { asyncQuestions.removeValue(forKey: reply.call) }
+            var event = ev(ts, .activityEnd, id: Self.questionID(call: reply.call, index: reply.index))
+            event.questionIndex = reply.index; event.persistentQuestion = true
+            return event
+        }
     }
 
     /// Codex submits option/free-text replies inside a tagged user message.
-    /// This is an answer, not an environment block or a new task. The desktop
-    /// card presents question index 0, so other answers must not close it.
+    /// Each item closes only its own indexed question, including across turns.
+    /// It is not a new task or a reply to another question in the same call.
     static func questionReplyCalls(_ text: String) -> Set<String>? {
+        questionReplies(text).map { Set($0.map(\.call)) }
+    }
+
+    static func questionReplies(_ text: String) -> Set<QuestionReply>? {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
         let start = "<send_user_message_question_reply>"
         let end = "</send_user_message_question_reply>"
@@ -261,9 +335,11 @@ public final class CodexRolloutParser {
                   let id = (try? JSONSerialization.jsonObject(with: bytes)) as? [Any], id.count == 3,
                   let tool = id[0] as? String,
                   ["request_user_input_async", "request_user_input"].contains(tool.split(separator: ".").last.map(String.init) ?? tool),
-                  let call = id[1] as? String, !call.isEmpty,
-                  let index = id[2] as? Int, index == 0 else { return nil }
-            return call
+                  let call = CodexResultTracker.identifier(id[1]),
+                  let number = id[2] as? NSNumber, CFGetTypeID(number) != CFBooleanGetTypeID(),
+                  number.doubleValue >= 0, number.doubleValue < 64,
+                  number.doubleValue == Double(number.intValue) else { return nil }
+            return QuestionReply(call: call, index: number.intValue)
         })
     }
 

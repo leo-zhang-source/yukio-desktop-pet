@@ -44,6 +44,18 @@ def build_macos(destination, version=VERSION, build_number=BUILD):
         command += ['--add-data', str(trust_policy) + ':.']
     command.append(str(package / 'launcher.py'))
     subprocess.run(command, check=True)
+    # Execute the frozen entry outside the source tree before accepting the
+    # build. Neither the author profile nor a development Python is available.
+    check_home=destination/'runtime-check-home';check_home.mkdir()
+    checked=subprocess.run([str(destination/'runtime/YukioRuntime/YukioRuntime'),
+        '--check','--data-dir',str(check_home/'data')],cwd=check_home,
+        env={'PATH':'/nonexistent','HOME':str(check_home),'CFFIXED_USER_HOME':str(check_home),
+             'CODEX_HOME':str(check_home/'.codex'),'CLAUDE_CONFIG_DIR':str(check_home/'.claude'),
+             'LANG':'en_US.UTF-8'},capture_output=True,text=True,timeout=30,check=True)
+    readiness=json.loads(checked.stdout)
+    if not readiness.get('collector_code_available') or any(c['available'] for c in readiness['clients']):
+        raise ValueError('Frozen runtime readiness check failed')
+    (destination/'runtime-check.json').write_text(json.dumps(readiness,indent=2)+'\n')
     app = destination / '雪绪活动工作台.app'
     contents = app / 'Contents'
     (contents / 'MacOS').mkdir(parents=True)

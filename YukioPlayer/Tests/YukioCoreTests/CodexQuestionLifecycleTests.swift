@@ -11,6 +11,14 @@ import Testing
             "call_id": "question", "arguments": ["questions": [["title": "选择颜色", "options": ["蓝色", "绿色"]]]]])
     }
 
+    @Test func malformedQuestionIndicesDoNotCloseAnUnrelatedPart() throws {
+        for index: Any in [true, -1, 64, 0.5, "0"] {
+            let id = String(data: try JSONSerialization.data(withJSONObject: ["request_user_input_async", "q", index]), encoding: .utf8)!
+            let body = String(data: try JSONSerialization.data(withJSONObject: [["questionItemId": id, "answer": "A"]]), encoding: .utf8)!
+            #expect(CodexRolloutParser.questionReplies("<send_user_message_question_reply>" + body + "</send_user_message_question_reply>") == [])
+        }
+    }
+
     @Test func acknowledgementKeepsQuestionVisibleWhileOtherToolsRun() {
         let parser = CodexRolloutParser(session: "test")
         let h = Harness(session: "test")
@@ -23,10 +31,10 @@ import Testing
         #expect(h.router.askingQuestion?.question.text == "选择颜色")
         #expect(h.router.askingQuestion?.question.options.map(\.label) == ["蓝色", "绿色"])
         let answer = event(parser, ["type": "message", "role": "user", "content": "蓝色"])
-        #expect(answer.map(\.kind) == [.activityEnd, .taskStart])
+        #expect(answer.map(\.kind) == [.taskStart])
         for e in answer { h.router.ingest(e, now: 5000) }
         h.run(to: 8000)
-        #expect(h.router.askingQuestion == nil)
+        #expect(h.router.askingQuestion?.question.text == "选择颜色")
     }
 
     @Test func synchronousAnswerStillClosesImmediately() {
@@ -45,18 +53,53 @@ import Testing
         #expect(user.map(\.kind) == [.taskStart])
     }
 
-    @Test func turnEndClearsAsyncQuestionTracking() {
+    @Test func turnEndKeepsAsyncQuestionTrackingUntilAnExplicitReply() throws {
         let parser = CodexRolloutParser(session: "test")
         _ = start(parser)
         _ = event(parser, ["type": "task_complete", "last_agent_message": "完成"])
+        #expect(event(parser, ["type": "function_call_output", "call_id": "question", "output": "{\"accepted\":true}"]).isEmpty)
         let user = event(parser, ["type": "message", "role": "user", "content": "继续"])
         #expect(user.map(\.kind) == [.taskStart])
+        #expect(event(parser, ["type": "message", "role": "user", "content": try taggedReply()]).map(\.kind) == [.activityEnd])
     }
 
     private func taggedReply(call: String = "question", index: Int = 0) throws -> String {
         let id = String(decoding: try JSONSerialization.data(withJSONObject: ["request_user_input_async", call, index]), as: UTF8.self)
         let body = String(decoding: try JSONSerialization.data(withJSONObject: [["questionItemId": id, "question": "选择颜色", "answer": "蓝色"]]), as: UTF8.self)
         return "<send_user_message_question_reply>\n\(body)\n</send_user_message_question_reply>"
+    }
+
+    @Test func asynchronousQuestionOutlivesTheAssistantTurnAndUnrelatedUserMessages() throws {
+        let parser = CodexRolloutParser(session: "test")
+        let h = Harness(session: "test")
+        for e in start(parser) { h.router.ingest(e, now: 1000) }
+        _ = event(parser, ["type": "function_call_output", "call_id": "question", "output": "{\"accepted\":true}"])
+        for e in event(parser, ["type": "task_complete", "last_agent_message": "Waiting for your choice"]) { h.router.ingest(e, now: 2000) }
+        h.run(to: 5000)
+        #expect(h.router.askingQuestion?.question.text == "选择颜色")
+        for e in event(parser, ["type": "task_started", "turn_id": "next"]) { h.router.ingest(e, now: 6000) }
+        for e in event(parser, ["type": "message", "role": "user", "content": "Also check another issue"]) { h.router.ingest(e, now: 6000) }
+        h.run(to: 9000)
+        #expect(h.router.askingQuestion?.question.text == "选择颜色")
+        for e in event(parser, ["type": "message", "role": "user", "content": try taggedReply()]) { h.router.ingest(e, now: 9000) }
+        h.run(to: 12000)
+        #expect(h.router.askingQuestion == nil)
+    }
+
+    @Test func eachAsyncQuestionHasItsOwnReplyAndNextQuestionSurvives() throws {
+        let parser = CodexRolloutParser(session: "test")
+        let h = Harness(session: "test")
+        let rows: [[String: Any]] = [["title": "选择颜色", "options": ["蓝色", "绿色"]], ["title": "选择形状", "options": ["圆形", "方形"]]]
+        for e in event(parser, ["type": "function_call", "name": "request_user_input_async", "call_id": "question", "arguments": ["questions": rows]]) { h.router.ingest(e, now: 1000) }
+        _ = event(parser, ["type": "function_call_output", "call_id": "question", "output": "{\"accepted\":true}"])
+        h.run(to: 5000)
+        #expect(h.router.askingQuestion?.question.text == "选择颜色")
+        for e in event(parser, ["type": "message", "role": "user", "content": try taggedReply(index: 0)]) { h.router.ingest(e, now: 5000) }
+        h.run(to: 8000)
+        #expect(h.router.askingQuestion?.question.text == "选择形状")
+        for e in event(parser, ["type": "message", "role": "user", "content": try taggedReply(index: 1)]) { h.router.ingest(e, now: 8000) }
+        h.run(to: 10000)
+        #expect(h.router.askingQuestion == nil)
     }
 
     @Test func taggedAnswerClosesQuestionWithoutStartingANewTask() throws {
@@ -98,15 +141,17 @@ import Testing
         #expect(h.router.askingQuestion == nil)
     }
 
-    @Test func taggedReplyTargetsItsCallAndFirstQuestionOnly() throws {
+    @Test func taggedReplyTargetsOnlyItsCallAndQuestionIndex() throws {
         let parser = CodexRolloutParser(session: "test")
         _ = start(parser)
         let second = event(parser, ["type": "message", "role": "user", "content": try taggedReply(index: 1)])
-        #expect(second.isEmpty)
+        #expect(second.first?.eventID == CodexRolloutParser.questionID(call: "question", index: 1))
+        #expect(second.first?.questionIndex == 1)
         let other = event(parser, ["type": "message", "role": "user", "content": try taggedReply(call: "other")])
         #expect(other.map(\.eventID) == ["other"])
         let remaining = event(parser, ["type": "message", "role": "user", "content": "继续"])
-        #expect(remaining.first?.eventID == "question")
+        #expect(remaining.map(\.kind) == [.taskStart])
+        #expect(event(parser, ["type": "message", "role": "user", "content": try taggedReply()]).first?.eventID == "question")
     }
 
     @Test func itemCompletedReplyIsAlsoRecognized() throws {

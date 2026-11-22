@@ -36,15 +36,23 @@ final class ClaudeQuestionBridge {
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
     }
     private func request(at dir: URL, now: Double) -> Request? {
-        guard let bytes = try? Data(contentsOf: dir.appendingPathComponent("request.json")), bytes.count < 1 << 20,
+        guard !FileManager.default.fileExists(atPath: dir.appendingPathComponent("done").path) else { return nil }
+        let file = dir.appendingPathComponent("request.json")
+        guard let info = try? file.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey, .fileSizeKey]),
+              info.isRegularFile == true, info.isSymbolicLink != true, (info.fileSize ?? Int.max) < 1 << 20,
+              let bytes = try? Data(contentsOf: file), bytes.count < 1 << 20,
               let value = try? JSONDecoder().decode(Request.self, from: bytes), value.id == dir.lastPathComponent,
-              value.expiresAt > now, kill(value.pid, 0) == 0,
+              !value.session.isEmpty, value.session.count <= 256, !value.callID.isEmpty, value.callID.count <= 256,
+              (1...64).contains(value.questions.count), value.pid > 0,
+              value.createdAt.isFinite, value.createdAt > 0, value.createdAt <= now + 1000,
+              value.expiresAt.isFinite, value.expiresAt > now, kill(value.pid, 0) == 0,
               !FileManager.default.fileExists(atPath: dir.appendingPathComponent("done").path) else { return nil }
         return value
     }
     private func source(_ r: Request) -> String { r.provider == "deepseek" ? DeepCodeMessageParser.source : ClaudeTranscriptParser.source }
     private func key(_ r: Request, _ index: Int) -> String { "yukio-\(r.provider ?? "claude"):\(r.id):\(index)" }
-    func poll(now: Double, enabled: Bool = true, providers: Set<String> = ["claude", "deepseek"]) -> [PetEvent] {
+    func poll(now: Double, enabled: Bool = true, providers: Set<String> = ["claude", "deepseek"],
+              acceptsClaudeSession: (String) -> Bool = { _ in true }) -> [PetEvent] {
         try? prepare()
         if enabled && now - heartbeatAt > 1000 {
             for provider in providers.intersection(["claude", "deepseek"]) {
@@ -57,18 +65,28 @@ final class ClaudeQuestionBridge {
             let directories = (try? FileManager.default.contentsOfDirectory(at: root, includingPropertiesForKeys: nil)) ?? []
             for dir in directories where UUID(uuidString: dir.lastPathComponent) != nil {
                 guard let r = request(at: dir, now: now), providers.contains(r.provider ?? "claude"),
+                      r.provider == "deepseek" || acceptsClaudeSession(r.session),
                       let index = r.questions.indices.first(where: { !FileManager.default.fileExists(atPath: dir.appendingPathComponent("receipt-\($0).json").path) }) else { continue }
                 let id = key(r, index)
                 next[id] = r
                 if shown[id] == nil {
-                    events.append(PetEvent(ts: now, source: source(r), session: r.session,
+                    events.append(PetEvent(ts: r.createdAt, source: source(r), session: r.session,
                         kind: .activityStart, eventID: id, activity: .question_for_user,
-                        tool: r.questions[index].isApproval ? "PermissionRequest" : "AskUserQuestion", detail: r.questions[index].shortLabel, question: r.questions[index]))
+                        tool: r.questions[index].isApproval ? "PermissionRequest" : "AskUserQuestion", detail: r.questions[index].shortLabel,
+                        question: r.questions[index], relatedCallID: r.callID))
                 }
             }
         }
         for (id, r) in shown where next[id] == nil {
             events.append(PetEvent(ts: now, source: source(r), session: r.session, kind: .activityEnd, eventID: id))
+            // A receipt for every item proves the hook has the complete answer.
+            // Retire the transcript's copy too, before it can flash back while
+            // Claude is still writing the corresponding tool_result.
+            let dir = root.appendingPathComponent(r.id)
+            if r.questions.indices.allSatisfy({ FileManager.default.fileExists(atPath: dir.appendingPathComponent("receipt-\($0).json").path) }) {
+                events.append(PetEvent(ts: now, source: source(r), session: r.session,
+                    kind: .activityEnd, eventID: r.callID, relatedCallID: r.callID))
+            }
         }
         shown = next
         return events
@@ -104,7 +122,73 @@ final class ClaudeQuestionBridge {
         throw Failure.unconfirmed
     }
 
-    /// Called by Claude's PreToolUse hook before AskUserQuestion is executed.
+    /// PermissionRequest lacks tool_use_id. Correlate only a single unresolved
+    /// call with exactly matching tool/input in the client-provided transcript.
+    /// No title/time/proximity matching; ambiguous or unavailable records fail closed.
+    static func transcriptCallID(_ obj: [String: Any]) -> String? {
+        guard let path = obj["transcript_path"] as? String, let session = obj["session_id"] as? String,
+              let name = obj["tool_name"] as? String, let input = obj["tool_input"] as? [String: Any],
+              let expected = try? JSONSerialization.data(withJSONObject: input, options: [.sortedKeys]),
+              let attrs = try? FileManager.default.attributesOfItem(atPath: path), attrs[.type] as? FileAttributeType == .typeRegular,
+              let size = attrs[.size] as? UInt64,
+              let handle = try? FileHandle(forReadingFrom: URL(fileURLWithPath: path)) else { return nil }
+        defer { try? handle.close() }
+        let offset = size > 1 << 20 ? size - (1 << 20) : 0
+        do {
+            try handle.seek(toOffset: offset)
+            guard var data = try handle.read(upToCount: 1 << 20) else { return nil }
+            if offset > 0 {
+                guard let newline = data.firstIndex(of: 10) else { return nil }
+                data = data.subdata(in: data.index(after: newline)..<data.endIndex)
+            }
+            var stream = JSONObjectStream(), matches: Set<String> = []
+            for bytes in stream.append(data) {
+                guard let row = (try? JSONSerialization.jsonObject(with: bytes)) as? [String: Any], row["sessionId"] as? String == session,
+                      row["isSidechain"] as? Bool != true, row["agentId"] == nil,
+                      row["isMeta"] as? Bool != true, row["isCompactSummary"] as? Bool != true,
+                      let message = row["message"] as? [String: Any] else { continue }
+                let blocks = message["content"] as? [[String: Any]] ?? []
+                if row["type"] as? String == "user" {
+                    let results = blocks.filter { $0["type"] as? String == "tool_result" }
+                    for result in results { if let id = result["tool_use_id"] as? String { matches.remove(id) } }
+                    if results.isEmpty, row["promptSource"] as? String != "system" { matches.removeAll() }
+                } else if row["type"] as? String == "assistant" {
+                    for block in blocks where block["type"] as? String == "tool_use" && block["name"] as? String == name {
+                        guard let id = block["id"] as? String, !id.isEmpty, id.count <= 256,
+                              let value = block["input"] as? [String: Any],
+                              let encoded = try? JSONSerialization.data(withJSONObject: value, options: [.sortedKeys]), encoded == expected else { continue }
+                        matches.insert(id)
+                    }
+                }
+            }
+            return matches.count == 1 ? matches.first : nil
+        } catch { return nil }
+    }
+
+    static func priorAnswers(root: URL, request: Request) -> [Int: Data] {
+        var result: [Int: Data] = [:]
+        let paths = ((try? FileManager.default.contentsOfDirectory(at: root, includingPropertiesForKeys: [.contentModificationDateKey])) ?? []).sorted {
+            ((try? $0.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast)
+                > ((try? $1.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast)
+        }
+        for path in paths.prefix(512) where UUID(uuidString: path.lastPathComponent) != nil && path.lastPathComponent != request.id {
+            guard let info = try? path.resourceValues(forKeys: [.isSymbolicLinkKey]), info.isSymbolicLink != true,
+                  let data = try? Data(contentsOf: path.appendingPathComponent("request.json")), data.count <= 1 << 20,
+                  let old = try? JSONDecoder().decode(Request.self, from: data), old.id == path.lastPathComponent,
+                  (old.provider ?? "claude") == (request.provider ?? "claude"), old.session == request.session, old.callID == request.callID,
+                  old.createdAt < request.createdAt, old.questions == request.questions else { continue }
+            for index in request.questions.indices {
+                guard let receipt = try? Data(contentsOf: path.appendingPathComponent("receipt-\(index).json")), receipt.count < 65536,
+                      let answer = try? JSONDecoder().decode(String.self, from: receipt), !answer.isEmpty else { continue }
+                // Conflicting receipts must not choose an answer on the user's behalf.
+                if let previous = result[index], previous != receipt { return [:] }
+                result[index] = receipt
+            }
+        }
+        return result
+    }
+
+    /// Called by the explicitly configured Claude question / permission hooks.
     static func runHook(input: Data, root: URL = defaultRoot, waitSeconds: Double = 570) -> Data {
         let empty = Data("{}".utf8)
         guard let obj = try? JSONSerialization.jsonObject(with: input) as? [String: Any],
@@ -117,8 +201,11 @@ final class ClaudeQuestionBridge {
               let modified = attributes[.modificationDate] as? Date, Date().timeIntervalSince(modified) < 4,
               let listenerText = try? String(contentsOf: root.appendingPathComponent("listener")),
               let listenerPID = Int32(listenerText), kill(listenerPID, 0) == 0 else { return empty }
-        let isApproval = obj["hook_event_name"] as? String == "PermissionRequest"
-        let callID = obj["tool_use_id"] as? String ?? UUID().uuidString
+        let permissionHook = obj["hook_event_name"] as? String == "PermissionRequest"
+        // Claude routes AskUserQuestion through its permission callback too.
+        // That callback asks for the answers, not permission to ask a question.
+        let isApproval = permissionHook && toolName != "AskUserQuestion"
+        let callID = obj["tool_use_id"] as? String ?? transcriptCallID(obj) ?? UUID().uuidString
         let raw: [[String: Any]]
         let questions: [PetQuestion]
         if isApproval {
@@ -130,21 +217,33 @@ final class ClaudeQuestionBridge {
             raw = toolInput["questions"] as? [[String: Any]] ?? []
             questions = raw.compactMap { PetQuestion.from(input: $0) }
         }
-        guard !raw.isEmpty, questions.count == raw.count, Set(raw.compactMap { $0["question"] as? String }).count == raw.count else { return empty }
+        guard (1...64).contains(raw.count), questions.count == raw.count, Set(raw.compactMap { $0["question"] as? String }).count == raw.count else { return empty }
         let now = Date().timeIntervalSince1970 * 1000
+        let parentPID = getppid()
         let r = Request(id: UUID().uuidString, session: session, callID: callID, questions: questions,
                         pid: getpid(), createdAt: now, expiresAt: now + waitSeconds * 1000)
         let dir = root.appendingPathComponent(r.id)
         do {
             try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
-            try JSONEncoder().encode(r).write(to: dir.appendingPathComponent("request.json"), options: .atomic)
             defer { try? Data().write(to: dir.appendingPathComponent("done"), options: .atomic) }
             var answers: [String: String] = [:]
+            if !isApproval {
+                for (index, receipt) in priorAnswers(root: root, request: r) {
+                    if let question = raw[index]["question"] as? String,
+                       let answer = try? JSONDecoder().decode(String.self, from: receipt) {
+                        answers[question] = answer
+                        try receipt.write(to: dir.appendingPathComponent("receipt-\(index).json"), options: .atomic)
+                    }
+                }
+            }
+            // Publish the lease after inherited receipts, so a resumed second
+            // question cannot briefly expose the already answered first one.
+            try JSONEncoder().encode(r).write(to: dir.appendingPathComponent("request.json"), options: .atomic)
             let deadline = Date().addingTimeInterval(waitSeconds)
             while Date() < deadline {
                 guard let attrs = try? FileManager.default.attributesOfItem(atPath: root.appendingPathComponent("listener").path),
                       let alive = attrs[.modificationDate] as? Date, Date().timeIntervalSince(alive) < 5,
-                      kill(listenerPID, 0) == 0 else { return empty }
+                      kill(listenerPID, 0) == 0, parentPID > 1, kill(parentPID, 0) == 0 else { return empty }
                 for index in raw.indices where answers[raw[index]["question"] as? String ?? ""] == nil {
                     guard let text = raw[index]["question"] as? String,
                           let data = try? Data(contentsOf: dir.appendingPathComponent("answer-\(index).json")), data.count < 65536,
@@ -156,11 +255,18 @@ final class ClaudeQuestionBridge {
                 if answers.count == raw.count {
                     if isApproval {
                         let allow = answers.values.first == ApprovalQuestion.allow
+                        let decision: [String: Any] = allow
+                            ? ["behavior": "allow", "updatedInput": toolInput]
+                            : ["behavior": "deny", "message": "The user declined this operation in Yukio."]
                         return try JSONSerialization.data(withJSONObject: ["hookSpecificOutput": [
-                            "hookEventName": "PermissionRequest", "decision": ["behavior": allow ? "allow" : "deny"]]])
+                            "hookEventName": "PermissionRequest", "decision": decision]])
                     }
                     var updated = toolInput
                     updated["answers"] = answers
+                    if permissionHook {
+                        return try JSONSerialization.data(withJSONObject: ["hookSpecificOutput": [
+                            "hookEventName": "PermissionRequest", "decision": ["behavior": "allow", "updatedInput": updated]]])
+                    }
                     return try JSONSerialization.data(withJSONObject: ["hookSpecificOutput": ["hookEventName": "PreToolUse",
                         "permissionDecision": "allow", "updatedInput": updated]])
                 }

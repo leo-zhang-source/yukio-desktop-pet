@@ -53,6 +53,28 @@ import Testing
         #expect(events.map(\.kind) == [.finalAnswer, .taskEnd])
     }
 
+    @Test func copiedParentQuestionsAndHeadersNeverBecomeHelperActivity() {
+        let parser = CodexRolloutParser(session: child)
+        var meta = header()
+        var payload = meta["payload"] as! [String: Any]
+        payload["subagent_history_start_ordinal"] = 10
+        meta["payload"] = payload
+        _ = parser.events(from: meta)
+        #expect(parser.events(from: ["ordinal": 0, "type": "session_meta", "payload": ["id": parent]]).isEmpty)
+        let question: [String: Any] = ["type": "function_call", "name": "request_user_input_async", "call_id": "call",
+                                      "arguments": ["questions": [["title": "Parent question?"]]]]
+        #expect(parser.events(from: ["ordinal": 9, "payload": question]).isEmpty)
+        #expect(parser.events(from: ["payload": question]).isEmpty)
+        #expect(parser.pendingQuestionEvents.isEmpty)
+        #expect(parser.session == child)
+        let own = parser.events(from: ["ordinal": 10, "payload": question])
+        #expect(own.count == 1)
+        #expect(own.first?.session == child)
+        #expect(parser.events(from: ["ordinal": 11, "type": "session_meta", "payload": ["id": parent]]).isEmpty)
+        #expect(parser.events(from: ["ordinal": 12, "payload": ["type": "task_complete", "last_agent_message": "done"]]).isEmpty)
+        #expect(parser.session == child)
+    }
+
     @Test func largeFileRestartKeepsHelperIdentityTitleAndNoFalseDoneCard() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("yukio-helper-\(UUID())")
         defer { try? FileManager.default.removeItem(at: root) }

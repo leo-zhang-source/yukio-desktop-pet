@@ -49,7 +49,7 @@ public final class JSONLTreeSource {
     private let matches: (String) -> Bool
     private let makeParser: (URL) -> LineParsing
     private let onGone: (String) -> PetEvent?
-    private var files: [String: (parser: LineParsing, tail: TailedFile)] = [:]
+    private var files: [String: (parser: LineParsing, tail: TailedFile, identity: String)] = [:]
     private var started = false
     private var lastScan: Double = -.infinity
 
@@ -69,7 +69,14 @@ public final class JSONLTreeSource {
             lastScan = now
             scan(now: now, into: &out)
         }
-        for (path, entry) in files {
+        for (path, previous) in files {
+            var entry = previous
+            if let attrs = try? FileManager.default.attributesOfItem(atPath: path),
+               Self.identity(attrs) != entry.identity || ((attrs[.size] as? NSNumber)?.uint64Value ?? 0) < entry.tail.offset {
+                if let event = onGone(Self.sessionName(path)) { out.append(event) }
+                entry = (makeParser(entry.tail.url), TailedFile(url: entry.tail.url, offset: 0), Self.identity(attrs))
+                files[path] = entry
+            }
             guard let objects = entry.tail.readNew() else {
                 files.removeValue(forKey: path)
                 // 会话文件被删除：该会话不可能再有后续事件。
@@ -81,6 +88,10 @@ public final class JSONLTreeSource {
         status.trackedFiles = files.count
         if let last = out.last?.ts { status.lastEventAt = max(status.lastEventAt ?? 0, last) }
         return out
+    }
+
+    private static func identity(_ attributes: [FileAttributeKey: Any]) -> String {
+        "\(attributes[.systemNumber] ?? ""):\(attributes[.systemFileNumber] ?? "")"
     }
 
     public static func sessionName(_ path: String) -> String {
@@ -121,7 +132,8 @@ public final class JSONLTreeSource {
             let tail = recent ? (size > bootstrapTailBytes ? size - bootstrapTailBytes : 0) : size
             let file = TailedFile(url: url, offset: tail, skipPartialLine: recent && tail > 0)
             let parser = makeParser(url)
-            files[url.path] = (parser, file)
+            let attrs = (try? fm.attributesOfItem(atPath: url.path)) ?? [:]
+            files[url.path] = (parser, file, Self.identity(attrs))
             if recent, let objects = file.readNew() {
                 for obj in objects { out += parser.events(fromLine: obj, now: now) }
             }
@@ -141,6 +153,9 @@ public final class CodexSessionsSource {
         var parents: [String: String] = [:]
         var origins: [String: String] = [:]
         var sessions: Set<String> = []
+        var fileSessions: [String: String] = [:]
+        var recovery: [String: (tail: TailedFile, parser: CodexRolloutParser, live: CodexRolloutParser)] = [:]
+        var recoveryCursor = 0
     }
     private let metadata: Metadata
 
@@ -171,11 +186,18 @@ public final class CodexSessionsSource {
                 if let parent = parser.parentSession { metadata.parents[parser.session] = parent }
                 metadata.origins[parser.session] = parser.originator
                 metadata.sessions.insert(parser.session)
+                metadata.fileSessions[JSONLTreeSource.sessionName(url.path)] = parser.session
+                metadata.recovery[url.path] = (TailedFile(url: url, offset: 0), CodexRolloutParser(session: parser.session), parser)
                 return parser
             },
             onGone: { name in
-                PetEvent(ts: 0, source: CodexRolloutParser.source,
-                         session: Self.sessionID(fromFileName: name), kind: .taskAbort)
+                let session = metadata.fileSessions.removeValue(forKey: name) ?? Self.sessionID(fromFileName: name)
+                metadata.recovery = metadata.recovery.filter { JSONLTreeSource.sessionName($0.key) != name }
+                // A paginated chat can have several source files. Losing one
+                // does not mean that its other live source has disappeared.
+                guard !metadata.fileSessions.values.contains(session) else { return nil }
+                return PetEvent(ts: 0, source: CodexRolloutParser.source,
+                         session: session, kind: .sourceLost)
             })
     }
 
@@ -205,8 +227,30 @@ public final class CodexSessionsSource {
 
     public func poll(now: Double) -> [PetEvent] {
         var out = tree.poll(now: now)
+        // A tail is sufficient for recent work, but not for an unanswered card
+        // several turns back. Replay at most 4 MiB per poll, fairly across files;
+        // publish only the final unresolved set after reaching the current EOF.
+        let paths = metadata.recovery.keys.sorted()
+        if !paths.isEmpty {
+            metadata.recoveryCursor %= paths.count
+            let path = paths[metadata.recoveryCursor]
+            metadata.recoveryCursor = (metadata.recoveryCursor + 1) % paths.count
+            if let recovery = metadata.recovery[path] {
+                if let rows = recovery.tail.readNew(maxBytes: 4 << 20),
+                   let attrs = try? FileManager.default.attributesOfItem(atPath: path),
+                   let size = (attrs[.size] as? NSNumber)?.uint64Value {
+                    for row in rows { _ = recovery.parser.events(fromLine: row, now: 0) }
+                    if recovery.tail.offset >= size {
+                        let restored = recovery.parser.pendingQuestionEvents
+                        recovery.live.restoreQuestions(restored)
+                        out += restored
+                        metadata.recovery.removeValue(forKey: path)
+                    }
+                } else { metadata.recovery.removeValue(forKey: path) }
+            }
+        }
         // 文件被删时用当前时间报中断（记录里没有时间可用）。
-        for i in out.indices where out[i].ts == 0 && out[i].kind == .taskAbort { out[i].ts = now }
+        for i in out.indices where out[i].ts == 0 && (out[i].kind == .taskAbort || out[i].kind == .sourceLost) { out[i].ts = now }
         knownSessions.formUnion(out.map(\.session))
         knownSessions.formUnion(metadata.sessions)
         let indexURL = sessionsDir.deletingLastPathComponent().appendingPathComponent("session_index.jsonl")
@@ -315,6 +359,7 @@ public final class AgentSources {
     }
 
     public func isBrowserSession(_ session: String) -> Bool { codex?.isBrowserSession(session) == true }
+    public func acceptsClaudeInteraction(session: String) -> Bool { claude?.acceptsInteraction(session: session) == true }
 
     public private(set) var provider: AgentProvider
     private var claude: ClaudeTranscriptSource?

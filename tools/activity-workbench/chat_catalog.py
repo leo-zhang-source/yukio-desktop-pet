@@ -9,6 +9,7 @@ from contextlib import closing
 from pathlib import Path
 from source_context import clean, user_text
 from localization import current_language, english_text
+from claude_desktop import apply_interaction, ENDED_ON_QUESTION, ended_on_blocking_question
 
 
 def claude_desktop_groups(history,reader,groups):
@@ -36,6 +37,20 @@ def claude_desktop_groups(history,reader,groups):
             out.append(dict(key=key_for(list(row[:5])),source_id=row[0],generation=row[1],session_id=row[2],
                             agent_id=row[3],is_sidechain=bool(row[4]),records=row[5],last_sequence=row[6],archived=False,desktop_chat=desktop))
     return out
+
+
+def apply_read_progress(detail, state):
+    # A batch boundary is not the end of the source. Replaying an old question
+    # before its later answer has been ingested must not flash as a live request.
+    if state.get('read_pending') is True:
+        detail.update(reading_latest=True,status='正在读取最新记录',tone='quiet',
+                      needs_you='这条聊天的较新记录尚未读完，请稍后查看。')
+
+
+def codex_pending_questions(state, session):
+    from yukio.parsers_codex import CodexRolloutParser
+    parser=CodexRolloutParser.from_history_checkpoint(json.loads(state['checkpoint']))
+    return parser._async_questions if parser.session==session else {}
 
 
 def catalog_card(history, reader, client, group, clock):
@@ -74,10 +89,15 @@ def catalog_card(history, reader, client, group, clock):
     elif marker_kind=='turn_cancelled' and not later:status='这一轮已取消'
     latest=meaningful[0][1] if meaningful else {}
     tone='attention' if latest.get('reported_await_user_response') is True and marker_kind not in ('turn_ended','turn_cancelled') else 'quiet'
+    ended_on_question=ended_on_blocking_question(marker_row,marker_kind,later)
+    if ended_on_question:status,tone=ENDED_ON_QUESTION['status'],ENDED_ON_QUESTION['tone']
     card=dict(client=client,key=group['key'],session_id=parts[2],title=readable_title(title),
               title_source='客户端聊天名称' if has_client_title else ('开场要求' if title else '名称待确认'),status=status,tone=tone,last_activity_ms=stamp,
-              source_unavailable=not available,has_content=has_content,turn_marker=marker_kind,age_seconds=age,
+              source_unavailable=not available,has_content=has_content,turn_marker=marker_kind,ended_on_question=ended_on_question,age_seconds=age,
               recorder=read_status(history.databases[client],client))
+    if client=='claude':apply_interaction(card,state,parts[2],reader.claude_interactions,reader.claude_runtime)
+    if client=='codex' and available and codex_pending_questions(state,parts[2]):card.update(status='等待你回答',tone='attention')
+    apply_read_progress(card,state)
     card['activity_state']=activity_state(card)
     if group.get('desktop_chat'):
         card['conversation_id']=group['desktop_chat']['id']
@@ -125,12 +145,15 @@ def opening_material(history,reader,client,parts,state,*,user_only=False):
 
 def activity_state(detail):
     # A recent message or a successful tool result is not proof of an open turn.
-    if detail.get('source_unavailable') or detail.get('recorder', {}).get('state') in ('stopped', 'failed', 'stale', 'unavailable', 'source_unavailable', 'paused_capacity'):
+    if detail.get('reading_latest') or detail.get('source_unavailable') or detail.get('recorder', {}).get('state') in ('stopped', 'failed', 'stale', 'unavailable', 'source_unavailable', 'paused_capacity'):
         return 'unknown'
     if detail.get('tone') == 'attention':
         return 'waiting'
     if detail.get('status') in ('这一轮已结束', '这一轮已取消'):
         return 'inactive'
+    if detail.get('claude_lifecycle',{}).get('phase')=='failed':return 'inactive'
+    if detail.get('claude_lifecycle',{}).get('phase')=='offline':return 'unknown'
+    if detail.get('claude_lifecycle',{}).get('phase')=='working' and detail['claude_lifecycle'].get('client_status')=='working':return 'working'
     age = detail.get('age_seconds')
     if detail.get('turn_marker') == 'turn_started' and isinstance(age, (float, int)) and age < 120:
         return 'working'

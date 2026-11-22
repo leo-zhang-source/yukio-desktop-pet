@@ -86,6 +86,7 @@ def run_activity_collector(argv):
         for sig in (signal.SIGINT, signal.SIGTERM):
             previous[sig] = signal.signal(sig, stop)
         start = time.monotonic()
+        saved = 0
         while not parent_closed.is_set():
             snapshot = collector.poll()
             if status:
@@ -93,7 +94,14 @@ def run_activity_collector(argv):
             elapsed = time.monotonic() - start
             if args.seconds and elapsed >= args.seconds:
                 break
-            parent_closed.wait(min(2, max(0, args.seconds - elapsed)) if args.seconds else 2)
+            # Keep the per-file limits and round-robin fairness, but do not add
+            # a two-second idle sleep between batches of an existing backlog.
+            # No-progress tails and failed sources retain the normal retry pace.
+            catching_up = (snapshot['state'] == 'active' and snapshot['pending_files'] > 0
+                           and snapshot['events_saved_this_run'] > saved)
+            saved = snapshot['events_saved_this_run']
+            delay = .05 if catching_up else 2
+            parent_closed.wait(min(delay, max(0, args.seconds - elapsed)) if args.seconds else delay)
     except KeyboardInterrupt:
         pass
     except (OSError, ValueError, sqlite3.Error, KeyError, TypeError, OverflowError):

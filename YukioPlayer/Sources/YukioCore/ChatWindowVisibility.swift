@@ -14,6 +14,17 @@ public enum ChatWindowVisibility {
         }
     }
 
+    /// macOS keeps transparent, often screen-sized surfaces above ordinary windows:
+    /// the Dock (20), the menu bar and the screenshot tool's lingering surface (24),
+    /// status items (25), notification banners, pop-up menus (101) and drag images (500).
+    /// Their rectangles say nothing about whether a chat underneath can be read, and
+    /// counting them left every chat on that display "covered" for days at a time.
+    /// Ordinary, floating, modal and utility windows (below the Dock level) still cover,
+    /// and so does everything from the screen-saver level up (screen saver, lock screen).
+    public static func isSystemOverlay(layer: Int) -> Bool {
+        layer >= 20 && layer < 1000
+    }
+
     public static func exposedParts(of rect: CGRect, screens: [CGRect], covers: [CGRect]) -> [CGRect] {
         guard !rect.isEmpty else { return [] }
         var parts = screens.map { rect.intersection($0) }.filter { !$0.isNull && !$0.isEmpty }

@@ -57,9 +57,33 @@ enum BackgroundAnswerSetup {
         process.standardError = handle
         return process
     }
-    static func installClaude() throws {
+    /// Updating Yukio must also update an already configured, Yukio-owned hook.
+    /// This does not enable a new hook or rewrite the user's settings.
+    static func hasManagedClaudeHook(_ settings: [String: Any], helper: String) -> Bool {
+        let expected = "'" + helper.replacingOccurrences(of: "'", with: "'\\''") + "' --claude-answer-hook"
+        let hooks = settings["hooks"] as? [String: Any] ?? [:]
+        return ["PreToolUse", "PermissionRequest"].contains { name in
+            (hooks[name] as? [[String: Any]] ?? []).contains { group in
+                (group["hooks"] as? [[String: Any]] ?? []).contains { $0["type"] as? String == "command" && $0["command"] as? String == expected }
+            }
+        }
+    }
+    static func refreshInstalledClaudeHelper() throws {
         let fm = FileManager.default
         let support = fm.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support/YukioPlayer")
+        let helper = support.appendingPathComponent("YukioAnswerBridge")
+        let config = ProcessInfo.processInfo.environment["CLAUDE_CONFIG_DIR"].map { URL(fileURLWithPath: $0) }
+            ?? fm.homeDirectoryForCurrentUser.appendingPathComponent(".claude")
+        guard fm.fileExists(atPath: helper.path),
+              let data = try? Data(contentsOf: config.appendingPathComponent("settings.json")), data.count <= 4 << 20,
+              let settings = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+              hasManagedClaudeHook(settings, helper: helper.path) else { return }
+        guard let executable = Bundle.main.executableURL else { throw Failure.unavailable }
+        if fm.contentsEqual(atPath: executable.path, andPath: helper.path) { return }
+        try installHelper(support: support)
+    }
+    private static func installHelper(support: URL) throws {
+        let fm = FileManager.default
         try fm.createDirectory(at: support, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
         guard let executable = Bundle.main.executableURL else { throw Failure.unavailable }
         let helper = support.appendingPathComponent("YukioAnswerBridge")
@@ -77,6 +101,12 @@ enum BackgroundAnswerSetup {
         // Atomic replacement; an existing running hook keeps its original inode.
         try Data(contentsOf: executable).write(to: helper, options: .atomic)
         try fm.setAttributes([.posixPermissions: 0o700], ofItemAtPath: helper.path)
+    }
+    static func installClaude() throws {
+        let fm = FileManager.default
+        let support = fm.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support/YukioPlayer")
+        let helper = support.appendingPathComponent("YukioAnswerBridge")
+        try installHelper(support: support)
         let configRoot = ProcessInfo.processInfo.environment["CLAUDE_CONFIG_DIR"].map { URL(fileURLWithPath: $0) }
             ?? fm.homeDirectoryForCurrentUser.appendingPathComponent(".claude")
         try fm.createDirectory(at: configRoot, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])

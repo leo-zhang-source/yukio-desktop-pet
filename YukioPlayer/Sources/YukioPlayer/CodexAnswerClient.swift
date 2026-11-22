@@ -47,21 +47,34 @@ final class CodexAnswerClient {
         return turns
     }
 
+    /// A contiguous canonical tail through the present contains every possible
+    /// reply after a question in that tail. Older pages cannot answer a later call.
+    static func tailCoversQuestion(_ snapshot: [String: Any], callID: String) -> Bool {
+        guard let state = snapshot["turnHistory"] as? [String: Any], state["kind"] as? String == "canonical",
+              let history = state["history"] as? [String: Any],
+              let islands = history["islands"] as? [[String: Any]], islands.count == 1,
+              let end = islands[0]["newerBoundary"] as? [String: Any], end["status"] as? String == "exhausted",
+              let turns = try? Self.turns(in: snapshot) else { return false }
+        return turns.flatMap { $0["items"] as? [[String: Any]] ?? [] }.contains {
+            $0["id"] as? String == callID && $0["type"] as? String == "agentMessage" && $0["questions"] is [[String: Any]]
+        }
+    }
+
     /// The mutation is constructed only from a freshly fetched question in this exact thread.
     static func submission(snapshot: [String: Any], session: String, callID: String,
-                           question: PetQuestion, answer: String) throws -> (method: String, params: [String: Any]) {
+                           question: PetQuestion, answer: String, questionIndex: Int = 0) throws -> (method: String, params: [String: Any]) {
         if question.isApproval {
             return try approvalSubmission(snapshot: snapshot, session: session, callID: callID, question: question, answer: answer)
         }
         guard snapshot["id"] as? String == session else { throw Failure.protocolMismatch }
         let turns = try Self.turns(in: snapshot)
-        guard let turn = turns.last(where: { $0["status"] as? String == "inProgress" }) else { throw Failure.expired }
-        let items = turn["items"] as? [[String: Any]] ?? []
+        guard (0..<64).contains(questionIndex) else { throw Failure.ambiguous }
+        let items = turns.flatMap { $0["items"] as? [[String: Any]] ?? [] }
         if let item = items.first(where: { $0["id"] as? String == callID && $0["type"] as? String == "agentMessage" }),
-           let questions = item["questions"] as? [[String: Any]], let first = questions.first,
-           let title = first["title"] as? String,
-           PetQuestion.from(input: ["title": title])?.text == question.text {
-            let questionID = String(data: try JSONSerialization.data(withJSONObject: ["request_user_input_async", callID, 0], options: [.fragmentsAllowed]), encoding: .utf8)!
+           let questions = item["questions"] as? [[String: Any]], questions.indices.contains(questionIndex),
+           let title = questions[questionIndex]["title"] as? String,
+           PetQuestion.from(input: questions[questionIndex]) == question {
+            let questionID = String(data: try JSONSerialization.data(withJSONObject: ["request_user_input_async", callID, questionIndex], options: [.fragmentsAllowed]), encoding: .utf8)!
             for item in items where ["userMessage", "steeringUserMessage"].contains(item["type"] as? String ?? "") {
                 if item["type"] as? String == "steeringUserMessage", item["status"] as? String != "accepted" { continue }
                 let content = (item["content"] ?? item["input"]) as? [[String: Any]] ?? []
@@ -71,39 +84,57 @@ final class CodexAnswerClient {
                        let b = text.range(of: "</send_user_message_question_reply>"), a.upperBound <= b.lowerBound,
                        let data = String(text[a.upperBound..<b.lowerBound]).data(using: .utf8),
                        let replies = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]],
-                       replies.contains(where: { $0["questionItemId"] as? String == questionID }) { throw Failure.expired }
+                       replies.contains(where: { reply in
+                           guard let raw = reply["questionItemId"] as? String, let data = raw.data(using: .utf8),
+                                 let id = try? JSONSerialization.jsonObject(with: data) as? [Any], id.count == 3,
+                                 let tool = id[0] as? String, ["request_user_input_async", "functions.request_user_input_async"].contains(tool),
+                                 id[1] as? String == callID, let index = id[2] as? NSNumber,
+                                 CFGetTypeID(index) != CFBooleanGetTypeID() else { return false }
+                           return index.doubleValue == Double(questionIndex)
+                       }) { throw Failure.expired }
                 }
             }
             let reply = [["questionItemId": questionID, "question": title, "answer": answer]]
             let json = String(data: try JSONSerialization.data(withJSONObject: reply, options: [.sortedKeys, .withoutEscapingSlashes]), encoding: .utf8)!
             let text = "<send_user_message_question_reply>\n\(json)\n</send_user_message_question_reply>"
             let id = UUID().uuidString
-            return ("thread-follower-steer-turn", ["conversationId": session,
-                "input": [["type": "text", "text": text, "text_elements": []]],
-                "clientUserMessageId": id, "attachments": [],
-                "restoreMessage": ["id": id, "cwd": snapshot["cwd"] ?? NSNull(),
-                    "context": ["prompt": text, "addedFiles": [], "fileAttachments": [], "imageAttachments": [],
-                                "commentAttachments": [], "turnTrigger": "send_user_message_async_question"]]])
+            let input: [[String: Any]] = [["type": "text", "text": text, "text_elements": []]]
+            let restore: [String: Any] = ["id": id, "cwd": snapshot["cwd"] ?? NSNull(),
+                "context": ["prompt": text, "addedFiles": [], "fileAttachments": [], "imageAttachments": [],
+                            "commentAttachments": [], "turnTrigger": "send_user_message_async_question"]]
+            if turns.last?["status"] as? String == "inProgress" {
+                return ("thread-follower-steer-turn", ["conversationId": session, "input": input,
+                    "clientUserMessageId": id, "attachments": [], "restoreMessage": restore])
+            }
+            // Desktop async cards outlive a turn. Follow the client's ordinary
+            // start path, inheriting this chat's model and permissions unchanged.
+            return ("thread-follower-start-turn", ["conversationId": session, "turnStart": [
+                "request": ["threadId": session, "input": input, "clientUserMessageId": id,
+                            "turnTrigger": "send_user_message_async_question"],
+                "context": ["restoreMessage": restore, "attachments": [], "commentAttachments": [],
+                            "inheritThreadSettings": true]]])
         }
         // Blocking request_user_input is a server request, not a chat message.
         let requests = snapshot["requests"] as? [[String: Any]] ?? []
         let matching = requests.filter { request in
             guard request["method"] as? String == "item/tool/requestUserInput",
                   let params = request["params"] as? [String: Any],
-                  params["itemId"] as? String == callID,
-                  let questions = params["questions"] as? [[String: Any]], questions.count == 1,
-                  PetQuestion.from(input: questions[0])?.text == question.text else { return false }
+                  params["itemId"] as? String == callID else { return false }
             return true
         }
         guard matching.count == 1, let request = matching.first, let id = request["id"],
               let params = request["params"] as? [String: Any],
-              let questions = params["questions"] as? [[String: Any]],
+              let questions = params["questions"] as? [[String: Any]] else { throw Failure.expired }
+        // This request expects all answers together. Keep it visible and direct
+        // the user to the chat rather than reporting a live multi-part request expired.
+        guard questions.count == 1 else { throw Failure.ambiguous }
+        guard questionIndex == 0, PetQuestion.from(input: questions[0])?.text == question.text,
               let questionID = questions.first?["id"] as? String else { throw Failure.expired }
         return ("thread-follower-submit-user-input", ["conversationId": session, "requestId": id,
             "response": ["answers": [questionID: ["answers": [answer]]]]])
     }
 
-    func send(session: String, callID: String, question: PetQuestion, answer: String) throws {
+    func send(session: String, callID: String, question: PetQuestion, answer: String, questionIndex: Int = 0) throws {
         var dispatched = false
         do {
         let connection = try Connection(path: socketPath)
@@ -111,19 +142,29 @@ final class CodexAnswerClient {
         guard let owner = ownerReply["handledByClientId"] as? String else { throw Failure.unavailable }
         try connection.follow(session: session, owner: owner, following: true)
         defer { try? connection.follow(session: session, owner: owner, following: false) }
-        let snapshot = try connection.snapshot(session: session, owner: owner)
-        let submission = try Self.submission(snapshot: snapshot, session: session, callID: callID, question: question, answer: answer)
+        let current = try connection.snapshot(session: session, owner: owner)
+        let blocking = (current["requests"] as? [[String: Any]] ?? []).contains {
+            $0["method"] as? String == "item/tool/requestUserInput"
+                && ($0["params"] as? [String: Any])?["itemId"] as? String == callID
+        }
+        // Current server requests are authoritative. Async cards additionally
+        // require every later message, but need not load unrelated older pages.
+        let snapshot = question.isApproval || blocking || Self.tailCoversQuestion(current, callID: callID)
+            ? current : try connection.completeSnapshot(session: session, owner: owner)
+        let submission = try Self.submission(snapshot: snapshot, session: session, callID: callID, question: question, answer: answer, questionIndex: questionIndex)
         dispatched = true
-        let response = try connection.request(submission.method, params: submission.params, target: owner)
+        let response = try connection.request(submission.method, params: submission.params, version: submission.method == "thread-follower-start-turn" ? 2 : 1, target: owner)
         guard let result = response["result"] as? [String: Any] else { throw Failure.protocolMismatch }
         if submission.method == "thread-follower-steer-turn" {
             // A successful steer includes the active turn ID, not merely an IPC ack.
             guard let accepted = result["result"] as? [String: Any], accepted["turnId"] is String else { throw Failure.protocolMismatch }
+        } else if submission.method == "thread-follower-start-turn" {
+            guard let accepted = result["result"] as? [String: Any],
+                  let turn = accepted["turn"] as? [String: Any], turn["id"] is String else { throw Failure.protocolMismatch }
         } else {
             guard result["ok"] as? Bool == true else { throw Failure.protocolMismatch }
             // Server-request handlers can no-op for an expired request. Verify its completed item.
-            _ = try connection.request("thread-follower-load-complete-history", params: ["conversationId": session], target: owner)
-            let updated = try connection.snapshot(session: session, owner: owner)
+            let updated = try connection.refreshSnapshot(session: session, owner: owner)
             let turns = try Self.turns(in: updated)
             let confirmed = question.isApproval ? !(updated["requests"] as? [[String: Any]] ?? []).contains {
                 String(describing: $0["id"] ?? "") == String(describing: submission.params["requestId"] ?? "")
@@ -152,6 +193,7 @@ final class CodexAnswerClient {
         private var fd: Int32 = -1
         private var client = "initializing-client"
         private var snapshots: [[String: Any]] = []
+        private var lastSnapshotRevision: Double?
         private let deadline = Date().addingTimeInterval(12)
         init(path: String) throws {
             var info = stat()
@@ -202,13 +244,52 @@ final class CodexAnswerClient {
                 "targetClientIds": [owner], "version": 1,
                 "params": ["conversationId": session, "hostId": "local", "following": following]])
         }
-        func snapshot(session: String, owner: String) throws -> [String: Any] {
-            while Date() < deadline {
-                if let i = snapshots.firstIndex(where: { $0["conversationId"] as? String == session && $0["owner"] as? String == owner }) {
-                    let params = snapshots.remove(at: i)
-                    guard let change = params["change"] as? [String: Any], let state = change["conversationState"] as? [String: Any] else { throw Failure.protocolMismatch }
-                    return state
+        func completeSnapshot(session: String, owner: String) throws -> [String: Any] {
+            func load() throws -> Double {
+                let reply = try request("thread-follower-load-complete-history", params: ["conversationId": session], target: owner)
+                guard let result = reply["result"] as? [String: Any],
+                      let revision = Self.revision(result["revision"]) else { throw Failure.protocolMismatch }
+                return revision
+            }
+            let first = try load()
+            if let state = try takeSnapshot(session: session, owner: owner, minimumRevision: first) { return state }
+            // Loading incomplete history may publish patches only. Once it is
+            // complete, the same official request publishes a full snapshot.
+            let complete = try load()
+            return try snapshot(session: session, owner: owner, minimumRevision: complete)
+        }
+        func refreshSnapshot(session: String, owner: String) throws -> [String: Any] {
+            snapshots.removeAll()
+            // Repeating this same-user subscription requests a current snapshot;
+            // it does not fetch older history or change the chat.
+            try follow(session: session, owner: owner, following: true)
+            return try snapshot(session: session, owner: owner, minimumRevision: lastSnapshotRevision)
+        }
+        private static func revision(_ value: Any?) -> Double? {
+            guard let number = value as? NSNumber, CFGetTypeID(number) != CFBooleanGetTypeID() else { return nil }
+            let n = number.doubleValue
+            return n >= 0 && n <= 9_007_199_254_740_991 && n.rounded(.down) == n ? n : nil
+        }
+        private func takeSnapshot(session: String, owner: String, minimumRevision: Double?) throws -> [String: Any]? {
+            var newest: [String: Any]?
+            snapshots.removeAll { params in
+                guard params["conversationId"] as? String == session, params["owner"] as? String == owner else { return false }
+                if let change = params["change"] as? [String: Any],
+                   minimumRevision == nil || Self.revision(change["revision"]).map({ $0 >= minimumRevision! }) == true {
+                    if newest == nil || (Self.revision(change["revision"]) ?? -1) >= (Self.revision(newest?["revision"]) ?? -1) {
+                        newest = change
+                    }
                 }
+                return true
+            }
+            guard let change = newest else { return nil }
+            guard let state = change["conversationState"] as? [String: Any] else { throw Failure.protocolMismatch }
+            if let revision = Self.revision(change["revision"]) { lastSnapshotRevision = revision }
+            return state
+        }
+        func snapshot(session: String, owner: String, minimumRevision: Double? = nil) throws -> [String: Any] {
+            while Date() < deadline {
+                if let state = try takeSnapshot(session: session, owner: owner, minimumRevision: minimumRevision) { return state }
                 _ = try receive()
             }
             throw Failure.unavailable

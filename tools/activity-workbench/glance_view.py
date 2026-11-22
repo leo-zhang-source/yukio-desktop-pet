@@ -12,8 +12,9 @@ from handoff_view import HandoffView
 from task_summary import recap
 from plain_language import plain_words,readable_fragment
 from explanation import add_object_names
-from chat_catalog import activity_state, readable_title, opening_title, catalog_card, codex_project, claude_desktop_groups
+from chat_catalog import activity_state, readable_title, opening_title, catalog_card, codex_project, claude_desktop_groups, codex_pending_questions, apply_read_progress
 from localization import current_language
+from claude_desktop import apply_interaction, ENDED_ON_QUESTION, ended_on_blocking_question
 
 IGNORED={'reasoning_record_observed','inherited_context_record','context_record_observed','identity_conflict','foreign_session_record','identity_scope_unresolved'}
 NOISE={'token_count','token_usage_record','thread_settings_applied'}
@@ -223,6 +224,7 @@ class GlanceView:
             last_step=dict(action=clean(target,72),result=result_label,event_id=results[-1]['event_id'],sequence=request['sequence']) if len(descriptions)==1 else None
             reqs=[r for r in material.get('requests',[]) if r['sequence']==request['sequence'] and r['call_id']==call]
             if len(reqs)!=1:continue
+            if reqs[0].get('material_kind')=='question':continue
             if reqs[0].get('material_kind')=='proposal':
                 proposals.append(dict(reqs[0],text=reqs[0]['target']+' 拟修改片段（脚本请求，尚未确认写入）：'+reqs[0]['excerpt']))
                 continue
@@ -243,6 +245,8 @@ class GlanceView:
         elif latest_marker=='turn_cancelled' and not later_work:status='这一轮已取消'
         elif age is not None and age<90:status='刚有新活动';tone='fresh'
         else:status='暂时没有新消息'
+        ended_on_question=ended_on_blocking_question(markers[0][1] if markers else {},latest_marker,later_work)
+        if ended_on_question:status,tone,needs=ENDED_ON_QUESTION['status'],ENDED_ON_QUESTION['tone'],ENDED_ON_QUESTION['needs_you']
         # Do not keep an old waiting signal after a result, reply or closed turn.
         closed=max((seq for seq,r in selected if r.get('turn_marker',r.get('kind')) in ('turn_ended','turn_cancelled','context_boundary')),default=0)
         attention=waiting_request(context['operations'],current_start,closed)
@@ -266,7 +270,7 @@ class GlanceView:
             needs_you=needs,recent=meaningful,source_unavailable=source['unavailable'],source_missing=source['missing'],
             partial=warnings or source['missing']>0 or material['missing']>0 or len(rows)>=360 or context['window_limited'],
             snapshot=high,scope='最近保存的一段；不是全部任务。',recorder=read_status(self.history.databases[client],client),
-            results=results,fragment=fragment,proposals=proposals,turn_marker=latest_marker,
+            results=results,fragment=fragment,proposals=proposals,turn_marker=latest_marker,ended_on_question=ended_on_question,
             evidence={k:v for k,v in [('goal',user),('content',activity),('explanation',speech),('reason',reason),('fragment',fragment)] if v})
         detail.update(local_story(user,activity,reason,last_step,fragment))
         content_refs=[dict(title='具体活动',**activity)] if activity else []
@@ -289,6 +293,59 @@ class GlanceView:
                 detail.update(reason=brief['benefit'],reason_basis='inference')
                 detail['part_evidence']['reason']=[dict(title='整体目标',text=brief['goal']),dict(title='项目说明中的用途',text=brief['benefit'])]
         detail['part_evidence']['content']=content_refs
+        if client=='claude':apply_interaction(detail,state,parts[2],self.reader.claude_interactions,self.reader.claude_runtime)
+        lifecycle=detail.get('claude_lifecycle',{})
+        question_ids=lifecycle.get('question_ids',[])[:16]
+        if client=='claude' and lifecycle.get('phase')=='waiting' and question_ids and not source['unavailable']:
+            # Pending questions may be much older than the activity window.
+            # Fetch only their exact requests, then verify and read the original
+            # source bytes. Question text is never added to saved checkpoints.
+            placeholders=','.join('?' for _ in question_ids)
+            with self.history.connect(client) as db:
+                pending_rows=db.execute('SELECT e.sequence,e.record'+FROM+f" WHERE {scope} AND {CLIENT}=? AND e.sequence<=? AND e.sequence>? AND EXISTS (SELECT 1 FROM json_each(e.record,'$.blocks') block WHERE json_extract(block.value,'$.kind')='tool_requested' AND json_extract(block.value,'$.call_id') IN ({placeholders})) ORDER BY e.sequence DESC LIMIT 32",args+[client,high,current_start]+question_ids).fetchall()
+            pending_material=self.reader.read(client,parts,state,[(seq,json.loads(raw)) for seq,raw in pending_rows])
+            questions=[];seen_questions=set()
+            for item in pending_material['requests']:
+                if item.get('material_kind')!='question' or item['call_id'] not in question_ids:continue
+                index=lifecycle.get('question_index')
+                if item['call_id']==lifecycle.get('question_call_id') and type(index) is int and item['index']<index:continue
+                identity=(item['call_id'],item['index'])
+                if identity not in seen_questions:questions.append(item);seen_questions.add(identity)
+            if questions:
+                text=clean('等待你回答：'+'；'.join(item['text'] for item in questions[:4]),400)
+                detail.update(content=text,needs_you=text,content_basis='observed',
+                              explanation='这是 Claude 当前尚未收到完整回答的问题。',explanation_basis='observed')
+                refs=[dict(title='Claude 提问',text=item['text'],sequence=item['sequence'],event_id=item['event_id']) for item in questions[:4]]
+                detail['part_evidence']['content']=refs;detail['part_evidence']['explanation']=refs
+                detail['evidence']['content']=dict(questions[0],kind='operation',text=text)
+        if client=='codex' and not source['unavailable']:
+            pending=codex_pending_questions(state,parts[2])
+            if pending:
+                detail.update(status='等待你回答',tone='attention',needs_you='这条聊天还有尚未回答的问题。')
+                calls=sorted(pending,key=lambda c:pending[c]['ts'],reverse=True)[:16]
+                placeholders=','.join('?' for _ in calls)
+                with self.history.connect(client) as db:
+                    pending_rows=db.execute('SELECT e.sequence,e.record'+FROM+f" WHERE {scope} AND {CLIENT}=? AND e.sequence<=? AND json_extract(e.record,'$.kind')='tool_requested' AND COALESCE(json_extract(e.record,'$.call_id'),json_extract(e.record,'$.reported_id')) IN ({placeholders}) ORDER BY e.sequence DESC LIMIT 32",args+[client,high]+calls).fetchall()
+                material=self.reader.read(client,parts,state,[(seq,json.loads(raw)) for seq,raw in pending_rows])
+                questions=[];seen=set()
+                for item in material['requests']:
+                    identity=(item['call_id'],item.get('index'))
+                    if item.get('material_kind')!='question' or identity in seen:continue
+                    if item['call_id'] not in pending or item['index'] not in pending[item['call_id']]['indices']:continue
+                    questions.append(item);seen.add(identity)
+                if questions:
+                    text=clean('等待你回答：'+'；'.join(item['text'] for item in questions[:4]),400)
+                    detail.update(content=text,needs_you=text,content_basis='observed',
+                                  explanation='这是 Codex 尚未收到回答的问题；回合结束不会自动取消它。',explanation_basis='observed')
+                    refs=[dict(title='Codex 提问',text=item['text'],sequence=item['sequence'],event_id=item['event_id']) for item in questions[:4]]
+                    detail['part_evidence']['content']=refs;detail['part_evidence']['explanation']=refs
+                    detail['evidence']['content']=dict(questions[0],kind='operation',text=text)
+        apply_read_progress(detail,state)
+        if detail.get('reading_latest'):
+            detail.update(content='正在读取这条聊天的最新记录。',content_basis='observed',
+                          explanation='读完后会核对最新进展和待答问题。',explanation_basis='observed',partial=True)
+            detail['part_evidence']['content']=[];detail['part_evidence']['explanation']=[]
+            detail['evidence'].pop('content',None);detail['evidence'].pop('explanation',None)
         meaning={k:detail[k] for k in ('title','goal','content','explanation','reason','needs_you','partial','source_unavailable','results','fragment','turn_marker')}
         # Model freshness follows readable meaning, not receipt IDs, repeated
         # opaque calls or polling. Real changed actions/results still invalidate.

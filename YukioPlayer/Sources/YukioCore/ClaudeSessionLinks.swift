@@ -13,6 +13,19 @@ import Foundation
 /// 只读这些文件，不写入。这是桌面版的内部记录，不是公开接口，字段可能随版本变化；
 /// 认不出会话时返回 nil，调用方退回到只把 Claude 带到前面。
 public struct ClaudeSessionLinks: Sendable {
+    private final class RetirementCache: @unchecked Sendable {
+        let lock = NSLock()
+        struct Entry {
+            let modified: Date
+            let size: UInt64
+            let inode: UInt64
+            let owner: String
+            let current: String
+            let prior: [String]
+        }
+        var entries: [URL: Entry] = [:]
+    }
+    private let retirementCache = RetirementCache()
     public let sessionsDir: URL
     /// 每份记录只读开头这么多字节：要找的两个字段都在最前面，后面是几百 KB 的快照。
     public var headBytes = 64 << 10
@@ -59,6 +72,46 @@ public struct ClaudeSessionLinks: Sendable {
         }
         for key in ambiguous { aliases.removeValue(forKey: key) }
         return aliases
+    }
+
+    /// Desktop rewinds copy history into a new transcript and may later touch
+    /// the abandoned file. Only explicit, unambiguous ownership retires it.
+    public func retiredTranscriptSessions() -> Set<String> {
+        retirementCache.lock.lock(); defer { retirementCache.lock.unlock() }
+        var claims: [String: Set<String>] = [:]
+        var entries: [(owner: String, current: String, prior: [String])] = []
+        var updated: [URL: RetirementCache.Entry] = [:]
+        var remaining = 64 << 20
+        for url in records() {
+            guard let attrs = try? FileManager.default.attributesOfItem(atPath: url.path),
+                  attrs[.type] as? FileAttributeType == .typeRegular,
+                  let modified = attrs[.modificationDate] as? Date,
+                  let size = attrs[.size] as? UInt64, size <= 2 << 20,
+                  let inode = attrs[.systemFileNumber] as? UInt64 else { continue }
+            let entry: RetirementCache.Entry
+            if let saved = retirementCache.entries[url], saved.modified == modified, saved.size == size, saved.inode == inode {
+                entry = saved
+            } else {
+                remaining -= Int(size)
+                if remaining < 0 { return [] }
+                guard let data = Self.readHead(url, bytes: (2 << 20) + 1), data.count <= 2 << 20,
+                  let row = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+                  let owner = row["sessionId"] as? String, owner == url.deletingPathExtension().lastPathComponent,
+                  let current = row["cliSessionId"] as? String, UUID(uuidString: current) != nil,
+                  let prior = (row["priorCliSessionIds"] ?? [String]()) as? [String], prior.count <= 256,
+                  prior.allSatisfy({ UUID(uuidString: $0) != nil }) else { continue }
+                entry = .init(modified: modified, size: size, inode: inode, owner: owner, current: current, prior: prior)
+            }
+            updated[url] = entry
+            let scope = url.deletingLastPathComponent().path + "/" + entry.owner
+            entries.append((scope, entry.current, entry.prior))
+            for id in [entry.current] + entry.prior { claims[id, default: []].insert(scope) }
+        }
+        retirementCache.entries = updated
+        return Set(entries.flatMap { entry in
+            guard claims[entry.current]?.count == 1 else { return [String]() }
+            return entry.prior.filter { $0 != entry.current && claims[$0]?.count == 1 }
+        })
     }
 
     /// 点击举着的牌子时要打开的链接。认不出会话时 nil。

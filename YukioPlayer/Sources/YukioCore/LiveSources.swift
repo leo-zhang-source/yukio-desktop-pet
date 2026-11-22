@@ -73,6 +73,11 @@ public final class ClaudeTranscriptSource {
     private var started = false
     private var lastScan: Double = -.infinity
     private let parser = ClaudeTranscriptParser()
+    private let desktopLinks: ClaudeSessionLinks?
+    private var retired: Set<String> = []
+    private let runtime: ClaudeRuntimeIndex
+    private var live: [String: ClaudeRuntimeIndex.Entry] = [:]
+    public func acceptsInteraction(session: String) -> Bool { !retired.contains(session) }
 
     func observeStopHook(_ obj: [String: Any], receivedAt: Double) -> [PetEvent] {
         parser.observeStopHook(obj, receivedAt: receivedAt)
@@ -85,8 +90,13 @@ public final class ClaudeTranscriptSource {
             && FileManager.default.isReadableFile(atPath: file.path)
     }
 
-    public init(projectsDir: URL = ClaudeTranscriptSource.defaultProjectsDir()) {
+    public init(projectsDir: URL = ClaudeTranscriptSource.defaultProjectsDir(), desktopSessionsDir: URL? = nil,
+                runtimeIndex: ClaudeRuntimeIndex? = nil) {
         self.projectsDir = projectsDir
+        runtime = runtimeIndex ?? ClaudeRuntimeIndex(root: projectsDir.deletingLastPathComponent().appendingPathComponent("sessions"))
+        let standard = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".claude/projects")
+        desktopLinks = desktopSessionsDir.map { ClaudeSessionLinks(sessionsDir: $0) }
+            ?? (projectsDir.standardizedFileURL == standard.standardizedFileURL ? ClaudeSessionLinks() : nil)
     }
 
     public static func defaultProjectsDir() -> URL {
@@ -99,7 +109,9 @@ public final class ClaudeTranscriptSource {
     /// 读取自上次调用以来的新事件。调用方用事件自身的时间戳 ingest。
     public func poll(now: Double) -> [PetEvent] {
         var out: [PetEvent] = []
-        if now - lastScan >= rescanIntervalMs {
+        let scanned = now - lastScan >= rescanIntervalMs
+        if scanned {
+            live = runtime.snapshot(now: now)
             lastScan = now
             scan(now: now, into: &out)
         }
@@ -113,6 +125,17 @@ public final class ClaudeTranscriptSource {
             }
             for obj in objects { out += parser.events(fromLine: obj) }
         }
+        if scanned {
+            for row in live.values where !retired.contains(row.session) {
+                out.append(PetEvent(ts: now, source: ClaudeTranscriptParser.source,
+                                    session: row.session, kind: .clientState, detail: row.status, clientStateAt: row.updatedAt))
+            }
+            for session in runtime.exited where !retired.contains(session) {
+                out.append(PetEvent(ts: now, source: ClaudeTranscriptParser.source, session: session,
+                                    kind: .clientState, detail: "offline"))
+                parser.reset(session: session)
+            }
+        }
         status.trackedFiles = files.count
         if let last = out.last?.ts { status.lastEventAt = max(status.lastEventAt ?? 0, last) }
         return out
@@ -120,6 +143,12 @@ public final class ClaudeTranscriptSource {
 
     private func scan(now: Double, into out: inout [PetEvent]) {
         let fm = FileManager.default
+        retired = desktopLinks?.retiredTranscriptSessions() ?? []
+        for (path, file) in files where retired.contains(file.url.deletingPathExtension().lastPathComponent) {
+            let session = file.url.deletingPathExtension().lastPathComponent
+            out.append(PetEvent(ts: now, source: ClaudeTranscriptParser.source, session: session, kind: .taskAbort))
+            parser.reset(session: session); files.removeValue(forKey: path)
+        }
         let keys: [URLResourceKey] = [.isDirectoryKey, .contentModificationDateKey, .fileSizeKey]
         guard let projects = try? fm.contentsOfDirectory(at: projectsDir, includingPropertiesForKeys: [.isDirectoryKey],
                                                          options: [.skipsHiddenFiles]) else {
@@ -131,14 +160,15 @@ public final class ClaudeTranscriptSource {
             guard let entries = try? fm.contentsOfDirectory(at: dir, includingPropertiesForKeys: keys,
                                                             options: [.skipsHiddenFiles]) else { continue }
             for url in entries where url.pathExtension == "jsonl" && files[url.path] == nil {
+                if retired.contains(url.deletingPathExtension().lastPathComponent) { continue }
                 guard let v = try? url.resourceValues(forKeys: Set(keys)), v.isDirectory != true,
                       let mtime = v.contentModificationDate?.timeIntervalSince1970 else { continue }
                 let age = now - mtime * 1000
                 let size = UInt64(v.fileSize ?? 0)
-                if age > trackWindowMs { continue }
+                if age > trackWindowMs && live[url.deletingPathExtension().lastPathComponent] == nil { continue }
                 // 启动时只回放最近活跃的会话；运行中新发现的文件（新会话或恢复的旧会话）
                 // 也只回放末尾，历史事件带旧时间戳，不会被当成实时活动。
-                let recent = !started ? age <= bootstrapWindowMs : true
+                let recent = !started ? age <= bootstrapWindowMs || live[url.deletingPathExtension().lastPathComponent] != nil : true
                 let tail = recent ? (size > bootstrapTailBytes ? size - bootstrapTailBytes : 0) : size
                 let file = TailedFile(url: url, offset: tail, skipPartialLine: recent && tail > 0)
                 files[url.path] = file

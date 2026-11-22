@@ -38,7 +38,9 @@ enum BrowserOpenChat {
             var ids = [CGDirectDisplayID](repeating: 0, count: 32)
             var count: UInt32 = 0
             CGGetActiveDisplayList(32, &ids, &count)
-            let screens = ids.prefix(Int(count)).map(CGDisplayBounds)
+            // Nobody reads a chat on a sleeping display or behind the lock screen.
+            let locked = (CGSessionCopyCurrentDictionary() as? [String: Any])?["CGSSessionScreenIsLocked"] as? Bool == true
+            let screens = locked ? [] : ids.prefix(Int(count)).filter { CGDisplayIsAsleep($0) == 0 }.map(CGDisplayBounds)
             let dockPIDs = Set(NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.dock").map(\.processIdentifier))
             let windows = list.compactMap { row -> Window? in
                 guard let id = row[kCGWindowNumber as String] as? Int,
@@ -48,8 +50,9 @@ enum BrowserOpenChat {
                       let bounds = CGRect(dictionaryRepresentation: raw as CFDictionary),
                       (row[kCGWindowAlpha as String] as? Double ?? 1) > 0.05,
                       pid != ProcessInfo.processInfo.processIdentifier else { return nil }
-                let overlay = ChatWindowVisibility.isDesktopOverlay(isDock: dockPIDs.contains(pid),
-                    layer: layer, bounds: bounds, screens: screens)
+                let overlay = ChatWindowVisibility.isSystemOverlay(layer: layer)
+                    || ChatWindowVisibility.isDesktopOverlay(isDock: dockPIDs.contains(pid),
+                        layer: layer, bounds: bounds, screens: screens)
                 return Window(id: id, pid: pid, bounds: bounds, layer: layer, isDesktopOverlay: overlay)
             }
             return Snapshot(windows: windows, screens: screens)
@@ -58,6 +61,12 @@ enum BrowserOpenChat {
             guard let index = windows.firstIndex(of: window) else { return false }
             let covers = windows[..<index].filter { !$0.isDesktopOverlay }.map(\.bounds)
             return ChatWindowVisibility.canRead(rect.intersection(window.bounds), screens: screens, covers: covers)
+        }
+        /// Menus, tooltips, banners and other overlay surfaces come and go all the time
+        /// without changing what can be read; only windows that can cover content count.
+        func sameContent(as other: Snapshot) -> Bool {
+            screens == other.screens
+                && windows.filter { !$0.isDesktopOverlay } == other.windows.filter { !$0.isDesktopOverlay }
         }
         func mainWindows(pid: pid_t) -> [Window] {
             windows.filter { $0.pid == pid && $0.layer == 0 && $0.bounds.width >= 160 && $0.bounds.height >= 120 }
@@ -99,7 +108,7 @@ enum BrowserOpenChat {
         }
         // Window moves, tab changes are checked again at the next poll. Never use
         // a result after a window has vanished, moved or been covered meanwhile.
-        guard Snapshot.capture().windows == snapshot.windows else { return [] }
+        guard Snapshot.capture().sameContent(as: snapshot) else { return [] }
         return chats
     }
 

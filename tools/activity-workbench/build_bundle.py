@@ -12,9 +12,25 @@ import sys
 import zipfile
 
 ROOT=Path(__file__).resolve().parent
-RUNTIME=('agent_setup.py','agent_explanation.py','chat_catalog.py','claude_desktop.py','conversation_text.py','work_understanding.py','history_review.py','reading_view.py','page_explanation_policy.py','plain_language.py','task_summary.py','project_context.py','handoff_view.py','source_context.py','glance_view.py','glance_automation.py','server.py','history_view.py','context_view.py','explanation.py','runtime_identity.py','localization.py','collector_status.py','launcher.py','start-macos.command','start-windows.cmd')
+RUNTIME=('agent_setup.py','agent_explanation.py','chat_catalog.py','claude_desktop.py','claude_runtime.py','conversation_text.py','work_understanding.py','history_review.py','reading_view.py','page_explanation_policy.py','plain_language.py','task_summary.py','project_context.py','handoff_view.py','source_context.py','glance_view.py','glance_automation.py','server.py','history_view.py','context_view.py','explanation.py','runtime_identity.py','localization.py','collector_status.py','launcher.py','start-macos.command','start-windows.cmd')
+
+def validate_runtime_files(names):
+    # Keep the explicit data-free allowlist, but fail before building if a new
+    # local dependency was omitted. Source-tree imports can hide this mistake.
+    included=set(names)
+    for name in names:
+        if not name.endswith('.py'):continue
+        for node in ast.walk(ast.parse((ROOT/name).read_text(encoding='utf-8'))):
+            imports=[]
+            if isinstance(node,ast.Import):imports=[alias.name for alias in node.names]
+            elif isinstance(node,ast.ImportFrom) and not node.level and node.module:imports=[node.module]
+            for module in imports:
+                dependency=module.split('.')[0]+'.py'
+                if (ROOT/dependency).is_file() and dependency not in included:
+                    raise ValueError('Missing packaged dependency: '+name+' -> '+dependency)
 
 def build(destination,macos=False):
+    validate_runtime_files(RUNTIME)
     if destination.exists():raise ValueError('Use a new output directory')
     destination.mkdir(parents=True)
     package=destination/'Yukio-Activity-Workbench';package.mkdir()

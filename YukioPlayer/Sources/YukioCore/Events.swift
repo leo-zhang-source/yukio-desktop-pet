@@ -53,6 +53,8 @@ public struct PetEvent: Codable, Equatable, Sendable {
         /// 用户发出新请求，任务开始。detail 为请求的第一行。
         case taskStart = "task_start"
         /// 任务正常结束（已给出回答）。
+        /// activity 为 question_for_user 时，这一轮是以“必须等你回答才能继续”的提问收尾的，
+        /// 问题原文在 detail：举问题牌而不是完成牌。只是顺带提的下一步建议不带这个标记。
         case taskEnd = "task_end"
         /// 任务被中断／取消／会话关闭。
         case taskAbort = "task_abort"
@@ -66,6 +68,8 @@ public struct PetEvent: Codable, Equatable, Sendable {
         case activityFailed = "activity_failed"
         /// 模型产生了思考内容或过程说明：只说明任务仍在进行。
         case thinking
+        /// Validated Claude process presence; never proves successful completion.
+        case clientState = "client_state"
         /// 最终回答已输出。
         case finalAnswer = "final_answer"
         /// 来源断开（文件消失、适配器出错）；该来源的所有会话回到空闲。
@@ -87,6 +91,13 @@ public struct PetEvent: Codable, Equatable, Sendable {
     public var kind: Kind
     /// 工具调用 ID（tool_use_id），用于配对开始／结束与去重。
     public var eventID: String?
+    /// A live interaction channel may represent one item of a multi-question
+    /// Claude tool. The transcript receipt retires every item of that exact call.
+    public var relatedCallID: String?
+    public var clientStateAt: Double?
+    /// Codex async questions remain answerable independently of an agent turn.
+    public var persistentQuestion: Bool?
+    public var questionIndex: Int?
     public var activity: PetState?
     /// 原始工具名，仅用于显示和调试。
     public var tool: String?
@@ -99,12 +110,18 @@ public struct PetEvent: Codable, Equatable, Sendable {
 
     public init(ts: Double, source: String, session: String, kind: Kind,
                 eventID: String? = nil, activity: PetState? = nil, tool: String? = nil,
-                detail: String? = nil, todos: [TodoItem]? = nil, question: PetQuestion? = nil) {
+                detail: String? = nil, todos: [TodoItem]? = nil, question: PetQuestion? = nil,
+                relatedCallID: String? = nil, clientStateAt: Double? = nil,
+                persistentQuestion: Bool? = nil, questionIndex: Int? = nil) {
         self.ts = ts
         self.source = source
         self.session = session
         self.kind = kind
         self.eventID = eventID
+        self.relatedCallID = relatedCallID
+        self.clientStateAt = clientStateAt
+        self.persistentQuestion = persistentQuestion
+        self.questionIndex = questionIndex
         self.activity = activity
         self.tool = tool
         self.detail = detail

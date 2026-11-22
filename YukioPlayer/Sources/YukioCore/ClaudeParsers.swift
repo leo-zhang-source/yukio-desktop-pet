@@ -21,10 +21,23 @@ public final class ClaudeTranscriptParser {
         var responseID: String?
         var responseHasTools = false
         var answerEntrypoint: String?
+        var confirmedAt: Double?
+        /// The turn's closing next-step box asked something the chat cannot continue without.
+        var handoffQuestion: String?
+        var calls: [String: String] = [:]
+        var seen: Set<String> = []
+        var seenOrder: [String] = []
         var background: [String: String] = [:]
         var backgroundLimited = false
         var stops: [String: (hasPendingWork: Bool, receivedAt: Double)] = [:]
-        var pending: Bool { backgroundLimited || background.values.contains(promptID ?? "") }
+        var pending: Bool { !calls.isEmpty || backgroundLimited || background.values.contains(promptID ?? "") }
+
+        func remember(_ id: String) -> Bool {
+            guard !seen.contains(id) else { return false }
+            seen.insert(id); seenOrder.append(id)
+            if seenOrder.count > 4096 { seen.remove(seenOrder.removeFirst()) }
+            return true
+        }
     }
     private var turns: [String: Turn] = [:]
 
@@ -58,7 +71,7 @@ public final class ClaudeTranscriptParser {
                 guard let row = item as? [String: Any], let id = row["id"] as? String,
                       !id.isEmpty, id.count <= 256 else { pending = true; continue }
                 let key = prefix + id
-                if let status = row["status"] as? String, ["completed", "failed", "killed", "cancelled"].contains(status) {
+                if let status = row["status"] as? String, ["completed", "failed", "killed", "cancelled", "stopped"].contains(status) {
                     turn.background.removeValue(forKey: key); continue
                 }
                 active.insert(key)
@@ -87,6 +100,30 @@ public final class ClaudeTranscriptParser {
 
     public init() {}
 
+    func reset(session: String) { turns.removeValue(forKey: session) }
+
+    private func completion(_ turn: Turn, session: String) -> [PetEvent] {
+        guard let at = turn.confirmedAt, let answer = turn.answerID, !turn.pending else { return [] }
+        turn.completedAnswerID = answer; turn.answerID = nil; turn.confirmedAt = nil
+        let question = turn.handoffQuestion; turn.handoffQuestion = nil
+        return [PetEvent(ts: at, source: Self.source, session: session, kind: .finalAnswer),
+                PetEvent(ts: at, source: Self.source, session: session, kind: .taskEnd,
+                         activity: question == nil ? nil : .question_for_user, detail: question)]
+    }
+
+    /// Claude Desktop closes a turn with a "next step" box (`mcp__ccd_turn__wrap_up`): a recap,
+    /// optionally one question with reply buttons, and `blocked: true` only when the work
+    /// cannot go on until the user answers. That flag is the client's own distinction between
+    /// a question and a next-step suggestion; the wording of the question is never interpreted.
+    /// Internal client format: anything unrecognized stays an ordinary completed turn.
+    static let nextStepTool = "mcp__ccd_turn__wrap_up"
+    static func blockingQuestion(nextStep input: [String: Any]) -> String? {
+        guard let flag = input["blocked"] as? NSNumber, CFGetTypeID(flag) == CFBooleanGetTypeID(), flag.boolValue,
+              let ask = (input["ask"] as? String)?.split(whereSeparator: \.isWhitespace).joined(separator: " "),
+              !ask.isEmpty else { return nil }
+        return String(ask.prefix(200))
+    }
+
     private func observeBackground(_ obj: [String: Any], turn: Turn) {
         guard let result = obj["toolUseResult"] as? [String: Any] else { return }
         if let id = result["backgroundTaskId"] as? String, !id.isEmpty, id.count <= 256 {
@@ -94,7 +131,7 @@ public final class ClaudeTranscriptParser {
             else { turn.backgroundLimited = true }
         }
         if let task = result["task"] as? [String: Any], let status = task["status"] as? String,
-           ["completed", "failed", "killed", "cancelled"].contains(status),
+           ["completed", "failed", "killed", "cancelled", "stopped"].contains(status),
            let id = (task["task_id"] ?? task["id"]) as? String { turn.background.removeValue(forKey: id) }
     }
 
@@ -110,7 +147,7 @@ public final class ClaudeTranscriptParser {
         }
         if let body = captures(#"^\s*<task-notification>(.*?)</task-notification>"#, in: text).first {
             let ids = captures(#"<task-id>([A-Za-z0-9_-]{1,256})</task-id>"#, in: body)
-            let statuses = captures(#"<status>(completed|failed|killed|cancelled)</status>"#, in: body)
+            let statuses = captures(#"<status>(completed|failed|killed|cancelled|stopped)</status>"#, in: body)
             if ids.count == 1, statuses.count == 1 { turn.background.removeValue(forKey: ids[0]) }
         }
         return true
@@ -134,13 +171,29 @@ public final class ClaudeTranscriptParser {
         let turn = turn(for: session)
         if type == "last-prompt" {
             guard let answer = turn.answerID, obj["leafUuid"] as? String == answer,
-                  turn.answerEntrypoint == "sdk-cli", !turn.pending else { return [] }
-            turn.completedAnswerID = answer; turn.answerID = nil
-            return [PetEvent.Kind.finalAnswer, .taskEnd].map {
-                PetEvent(ts: turn.answerTimestamp, source: Self.source, session: session, kind: $0)
-            }
+                  turn.answerEntrypoint == "sdk-cli" else { return [] }
+            turn.confirmedAt = turn.answerTimestamp
+            return completion(turn, session: session)
         }
         guard let ts = PetEvent.parseTimestamp(obj["timestamp"] as? String) else { return [] }
+        if let id = obj["uuid"] as? String, !id.isEmpty, id.count <= 256,
+           !turn.remember(type == "user" ? id : "\(id):\(ts)") { return [] }
+        // Parallel results can be appended after a newer request. A global
+        // timestamp watermark must not discard a receipt for an open call.
+        if ts < turn.latestTimestamp, type == "user",
+           let message = obj["message"] as? [String: Any],
+           message["role"] == nil || message["role"] as? String == "user",
+           obj["isMeta"] as? Bool != true, obj["isCompactSummary"] as? Bool != true,
+           let blocks = message["content"] as? [[String: Any]] {
+            var out: [PetEvent] = []
+            for block in blocks where block["type"] as? String == "tool_result" {
+                guard let id = block["tool_use_id"] as? String, turn.calls.removeValue(forKey: id) != nil else { continue }
+                out.append(PetEvent(ts: ts, source: Self.source, session: session,
+                    kind: Self.isFailure(block) ? .activityFailed : .activityEnd, eventID: id))
+            }
+            if !out.isEmpty { observeBackground(obj, turn: turn); out += completion(turn, session: session) }
+            return out
+        }
         guard ts >= turn.latestTimestamp else { return [] }
 
         func ev(_ kind: PetEvent.Kind, id: String? = nil, activity: PetState? = nil, tool: String? = nil,
@@ -164,27 +217,31 @@ public final class ClaudeTranscriptParser {
                 guard let kind = userText(text, hasOtherBlocks: hasOtherBlocks) else { return [] }
                 turn.latestTimestamp = ts
                 turn.answerID = nil
+                turn.confirmedAt = nil
+                turn.calls.removeAll()
                 turn.promptID = (obj["promptId"] as? String) ?? (obj["uuid"] as? String) ?? "turn:\(ts)"
                 turn.hookPromptID = turn.promptID
                 turn.responseID = nil
                 turn.responseHasTools = false
+                turn.handoffQuestion = nil
                 return [ev(kind, detail: Self.promptLine(text))]
             }
             if let blocks = content as? [[String: Any]] {
                 let results = blocks.filter { $0["type"] as? String == "tool_result" }
                 if !results.isEmpty {
                     turn.latestTimestamp = ts
-                    turn.answerID = nil
+                    if ts > turn.answerTimestamp { turn.answerID = nil; turn.confirmedAt = nil }
                     observeBackground(obj, turn: turn)
                     var out = results.compactMap { (b: [String: Any]) -> PetEvent? in
                         guard let id = b["tool_use_id"] as? String else { return nil }
+                        turn.calls.removeValue(forKey: id)
                         return ev(Self.isFailure(b) ? .activityFailed : .activityEnd, id: id)
                     }
                     // TaskCreate 新任务的编号只在结果里。
                     if let item = ClaudeTasks.created(fromResult: obj["toolUseResult"]) {
                         out.append(ev(.todoUpdate, todos: [item]))
                     }
-                    return out
+                    return out + completion(turn, session: session)
                 }
                 let text = blocks.compactMap { $0["type"] as? String == "text" ? $0["text"] as? String : nil }
                     .joined(separator: "\n")
@@ -202,7 +259,9 @@ public final class ClaudeTranscriptParser {
             if let id = obj["uuid"] as? String, id == turn.completedAnswerID { return [] }
             turn.latestTimestamp = ts
             turn.answerID = nil
+            turn.confirmedAt = nil
             if message["model"] as? String == "<synthetic>" {
+                turn.calls.removeAll()
                 // 客户端合成的消息：本轮不会再有真实回答。
                 // API 报错带 isApiErrorMessage=true，算失败；“No response requested.”等中断提示不算。
                 return [ev(obj["isApiErrorMessage"] as? Bool == true ? .taskFailed : .taskAbort)]
@@ -229,9 +288,15 @@ public final class ClaudeTranscriptParser {
                 switch b["type"] as? String {
                 case "tool_use":
                     let name = (b["name"] as? String) ?? ""
+                    if let id = b["id"] as? String, !id.isEmpty, id.count <= 256 {
+                        if turn.calls.count < 4096 { turn.calls[id] = name }
+                        else { turn.backgroundLimited = true }
+                    }
                     let input = (b["input"] as? [String: Any]) ?? [:]
+                    // The last box of the turn decides; a later plain recap withdraws the question.
+                    if name == Self.nextStepTool { turn.handoffQuestion = Self.blockingQuestion(nextStep: input) }
                     let activity: PetState?
-                    switch ClaudeToolClassifier.classify(tool: name, input: input) {
+                    switch name == "ExitPlanMode" ? .activity(.question_for_user) : ClaudeToolClassifier.classify(tool: name, input: input) {
                     case .activity(let s): activity = s
                     case .continuePrevious: activity = nil
                     }
@@ -268,7 +333,6 @@ public final class ClaudeTranscriptParser {
                       number.doubleValue.isFinite, number.doubleValue >= 0 else { return [] }
             }
             turn.latestTimestamp = ts
-            turn.answerID = nil
             let stopped = subtype == "turn_duration" || (obj["preventedContinuation"] as? Bool == false
                 && obj["hasOutput"] as? Bool == false
                 && (obj["hookErrors"] as? [Any])?.isEmpty == true
@@ -277,9 +341,13 @@ public final class ClaudeTranscriptParser {
             let backgroundPending = turn.hookPromptID.flatMap { turn.stops[$0] }.map {
                 $0.receivedAt >= turn.answerTimestamp && $0.hasPendingWork
             } ?? false
-            guard stopped, !backgroundPending, !turn.pending else { return [ev(.thinking)] }
-            turn.completedAnswerID = answer
-            return [ev(.finalAnswer), ev(.taskEnd)]
+            guard stopped, !backgroundPending else {
+                turn.answerID = nil; turn.confirmedAt = nil
+                return [ev(.thinking)]
+            }
+            turn.confirmedAt = ts
+            let ended = completion(turn, session: session)
+            return ended.isEmpty ? [ev(.thinking)] : ended
 
         case "api-request":
             // Only the observed desktop main-loop request shape is recognized;
@@ -326,7 +394,8 @@ public final class ClaudeTranscriptParser {
         } else {
             text = ""
         }
-        return !(text.contains("doesn't want to proceed") || text.hasPrefix("[Request interrupted"))
+        return !(text.contains("doesn't want to proceed") || text.hasPrefix("[Request interrupted")
+                 || text == "Permission denied by hook" || text == "The user declined this operation in Yukio.")
     }
 }
 
@@ -407,8 +476,8 @@ public struct ClaudeHookParser: Sendable {
 enum ClaudeTasks {
     static func events(tool: String, input: [String: Any]) -> (kind: PetEvent.Kind, items: [TodoItem])? {
         switch tool {
-        case "TodoWrite":
-            guard let todos = input["todos"] as? [[String: Any]] else { return nil }
+        case "TodoWrite", "mcp__ccd_turn__update_plan":
+            guard let todos = input[tool == "TodoWrite" ? "todos" : "items"] as? [[String: Any]] else { return nil }
             let items = todos.enumerated().map { (i, t) in
                 TodoItem(id: idString(t["id"]) ?? String(i),
                          subject: (t["content"] as? String) ?? (t["activeForm"] as? String),

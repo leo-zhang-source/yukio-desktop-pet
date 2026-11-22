@@ -21,6 +21,26 @@ from test_workbench import fixture
 class LauncherTests(unittest.TestCase):
     def setUp(self):self.temp=tempfile.TemporaryDirectory();self.root=Path(self.temp.name)
     def tearDown(self):self.temp.cleanup()
+    def test_packaging_rejects_an_omitted_local_dependency(self):
+        from build_bundle import RUNTIME,validate_runtime_files
+        validate_runtime_files(RUNTIME)
+        with self.assertRaisesRegex(ValueError,'claude_runtime.py'):
+            validate_runtime_files(tuple(name for name in RUNTIME if name!='claude_runtime.py'))
+
+    def test_packaged_launcher_starts_without_source_tree_or_user_profile(self):
+        from build_bundle import build
+        destination=self.root/'portable';build(destination)
+        profile=self.root/'profile';profile.mkdir()
+        result=subprocess.run([sys.executable,str(destination/'Yukio-Activity-Workbench/launcher.py'),
+            '--check','--data-dir',str(profile/'data')],cwd=profile,
+            env={'PATH':'/nonexistent','HOME':str(profile),'CFFIXED_USER_HOME':str(profile),
+                 'PYTHONNOUSERSITE':'1','LANG':'en_US.UTF-8'},
+            capture_output=True,text=True,timeout=15)
+        self.assertEqual(result.returncode,0,result.stderr)
+        readiness=json.loads(result.stdout)
+        self.assertTrue(readiness['collector_code_available'])
+        self.assertTrue(all(not item['available'] for item in readiness['clients']))
+        self.assertFalse((profile/'data').exists())
     def launch_until_ready(self,port,data):
         process=subprocess.Popen([sys.executable,str(ROOT/'launcher.py'),'--no-browser','--fallback-port','--port',str(port),'--data-dir',str(data)],stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True)
         lines=queue.Queue()

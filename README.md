@@ -1,3 +1,5 @@
+**Maintenance branch:** this source also contains unaccepted lifecycle candidates 67–69. Preview 5 downloads are built from `main`, not this branch.
+
 <div align="center">
 
 # Yukio
@@ -10,7 +12,7 @@ A Mac desktop companion that animates coding activity, explains progress and ale
 
 **English** · [简体中文](README.zh-CN.md)
 
-**[Download Mac preview](https://github.com/leo-zhang-source/yukio-desktop-pet/releases/tag/v5.4-preview.4)** · [Quick start](docs/MAC-USER-GUIDE.md) · [Online animation demo](https://is.gd/yukioapp)
+**[Download Mac preview](https://github.com/leo-zhang-source/yukio-desktop-pet/releases/tag/v5.4-preview.5)** · [Quick start](docs/MAC-USER-GUIDE.md) · [Online animation demo](https://is.gd/yukioapp)
 
 </div>
 
@@ -41,7 +43,7 @@ To try explanations or answer delivery, connect your own assistant using the [qu
 
 ## Downloads and scope
 
-For **Apple silicon Macs, macOS 13+**, with English and Chinese interfaces. **5.4 Preview 4 (66)** fixes Claude completion detection and keeps current workbench content in step with new messages. This update passed its completion/freshness checks in an independent Mac VM. Full first-run acceptance is still incomplete. Windows and cloud Cowork are deferred.
+For **Apple silicon Macs, macOS 13+**, with English and Chinese interfaces. **5.4 Preview 5 (66.8)** improves completion-sign visibility, distinguishes Claude blocking questions, and adds workbench display choices and an Open this chat button. This update passed its completion/freshness checks in an independent Mac VM. Full first-run acceptance is still incomplete. Windows and cloud Cowork are deferred.
 
 The package is not notarized; see [first-launch instructions](docs/MAC-HELP.md#install). Older versions need one manual installation; see the [current update instructions](docs/MANUAL-UPDATES.md#en).
 
@@ -51,4 +53,4 @@ Activity records and search stay local. Enabling AI explanations sends relevant 
 
 A native **Swift / AppKit** companion with a **Python / JavaScript** activity workbench. Animations use transparent layers, localized motion and independent blinking.
 
-[What changed](docs/releases/5.4-preview.4.md) · [Usage and troubleshooting](docs/MAC-HELP.md) · [Documentation](docs/README.md) · [Source and build](docs/remediation/MAC-BUILD.md) · [Development and validation](DEVELOPMENT.md) · [Report an issue](https://github.com/leo-zhang-source/yukio-desktop-pet/issues)
+[What changed](docs/releases/5.4-preview.5.md) · [Usage and troubleshooting](docs/MAC-HELP.md) · [Documentation](docs/README.md) · [Source and build](docs/remediation/MAC-BUILD.md) · [Development and validation](DEVELOPMENT.md) · [Report an issue](https://github.com/leo-zhang-source/yukio-desktop-pet/issues)

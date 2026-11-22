@@ -29,6 +29,19 @@ import Testing
         }
     }
 
+    /// Claude Desktop publishes its current chat as `claude.ai/epitaxy/local_…`, without a scheme.
+    @Test func claudeDesktopAddressWithoutSchemeIsRecognizedForThatHostOnly() throws {
+        let desktop = try #require(VisibleChat(url: "claude.ai/epitaxy/local_\(a)"))
+        #expect(desktop == VisibleChat(url: "https://claude.ai/epitaxy/local_\(a)"))
+        #expect(desktop.matches(session: a, provider: .claude, aliases: ["local_\(a)": a]))
+        #expect(!desktop.matches(session: b, provider: .claude, aliases: ["local_\(a)": a]))
+        for url in ["claude.ai/", "claude.ai/recents", "claude.ai/epitaxy/local_\(a)/share", "claude.ai/chat/no-id",
+                    "claude.ai.evil.test/chat/\(a)", "evil.test/claude.ai/chat/\(a)", "chatgpt.com/c/\(a)",
+                    "/epitaxy/local_\(a)", "epitaxy/local_\(a)"] {
+            #expect(VisibleChat(url: url) == nil, "\(url)")
+        }
+    }
+
     @Test func identitiesAreProviderScopedAndAliasesMustBeExplicit() throws {
         let web = try #require(VisibleChat(url: "https://claude.ai/chat/\(a)"))
         #expect(web.matches(session: a, provider: .claude))

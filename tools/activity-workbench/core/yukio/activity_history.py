@@ -18,7 +18,7 @@ from .activity_gaps import HistoryCoverage
 from .activity_handoffs import capture as capture_handoff
 from .events import parse_timestamp
 from .file_identity import persistent_file_identity
-from .parsers_codex import CodexRolloutParser
+from .parsers_codex import CodexRolloutParser, as_dict, content_text, question_replies, tool_name
 
 APPLICATION_ID = 1498762063
 MAX_LINE = 8 << 20
@@ -37,7 +37,7 @@ def metadata_record(obj):
 
     def outcome_fields(value):
         out = fields(value, ('status',))
-        for key in ('success', 'isError'):
+        for key in ('success', 'isError', 'accepted'):
             if type(value.get(key)) is bool:
                 out[key] = value[key]
         metadata = value.get('metadata') if isinstance(value.get('metadata'), dict) else {}
@@ -59,10 +59,21 @@ def metadata_record(obj):
         except RecursionError:
             output = {}
         p['output'] = outcome_fields(output)
+    if tool_name(payload.get('name')) == 'request_user_input_async':
+        from .events import PetQuestion
+        questions=as_dict(payload.get('arguments')).get('questions',[])
+        if isinstance(questions,list):
+            p['async_question_indices']=[i for i,q in enumerate(questions[:64]) if isinstance(q,dict) and PetQuestion.parse(q)]
+    if payload.get('role')=='user':
+        replies=question_replies(content_text(payload.get('content')))
+        if replies is not None:p['async_question_replies']=sorted(replies)
     item = payload.get('item')
     if isinstance(item, dict):
         p['item'] = fields(item, ('type', 'id', 'call_id'))
         p['item'].update(outcome_fields(item))
+        if item.get('type')=='UserMessage':
+            replies=question_replies(content_text(item.get('content')))
+            if replies is not None:p['item']['async_question_replies']=sorted(replies)
     out['payload'] = p
     return out
 
@@ -96,7 +107,8 @@ def observation(raw, parser, scope=None, coverage=None):
         gated = coverage.gate_codex(payload, payload.get('type', obj.get('type')), scope)
         if gated is not None: return gated, parser
     if payload.get('type', obj.get('type')) == 'compacted':
-        return dict(kind='context_boundary', source_kind='compacted', evidence_class='observed', timestamp_available=False, session_id=parser.session), CodexRolloutParser(parser.session)
+        parser._results.reset()
+        return dict(kind='context_boundary', source_kind='compacted', evidence_class='observed', timestamp_available=False, session_id=parser.session), parser
     handoff = capture_handoff(payload, payload.get('type', obj.get('type')))
     identity = codex_identity(payload) if payload.get('type', obj.get('type')) == 'session_meta' else None
     obj = metadata_record(obj)
@@ -273,8 +285,11 @@ class ActivityHistory:
                     raise ValueError('Unsupported Codex history identity version')
             if old and source_format == 'codex' and (old.get('codex_handoff_version') is not None and (type(old['codex_handoff_version']) is not int or old['codex_handoff_version'] != 1)):
                 raise ValueError('Unsupported Codex handoff version')
+            if old and source_format == 'codex' and old.get('codex_question_version') is not None:
+                if type(old['codex_question_version']) is not int or old['codex_question_version'] != 1:
+                    raise ValueError('Unsupported Codex question version')
             if old and source_format == 'claude' and old.get('claude_lifecycle_version') is not None:
-                if type(old['claude_lifecycle_version']) is not int or old['claude_lifecycle_version'] != 1:
+                if type(old['claude_lifecycle_version']) is not int or old['claude_lifecycle_version'] not in (1,2):
                     raise ValueError('Unsupported Claude lifecycle version')
             with open_source(path) as stream:
                 info = os.fstat(stream.fileno())
@@ -310,7 +325,9 @@ class ActivityHistory:
                         reason = 'identity_model_upgraded'
                     elif source_format == 'codex' and old.get('codex_handoff_version') is None:
                         reason = 'handoff_model_upgraded'
-                    elif source_format == 'claude' and old.get('claude_lifecycle_version') != 1:
+                    elif source_format == 'codex' and old.get('codex_question_version') is None:
+                        reason = 'codex_question_model_upgraded'
+                    elif source_format == 'claude' and old.get('claude_lifecycle_version') != 2:
                         reason = 'claude_lifecycle_model_upgraded'
                 if reason:
                     offset, line, generation = 0, 0, generation + 1
@@ -369,15 +386,17 @@ class ActivityHistory:
                 if (current.st_dev, current.st_ino) != (info.st_dev, info.st_ino):
                     raise ValueError('Source replaced while reading; no batch was saved')
                 state = dict(source_format=source_format, generation=generation, file_identity=identity, offset=offset, line=line,
-                             prefix_sha256=digest.hexdigest(), checkpoint=compact(parser.history_checkpoint()), coverage=coverage.checkpoint())
+                             prefix_sha256=digest.hexdigest(), checkpoint=compact(parser.history_checkpoint()), coverage=coverage.checkpoint(),
+                             read_pending=offset < info.st_size)
                 if persistent_identity:
                     state['persistent_file_identity'] = persistent_identity
                 if source_format == 'codex':
                     state['codex_identity_version'] = 2
                     state['codex_handoff_version'] = 1
+                    state['codex_question_version'] = 1
                     state['codex_scope'] = scope.checkpoint()
                 if source_format == 'claude':
-                    state['claude_lifecycle_version'] = 1
+                    state['claude_lifecycle_version'] = 2
                 self.db.execute('INSERT INTO sources VALUES (?, ?) ON CONFLICT(source_id) DO UPDATE SET state=excluded.state',
                                 (source_id, compact(state)))
             self.db.execute('COMMIT')

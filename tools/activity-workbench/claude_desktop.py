@@ -6,6 +6,7 @@ Unrecognized, conflicting or unavailable metadata cannot authorize a merge.
 """
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -13,6 +14,105 @@ import stat
 import sys
 import threading
 import time
+import uuid
+
+
+ENDED_ON_QUESTION=dict(status='等待你回答',tone='attention',needs_you='Claude 在这一轮结束时提了一个问题，要等你回答才能继续。请回原聊天回答。')
+
+
+def ended_on_blocking_question(marker_row, marker_kind, later):
+    """The latest turn closed on the client's own blocking question and nothing followed."""
+    return marker_kind=='turn_ended' and not later and marker_row.get('reported_blocked_on_user') is True
+
+
+def lifecycle_snapshot(state, session):
+    """Use the Claude adapter's durable state, not another client's wait flag."""
+    from yukio.parsers_claude import ClaudeTranscriptParser
+    try:
+        saved=json.loads(state['checkpoint'])
+        return ClaudeTranscriptParser.from_history_checkpoint(saved['lifecycle']).snapshot(session)
+    except (KeyError, TypeError, ValueError, RecursionError):return None
+
+
+def apply_interaction(detail, state, session, interactions=None, runtime=None):
+    snapshot=lifecycle_snapshot(state,session)
+    if snapshot is None:return
+    presence=runtime.get(session) if runtime is not None else None
+    if presence:
+        snapshot=dict(snapshot,client_status=presence['status'])
+        if presence['status']=='offline' and snapshot['phase'] not in ('completed','cancelled','failed'):
+            snapshot['phase']='offline'
+        elif presence['status']=='waiting' and presence['updated_at'] >= (snapshot['timestamp'] or 0):
+            snapshot['phase']='waiting'
+    live=interactions.get(session) if interactions is not None else None
+    # A stale hook from a previous turn cannot replace this turn or a terminal
+    # receipt. Receipt time is only used to scope a live channel, never to end work.
+    if live and snapshot['phase']!='offline' and live['created_at'] >= (snapshot['started_at'] or 0) and (
+            snapshot['phase'] not in ('completed','cancelled','failed') or live['created_at'] > (snapshot['timestamp'] or 0)):
+        snapshot=dict(snapshot,phase='waiting',interaction_kind=live['kind'],channel='live',
+                      question_call_id=live.get('call_id'),question_index=live.get('index'))
+    detail['claude_lifecycle']=snapshot
+    if detail.get('source_unavailable'):return
+    if snapshot['phase']=='waiting':
+        permission=snapshot.get('interaction_kind')=='permission'
+        detail.update(status='等待你批准' if permission else '等待你回答',tone='attention',
+                      needs_you='Claude 正在等你批准这次操作。' if permission else 'Claude 正在等你回答问题。')
+    elif snapshot['phase']=='completed' and detail.get('ended_on_question') is True:
+        # The turn is over, but it closed on the client's blocking question.
+        detail.update(ENDED_ON_QUESTION)
+    elif snapshot['phase'] in ('completed','cancelled'):
+        detail.update(status='这一轮已结束' if snapshot['phase']=='completed' else '这一轮已取消',tone='quiet')
+    elif snapshot['phase']=='failed':
+        detail.update(status='这一轮因错误停止',tone='quiet',needs_you='Claude 报告了错误，请回原聊天查看。')
+    elif snapshot['phase']=='offline':
+        detail.update(status='Claude 客户端已退出',tone='quiet',needs_you='请回原聊天继续；退出不代表任务完成。')
+
+
+class ClaudeInteractionIndex:
+    """Read an already-configured local answer channel. Never install a hook.
+
+    Only lease/identity facts leave this reader; questions and answers are not
+    copied into history or sent to an explanation provider.
+    """
+    def __init__(self, root=None, *, clock=time.time):
+        self.root=Path(root) if root is not None else None
+        self.clock=clock;self.checked=None;self.cache={};self.lock=threading.Lock()
+
+    def get(self, session):
+        with self.lock:
+            now=self.clock()
+            if self.checked is not None and now-self.checked<.25:return self.cache.get(session)
+            result={}
+            if self.root is not None and self.root.is_dir() and not self.root.is_symlink():
+                try:
+                    paths=sorted(self.root.iterdir(),key=lambda p:p.stat().st_mtime,reverse=True)[:512]
+                    for path in paths:
+                        try:
+                            uuid.UUID(path.name)
+                            if path.is_symlink() or not path.is_dir():continue
+                            request=path/'request.json';info=request.lstat()
+                            if not stat.S_ISREG(info.st_mode) or info.st_uid!=os.getuid() or info.st_size>1<<20:continue
+                            with request.open('rb') as stream:raw=stream.read((1<<20)+1)
+                            if len(raw)>1<<20:continue
+                            row=json.loads(raw)
+                            if row.get('id')!=path.name or row.get('provider','claude')!='claude':continue
+                            if type(row.get('pid')) is not int or row['pid']<=0:continue
+                            if type(row.get('expiresAt')) not in (int,float) or not math.isfinite(row['expiresAt']) or row['expiresAt']<=now*1000:continue
+                            if type(row.get('createdAt')) not in (int,float) or not 0<=row['createdAt']<=now*1000+1000:continue
+                            if (path/'done').exists():continue
+                            os.kill(row['pid'],0)
+                            questions=row.get('questions')
+                            if not isinstance(questions,list) or not 1<=len(questions)<=64:continue
+                            pending=[(n,q) for n,q in enumerate(questions) if not (path/('receipt-%d.json'%n)).exists()]
+                            sid=row.get('session')
+                            if pending and isinstance(pending[0][1],dict) and isinstance(sid,str) and 0<len(sid)<=256 and sid not in result:
+                                call=row.get('callID')
+                                result[sid]=dict(created_at=row['createdAt'],kind='permission' if pending[0][1].get('approval') is True else 'question',
+                                                 call_id=call if isinstance(call,str) and len(call)<=256 else None,index=pending[0][0])
+                        except (OSError,ValueError,TypeError,RecursionError):continue
+                except OSError:pass
+            self.cache=result;self.checked=now
+            return result.get(session)
 
 MAX_FILE = 2 * 1024 * 1024
 MAX_TOTAL = 64 * 1024 * 1024

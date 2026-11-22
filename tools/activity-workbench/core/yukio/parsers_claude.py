@@ -44,7 +44,8 @@ def _is_failure(result: Dict[str, Any]) -> bool:
         text = "\n".join(p.get("text", "") for p in content if isinstance(p, dict))
     else:
         text = ""
-    return not ("doesn't want to proceed" in text or text.startswith("[Request interrupted"))
+    return not ("doesn't want to proceed" in text or text.startswith("[Request interrupted")
+                or text in ('Permission denied by hook','The user declined this operation in Yukio.'))
 
 
 def _todo_id(value: Any) -> Optional[str]:
@@ -57,8 +58,8 @@ def _todo_id(value: Any) -> Optional[str]:
 
 def _task_events(tool: str, input: Dict[str, Any]):
     """任务清单工具 → (事件类型, 条目)。"""
-    if tool == "TodoWrite":
-        todos = input.get("todos")
+    if tool in ("TodoWrite", "mcp__ccd_turn__update_plan"):
+        todos = input.get("todos" if tool == "TodoWrite" else "items")
         if not isinstance(todos, list):
             return None
         items = []
@@ -112,11 +113,17 @@ class _Turn:
     response_id: Optional[str] = None
     response_has_tools: bool = False
     answer_entrypoint: Optional[str] = None
+    answer_timestamp: Optional[float] = None
+    confirmed_at: Optional[float] = None
+    started_at: Optional[float] = None
+    phase: str = 'unknown'
+    calls: Dict[str, str] = field(default_factory=dict)
+    seen: Dict[str, bool] = field(default_factory=dict)
     background: Dict[str, str] = field(default_factory=dict)
     background_limited: bool = False
 
     def pending(self):
-        return self.background_limited or (self.prompt_id or '') in self.background.values()
+        return bool(self.calls) or self.background_limited or (self.prompt_id or '') in self.background.values()
 
 
 class ClaudeTranscriptParser:
@@ -136,11 +143,11 @@ class ClaudeTranscriptParser:
         turns = {key: asdict(value) for key, value in self._turns.items()}
         for value in turns.values():
             if not math.isfinite(value['latest_timestamp']): value['latest_timestamp'] = None
-        return dict(claude_lifecycle_version=1, turns=turns)
+        return dict(claude_lifecycle_version=2, turns=turns)
 
     @classmethod
     def from_history_checkpoint(cls, state):
-        if state.get('claude_lifecycle_version') != 1 or not isinstance(state.get('turns'), dict) or len(state['turns']) > 1024:
+        if state.get('claude_lifecycle_version') != 2 or not isinstance(state.get('turns'), dict) or len(state['turns']) > 1024:
             raise ValueError('Invalid Claude lifecycle checkpoint')
         parser = cls()
         for session, value in state['turns'].items():
@@ -156,11 +163,38 @@ class ClaudeTranscriptParser:
             if stamp is not None and (type(stamp) not in (int, float) or not math.isfinite(stamp)):
                 raise ValueError('Invalid Claude lifecycle timestamp')
             value['latest_timestamp'] = stamp if stamp is not None else float('-inf')
+            for key in ('answer_timestamp', 'confirmed_at', 'started_at'):
+                if value[key] is not None and (type(value[key]) not in (int, float) or not math.isfinite(value[key])):
+                    raise ValueError('Invalid Claude interaction timestamp')
+            if value['phase'] not in ('unknown', 'working', 'completed', 'cancelled', 'failed'):
+                raise ValueError('Invalid Claude interaction phase')
+            for key in ('calls', 'seen'):
+                items=value[key]
+                if not isinstance(items, dict) or len(items)>4096 or any(not isinstance(k,str) or not 0<len(k)<=(320 if key=='seen' else 256) for k in items):
+                    raise ValueError('Invalid Claude interaction identities')
+            if any(not isinstance(v,str) or len(v)>256 for v in value['calls'].values()) or any(v is not True for v in value['seen'].values()):
+                raise ValueError('Invalid Claude interaction values')
             jobs = value['background']
             if not isinstance(jobs, dict) or len(jobs) > 256 or any(not isinstance(x, str) or len(x) > 256 for pair in jobs.items() for x in pair):
                 raise ValueError('Invalid Claude background identities')
             parser._turns[session] = _Turn(**value)
         return parser
+
+    def snapshot(self, session):
+        turn=self._turns.get(session)
+        if turn is None:return None
+        questions=[key for key,name in turn.calls.items() if name in ('AskUserQuestion','ExitPlanMode')]
+        return dict(phase='waiting' if questions else turn.phase, started_at=turn.started_at,
+                    interaction_kind='permission' if questions and all(turn.calls[key]=='ExitPlanMode' for key in questions) else 'question',
+                    timestamp=turn.latest_timestamp if math.isfinite(turn.latest_timestamp) else None,
+                    question_ids=questions, pending_calls=len(turn.calls), pending_background=len(turn.background),
+                    limited=turn.background_limited)
+
+    @staticmethod
+    def _completion(turn, session):
+        if turn.confirmed_at is None or not turn.answer_id or turn.pending():return []
+        at=turn.confirmed_at;turn.completed_answer_id=turn.answer_id;turn.answer_id=None;turn.confirmed_at=None
+        return [PetEvent(at,SOURCE,session,kind) for kind in (Kind.final_answer,Kind.task_end)]
 
     @staticmethod
     def _background_result(turn, obj):
@@ -172,7 +206,7 @@ class ClaudeTranscriptParser:
                 turn.background[job] = turn.prompt_id or ''
             else: turn.background_limited = True
         task = result.get('task')
-        if isinstance(task, dict) and task.get('status') in ('completed', 'failed', 'killed', 'cancelled'):
+        if isinstance(task, dict) and task.get('status') in ('completed', 'failed', 'killed', 'cancelled', 'stopped'):
             identity = task.get('task_id') or task.get('id')
             if isinstance(identity, str): turn.background.pop(identity, None)
 
@@ -186,7 +220,7 @@ class ClaudeTranscriptParser:
         match = re.match(r'^\s*<task-notification>(.*?)</task-notification>', text[:16000], re.S)
         if match:
             ids = re.findall(r'<task-id>([A-Za-z0-9_-]{1,256})</task-id>', match[1])
-            statuses = re.findall(r'<status>(completed|failed|killed|cancelled)</status>', match[1])
+            statuses = re.findall(r'<status>(completed|failed|killed|cancelled|stopped)</status>', match[1])
             if len(ids) == len(statuses) == 1: turn.background.pop(ids[0], None)
         return True
 
@@ -199,6 +233,18 @@ class ClaudeTranscriptParser:
         return self.events(obj) if isinstance(obj, dict) else []
 
     def events(self, obj: Dict[str, Any]) -> List[PetEvent]:
+        events=self._events(obj)
+        for event in events:
+            turn=self._turn(event.session)
+            if event.kind==Kind.task_start:
+                turn.phase='working';turn.started_at=event.ts
+            elif event.kind==Kind.task_end:turn.phase='completed'
+            elif event.kind==Kind.task_abort:turn.phase='cancelled'
+            elif event.kind==Kind.task_failed:turn.phase='failed'
+            elif event.kind in (Kind.thinking,Kind.activity_start):turn.phase='working'
+        return events
+
+    def _events(self, obj: Dict[str, Any]) -> List[PetEvent]:
         type_ = obj.get("type")
         session = obj.get("sessionId")
         if not isinstance(type_, str) or not isinstance(session, str) or not 0 < len(session) <= 256:
@@ -214,15 +260,33 @@ class ClaudeTranscriptParser:
         turn = self._turn(session)
         if type_ == 'last-prompt':
             if (turn.answer_id and obj.get('leafUuid') == turn.answer_id
-                    and turn.answer_entrypoint == 'sdk-cli' and not turn.pending()):
-                turn.completed_answer_id = turn.answer_id
-                turn.answer_id = None
-                return [PetEvent(turn.latest_timestamp, SOURCE, session, kind) for kind in (Kind.final_answer, Kind.task_end)]
+                    and turn.answer_entrypoint == 'sdk-cli'):
+                turn.confirmed_at=turn.answer_timestamp
+                return self._completion(turn,session)
             return []
         ts = parse_timestamp(obj.get("timestamp"))
         if ts is None:
             return []
+        uuid=obj.get('uuid')
+        if isinstance(uuid,str) and 0<len(uuid)<=256:
+            identity=uuid if type_=='user' else uuid+':'+str(ts)
+            if identity in turn.seen:return []
+            turn.seen[identity]=True
+            if len(turn.seen)>4096:del turn.seen[next(iter(turn.seen))]
         if ts < turn.latest_timestamp:
+            message=obj.get('message')
+            if (type_=='user' and isinstance(message,dict) and message.get('role') in (None,'user')
+                    and obj.get('isMeta') is not True and obj.get('isCompactSummary') is not True
+                    and isinstance(message.get('content'),list)):
+                out=[]
+                for block in message['content']:
+                    if not isinstance(block,dict) or block.get('type')!='tool_result':continue
+                    call=block.get('tool_use_id')
+                    if not isinstance(call,str) or call not in turn.calls:continue
+                    del turn.calls[call]
+                    out.append(PetEvent(ts,SOURCE,session,Kind.activity_failed if _is_failure(block) else Kind.activity_end,event_id=call))
+                if out:self._background_result(turn,obj);out+=self._completion(turn,session)
+                return out
             return []
 
         def ev(kind, event_id=None, activity=None, tool=None, detail=None, todos=None, question=None):
@@ -247,6 +311,8 @@ class ClaudeTranscriptParser:
                     return []
                 turn.latest_timestamp = ts
                 turn.answer_id = None
+                turn.confirmed_at = None
+                turn.calls.clear()
                 turn.prompt_id = next((obj[k] for k in ('promptId', 'uuid') if isinstance(obj.get(k), str) and len(obj[k]) <= 256), 'turn:' + str(ts))
                 turn.response_id = None
                 turn.response_has_tools = False
@@ -256,18 +322,20 @@ class ClaudeTranscriptParser:
                 results = [b for b in content if isinstance(b, dict) and b.get("type") == "tool_result"]
                 if results:
                     turn.latest_timestamp = ts
-                    turn.answer_id = None
+                    if turn.answer_timestamp is None or ts>turn.answer_timestamp:
+                        turn.answer_id = None;turn.confirmed_at=None
                     self._background_result(turn, obj)
                     out = []
                     for b in results:
                         tid = b.get("tool_use_id")
                         if not isinstance(tid, str):
                             continue
+                        turn.calls.pop(tid,None)
                         out.append(ev(Kind.activity_failed if _is_failure(b) else Kind.activity_end, event_id=tid))
                     item = _task_created(obj.get("toolUseResult"))
                     if item:
                         out.append(ev(Kind.todo_update, todos=[item]))
-                    return out
+                    return out+self._completion(turn,session)
                 text = "\n".join(b.get("text", "") for b in content
                                  if isinstance(b, dict) and b.get("type") == "text")
                 return prompt_events(text, bool(content))
@@ -287,7 +355,9 @@ class ClaudeTranscriptParser:
                 return []
             turn.latest_timestamp = ts
             turn.answer_id = None
+            turn.confirmed_at=None
             if message.get("model") == "<synthetic>":
+                turn.calls.clear()
                 # 客户端合成的消息：本轮不会再有真实回答。
                 return [ev(Kind.task_failed if obj.get("isApiErrorMessage") is True else Kind.task_abort)]
             stop = message.get("stop_reason")
@@ -302,6 +372,7 @@ class ClaudeTranscriptParser:
                            and isinstance(b.get('text'), str) and b['text'].strip() for b in blocks)
             if stop == 'end_turn' and has_text and not turn.response_has_tools and isinstance(obj.get('uuid'), str) and 0 < len(obj['uuid']) <= 256:
                 turn.answer_id = obj['uuid']
+                turn.answer_timestamp=ts
                 turn.answer_entrypoint = obj.get('entrypoint') if isinstance(obj.get('entrypoint'), str) and len(obj['entrypoint']) <= 256 else None
             out: List[PetEvent] = []
             for b in blocks:
@@ -314,6 +385,9 @@ class ClaudeTranscriptParser:
                     kind = classify(name, input)
                     activity = None if kind == CONTINUE_PREVIOUS else kind
                     bid = b.get("id") if isinstance(b.get("id"), str) else None
+                    if bid and len(bid)<=256:
+                        if len(turn.calls)<4096:turn.calls[bid]=name
+                        else:turn.background_limited=True
                     out.append(ev(Kind.activity_start, event_id=bid, activity=activity,
                                   tool=name, detail=describe(name, input),
                                   question=question(name, input)))
@@ -340,14 +414,14 @@ class ClaudeTranscriptParser:
                 return []
             answer = turn.answer_id
             turn.latest_timestamp = ts
-            turn.answer_id = None
             stopped = subtype == 'turn_duration' or (obj.get('preventedContinuation') is False and obj.get('hasOutput') is False
                        and obj.get('hookErrors') == [] and obj.get('hookAdditionalContext') == []
                        and not obj.get('stopReason'))
-            if not stopped or turn.pending():
+            if not stopped:
+                turn.answer_id=None;turn.confirmed_at=None
                 return [ev(Kind.thinking)]
-            turn.completed_answer_id = answer
-            return [ev(Kind.final_answer), ev(Kind.task_end)]
+            turn.confirmed_at=ts
+            return self._completion(turn,session) or [ev(Kind.thinking)]
         if type_ == 'api-request':
             if obj.get('querySource') != 'sdk':
                 return []

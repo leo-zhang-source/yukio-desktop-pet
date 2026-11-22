@@ -19,6 +19,8 @@ Codex 把每条聊天写在 `~/.codex/sessions/<年>/<月>/<日>/rollout-<时间
 from __future__ import annotations
 
 import json
+import base64
+import math
 import re
 from typing import Any, Dict, List, Optional
 
@@ -60,7 +62,7 @@ def prompt_line(text: Optional[str]) -> Optional[str]:
     return None
 
 
-def question_reply_calls(text):
+def question_replies(text):
     text = text.strip()
     start, end = '<send_user_message_question_reply>', '</send_user_message_question_reply>'
     if not (text.startswith(start) and text.endswith(end)):
@@ -81,9 +83,22 @@ def question_reply_calls(text):
             continue
         if (isinstance(ident, list) and len(ident) == 3 and isinstance(ident[0], str)
                 and ident[0].split('.')[-1] in ('request_user_input', 'request_user_input_async')
-                and isinstance(ident[1], str) and ident[1] and type(ident[2]) is int and ident[2] == 0):
-            calls.add(ident[1])
+                and identifier(ident[1]) and type(ident[2]) is int and 0 <= ident[2] < 64):
+            calls.add((ident[1], ident[2]))
     return calls
+
+
+def question_reply_calls(text):
+    replies = question_replies(text)
+    return None if replies is None else {call for call, _ in replies}
+
+
+def question_id(call, index):
+    return call if index == 0 else 'codex-question:' + base64.b64encode(call.encode()).decode() + ':' + str(index)
+
+
+def tool_name(name):
+    return name.removeprefix('functions.') if isinstance(name, str) else ''
 
 
 def content_text(content: Any) -> str:
@@ -343,10 +358,11 @@ class CodexRolloutParser:
         self.session = session
         self._results = CodexResultTracker()
         self.last_tool_results = []
-        self._async_questions = set()
+        self._async_questions = {}
+        self._seen_questions = []
 
     def history_checkpoint(self):
-        return dict(version=1, session=self.session, results=dict(
+        return dict(version=2, session=self.session, seen_questions=self._seen_questions, async_questions=[dict(id=call, indices=sorted(value['indices']), ts=value['ts']) for call,value in self._async_questions.items()], results=dict(
             turn_id=self._results.turn_id, closed=self._results.closed,
             calls=[dict(id=k, outcomes=sorted(v)) for k, v in self._results.calls.items()],
             retired=list(self._results.retired)))
@@ -354,7 +370,7 @@ class CodexRolloutParser:
     @classmethod
     def from_history_checkpoint(cls, state):
         from collections import OrderedDict
-        if state['version'] != 1 or not isinstance(state['session'], str):
+        if state['version'] != 2 or not isinstance(state['session'], str):
             raise ValueError('Invalid activity history checkpoint')
         result = cls(state['session'])
         saved = state['results']
@@ -371,6 +387,20 @@ class CodexRolloutParser:
         result._results.closed = saved['closed']
         result._results.calls = OrderedDict((c['id'], set(c['outcomes'])) for c in calls)
         result._results.retired = OrderedDict((c, None) for c in retired)
+        seen=state.get('seen_questions',[])
+        if not isinstance(seen,list) or len(seen)>4096 or any(not identifier(x) for x in seen) or len(set(seen))!=len(seen):
+            raise ValueError('Invalid Codex question identities')
+        result._seen_questions=seen
+        pending = state.get('async_questions', [])
+        if (not isinstance(pending, list) or len(pending) > 4096
+                or any(not isinstance(q, dict) or not identifier(q.get('id'))
+                       or not isinstance(q.get('indices'), list) or not q['indices'] or len(q['indices']) > 64
+                       or any(type(i) is not int or not 0 <= i < 64 for i in q['indices'])
+                       or len(set(q['indices'])) != len(q['indices'])
+                       or type(q.get('ts')) not in (int, float) or not math.isfinite(q['ts']) for q in pending)
+                or len({q['id'] for q in pending}) != len(pending)):
+            raise ValueError('Invalid pending Codex questions')
+        result._async_questions = {q['id']: dict(indices=set(q['indices']), ts=q['ts']) for q in pending}
         return result
 
     def events_from_line(self, data: bytes, fallback_session: str = "", fallback_ts: float = 0.0) -> List[PetEvent]:
@@ -398,6 +428,7 @@ class CodexRolloutParser:
                 if found != self.session:
                     self._results.reset()
                     self._async_questions.clear()
+                    self._seen_questions.clear()
                 self.session = found
             return []
         if not self.session:
@@ -416,14 +447,11 @@ class CodexRolloutParser:
 
         if kind in ("task_started", "turn_context"):
             turn = identifier(payload.get("turn_id"))
-            if turn and turn != self._results.turn_id:
-                self._async_questions.clear()
             self._results.begin_turn(turn)
             return []
         if kind == "task_complete":
             if not self._results.matches_turn(payload.get("turn_id")):
                 return []
-            self._async_questions.clear()
             self._results.close_turn()
             # 有回答才算答完：没有 last_agent_message 的一轮（被压缩、被接管）只算结束。
             answered = bool(payload.get("last_agent_message"))
@@ -431,7 +459,6 @@ class CodexRolloutParser:
         if kind == "turn_aborted":
             if not self._results.matches_turn(payload.get("turn_id")):
                 return []
-            self._async_questions.clear()
             self._results.close_turn()
             # 用户按停、或被新一轮顶掉：都不算失败，不让她沮丧。
             reason = str(payload.get("reason") or "").lower()
@@ -439,13 +466,14 @@ class CodexRolloutParser:
         if kind in ("error", "stream_error"):
             if not self._results.matches_turn(payload.get("turn_id")):
                 return []
-            self._async_questions.clear()
             self._results.close_turn()
             return [ev(Kind.task_failed)]
         if kind in ("item_completed", "item_started", "item_updated"):
             return self._item(payload.get("item"), payload, ts, ev, completed=kind == "item_completed")
 
         if kind == "message":
+            if 'async_question_replies' in payload:
+                return self._answer_questions(payload['async_question_replies'],ev)
             role = payload.get("role")
             text = content_text(payload.get("content"))
             if role == "user":
@@ -457,7 +485,7 @@ class CodexRolloutParser:
         if kind == "reasoning":
             return [ev(Kind.thinking)]
         if kind in ("function_call", "custom_tool_call", "local_shell_call"):
-            return self._tool_start(payload, ev)
+            return self._tool_start(payload, ev, ts)
         if kind in ("function_call_output", "custom_tool_call_output", "local_shell_call_output"):
             return self._tool_end(payload, ts, ev)
         if kind == "web_search_call":
@@ -476,6 +504,8 @@ class CodexRolloutParser:
             return []
         kind = item.get("type")
         if kind == "UserMessage":
+            if completed and 'async_question_replies' in item:
+                return self._answer_questions(item['async_question_replies'],ev)
             return self._user_message(content_text(item.get("content")), ev) if completed else []
         if kind == "AgentMessage":
             if not completed:
@@ -499,8 +529,8 @@ class CodexRolloutParser:
             return [ev(Kind.todo_list, todos=todos)] if todos else []
         return []
 
-    def _tool_start(self, payload: Dict[str, Any], ev) -> List[PetEvent]:
-        name = payload.get("name") or ""
+    def _tool_start(self, payload: Dict[str, Any], ev, ts) -> List[PetEvent]:
+        name = tool_name(payload.get("name"))
         namespace = payload.get("namespace")
         arguments = as_dict(payload.get("arguments"))
         script = payload.get("input") if isinstance(payload.get("input"), str) else None
@@ -511,7 +541,17 @@ class CodexRolloutParser:
             return []
         self._results.start(call)
         if name.lower() == "request_user_input_async" and isinstance(call, str):
-            self._async_questions.add(call)
+            if call in self._seen_questions:return []
+            self._seen_questions.append(call)
+            self._seen_questions=self._seen_questions[-4096:]
+            questions = arguments.get('questions', [])
+            parsed = [(i, PetQuestion.parse(q)) for i,q in enumerate(questions[:64]) if isinstance(q,dict)] if isinstance(questions,list) else []
+            indices = payload.get('async_question_indices', [i for i,q in parsed if q])
+            if isinstance(indices,list) and indices and all(type(i) is int and 0 <= i < 64 for i in indices):
+                self._async_questions.setdefault(call, dict(indices=set(indices), ts=ts))
+                if len(self._async_questions)>4096:self._async_questions.pop(next(iter(self._async_questions)))
+            return [ev(Kind.activity_start, event_id=question_id(call,i), activity=PetState.question_for_user,
+                       tool=name, detail=q.short_label, question=q) for i,q in parsed if q]
         out = [ev(Kind.activity_start, event_id=call if isinstance(call, str) else None,
                   activity=activity, tool=name, detail=detail,
                   question=tool_question(name, arguments))]
@@ -524,27 +564,28 @@ class CodexRolloutParser:
         result = self._results.record(session=self.session, payload=payload, item=None,
                                       source_kind=payload.get("type", "tool_output"), timestamp=ts)
         self.last_tool_results = [result]
-        if not result.projection_eligible:
-            return []  # Missing IDs must never close the last unrelated tool.
         call = result.call_id
+        if not result.projection_eligible and call not in self._async_questions:
+            return []  # Missing IDs must never close the last unrelated tool.
         if call in self._async_questions and as_dict(payload.get("output")).get("accepted") is True:
             return []
-        self._async_questions.discard(call)
+        self._async_questions.pop(call, None)
         return [ev(Kind.activity_failed if result.call_outcome == 'failed' else Kind.activity_end,
                    event_id=call)]
 
-    def _user_message(self, text, ev):
-        answered = question_reply_calls(text)
-        if answered is not None:
-            self._async_questions.difference_update(answered)
-            return [ev(Kind.activity_end, event_id=call) for call in sorted(answered)]
-        line = prompt_line(text)
-        return self._close_async_questions(ev) + [ev(Kind.task_start, detail=line)] if line else []
+    def _answer_questions(self, answered, ev):
+        for call,index in answered:
+            pending=self._async_questions.get(call)
+            if pending:
+                pending['indices'].discard(index)
+                if not pending['indices']:self._async_questions.pop(call)
+        return [ev(Kind.activity_end,event_id=question_id(call,index)) for call,index in sorted(answered)]
 
-    def _close_async_questions(self, ev):
-        events = [ev(Kind.activity_end, event_id=call) for call in sorted(self._async_questions)]
-        self._async_questions.clear()
-        return events
+    def _user_message(self, text, ev):
+        answered = question_replies(text)
+        if answered is not None:return self._answer_questions(answered,ev)
+        line = prompt_line(text)
+        return [ev(Kind.task_start, detail=line)] if line else []
 
     def _search_pair(self, item_id: Any, query: Any, ts: Optional[float], ev) -> List[PetEvent]:
         """网页搜索在记录里只有「搜完了」这一条，没有开始。发一对开始／结束，让她照样看一下网页。"""

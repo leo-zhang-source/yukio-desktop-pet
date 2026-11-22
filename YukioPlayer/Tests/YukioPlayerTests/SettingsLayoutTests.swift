@@ -20,7 +20,7 @@ import YukioCore
         defer { controller.close() }
         let chat = SessionSummary(id: "layout-check", title: String(repeating: "Long conversation title · ", count: 12),
             state: .default_work, live: true, raisedSign: false, quietMs: 0, focused: true, pinned: true)
-        let snapshot = SettingsSnapshot(status: "正在工作", following: true, hidden: false, provider: .auto,
+        var snapshot = SettingsSnapshot(status: "正在工作", following: true, hidden: false, provider: .auto,
             chats: [chat], showBubble: true, showCards: false, showQuestionCard: true, scale: 1.2,
             language: language, demoPlaying: false, launchAtLogin: .requiresApproval)
         controller.apply(snapshot)
@@ -32,40 +32,45 @@ import YukioCore
         let browser = try #require(find(root, "browserChatPermissionButton", as: NSButton.self))
         let startup = try #require(find(root, "launchAtLoginSwitch", as: NSSwitch.self))
         let idle = try #require(find(root, "hideWhenIdleSwitch", as: NSSwitch.self))
+        let display = try #require(find(root, "workbenchDisplayPicker", as: NSSegmentedControl.self))
+        let displayHint = try #require(find(root, "workbenchDisplayHint", as: NSTextField.self))
         #expect(!hidden(sign) && !hidden(browser) && !hidden(startup))
         let initial = idle.state
-        for width: CGFloat in [1100, 760, 540, 1400, 1050, 1040, 1055, 775] {
-            controller.window?.setContentSize(NSSize(width: width, height: 650))
-            controller.apply(snapshot)
-            root.layoutSubtreeIfNeeded()
-            root.layoutSubtreeIfNeeded()
-            let document = controller.embeddedView()
-            let groups = try ["appearanceSettingsGroup", "chatSettingsGroup", "generalSettingsGroup"].map {
-                try #require(find(root, $0, as: NSStackView.self))
-            }
-            let frames = groups.map { $0.convert($0.bounds, to: document) }
-            #expect(groups.allSatisfy { !hidden($0) })
-            #expect(frames.allSatisfy { document.bounds.contains($0) && $0.width > 250 })
-            #expect(!frames[0].intersects(frames[1]) && !frames[1].intersects(frames[2]))
-            #expect(idle.state == initial)
-            // Layout is based on the clip view, which loses width to legacy
-            // scrollbars. Window width is not the available content width.
-            let available = scroll.contentView.bounds.width
-            #expect(!scroll.hasHorizontalScroller)
-            #expect(frames.allSatisfy { $0.minX >= 0 && $0.maxX <= available })
-            if available >= 1040 {
-                #expect(abs(frames[0].minY - frames[2].minY) < 1)
-                #expect(abs(frames[0].minX - 24) < 1)
-                #expect(abs(frames[2].maxX - (available - 24)) < 1)
-                for control in [sign as NSView, browser as NSView, startup as NSView] {
-                    #expect(root.bounds.contains(control.convert(control.bounds, to: root)))
+        for mode in WorkbenchDisplayMode.allCases {
+            snapshot.workbenchDisplayMode = mode
+            for width: CGFloat in [1100, 760, 540, 1400, 1050, 1040, 1055, 775] {
+                controller.window?.setContentSize(NSSize(width: width, height: 650))
+                controller.apply(snapshot)
+                root.layoutSubtreeIfNeeded()
+                root.layoutSubtreeIfNeeded()
+                let document = controller.embeddedView()
+                let groups = try ["appearanceSettingsGroup", "chatSettingsGroup", "generalSettingsGroup"].map {
+                    try #require(find(root, $0, as: NSStackView.self))
                 }
-            } else if available >= 760 {
-                #expect(abs(frames[0].minY - frames[1].minY) < 1)
-                #expect(frames[2].minY >= max(frames[0].maxY, frames[1].maxY))
-            } else {
-                #expect(frames[1].minY >= frames[0].maxY)
-                #expect(frames[2].minY >= frames[1].maxY)
+                let frames = groups.map { $0.convert($0.bounds, to: document) }
+                #expect(groups.allSatisfy { !hidden($0) })
+                #expect(frames.allSatisfy { document.bounds.contains($0) && $0.width > 250 })
+                #expect(!frames[0].intersects(frames[1]) && !frames[1].intersects(frames[2]))
+                #expect(idle.state == initial)
+                // Layout is based on the clip view, which loses width to legacy
+                // scrollbars. Window width is not the available content width.
+                let available = scroll.contentView.bounds.width
+                #expect(!scroll.hasHorizontalScroller)
+                #expect(frames.allSatisfy { $0.minX >= 0 && $0.maxX <= available })
+                if available >= 1040 {
+                    #expect(abs(frames[0].minY - frames[2].minY) < 1)
+                    #expect(abs(frames[0].minX - 24) < 1)
+                    #expect(abs(frames[2].maxX - (available - 24)) < 1)
+                    for control in [sign as NSView, browser as NSView, startup as NSView, display as NSView, displayHint as NSView] {
+                        #expect(root.bounds.contains(control.convert(control.bounds, to: root)))
+                    }
+                } else if available >= 760 {
+                    #expect(abs(frames[0].minY - frames[1].minY) < 1)
+                    #expect(frames[2].minY >= max(frames[0].maxY, frames[1].maxY))
+                } else {
+                    #expect(frames[1].minY >= frames[0].maxY)
+                    #expect(frames[2].minY >= frames[1].maxY)
+                }
             }
         }
         var cancelled = 0

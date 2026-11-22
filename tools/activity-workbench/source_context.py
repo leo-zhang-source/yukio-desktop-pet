@@ -5,6 +5,7 @@ A changed/missing source cannot supply content for an old saved event.
 """
 import hashlib
 import json
+from claude_runtime import ClaudeRuntimeIndex
 import os
 from pathlib import Path
 import re
@@ -15,7 +16,7 @@ from contextlib import closing
 import threading
 import time
 from conversation_text import conversation_text
-from claude_desktop import ClaudeDesktopIndex, default_directory as desktop_directory
+from claude_desktop import ClaudeDesktopIndex, ClaudeInteractionIndex, default_directory as desktop_directory
 
 MAX_LINE = 256 * 1024
 MAX_READ = 2 * 1024 * 1024
@@ -289,6 +290,15 @@ def tool_material(client,obj):
                 try:args=json.loads(args)
                 except (ValueError,RecursionError):args={}
             if isinstance(args,dict) and isinstance(args.get('cmd'),str):requests.append(dict(call_id=p['call_id'],target=operation(p['name'],args) or '这次命令',material_kind='tool_output'))
+        if kind=='function_call' and p.get('name') in ('request_user_input_async','functions.request_user_input_async') and isinstance(p.get('call_id') or p.get('id'),str):
+            args=p.get('arguments',{})
+            if isinstance(args,str):
+                try:args=json.loads(args)
+                except (ValueError,RecursionError):args={}
+            questions=args.get('questions',[]) if isinstance(args,dict) else []
+            for index,question in enumerate(questions[:64] if isinstance(questions,list) else []):
+                text=clean(next((question.get(k) for k in ('question','title','prompt','text') if isinstance(question.get(k),str) and question[k].strip()),''),240) if isinstance(question,dict) else ''
+                if text:requests.append(dict(call_id=p.get('call_id') or p['id'],material_kind='question',text=text,index=index))
         if kind=='function_call_output':receipt(p.get('call_id'),p.get('output'))
         if kind=='custom_tool_call' and p.get('name') in ('exec','functions.exec') and isinstance(p.get('input'),str) and isinstance(p.get('call_id'),str):
             patch=script_patch(p['input'])
@@ -302,6 +312,11 @@ def tool_material(client,obj):
         for block in blocks[:100] if isinstance(blocks,list) else []:
             if not isinstance(block,dict):continue
             if block.get('type')=='tool_use':request(block.get('id'),block.get('name'),block.get('input'))
+            if block.get('type')=='tool_use' and block.get('name')=='AskUserQuestion' and isinstance(block.get('id'),str):
+                args=block.get('input',{});questions=args.get('questions',[]) if isinstance(args,dict) else []
+                for index,question in enumerate(questions[:64] if isinstance(questions,list) else []):
+                    text=clean(question.get('question'),240) if isinstance(question,dict) else ''
+                    if text:requests.append(dict(call_id=block['id'],material_kind='question',text=text,index=index))
             if block.get('type')=='tool_result':receipt(block.get('tool_use_id'),block.get('content'))
     elif client=='deepcode':
         params=obj.get('messageParams',{})
@@ -350,6 +365,9 @@ class SourceContext:
         self.roots={k:Path(v).resolve() for k,v in (default_roots() if roots is None else roots).items()}
         self.paths={};self.scan_at={};self.lock=threading.Lock();self.title_cache={}
         self.claude_desktop=ClaudeDesktopIndex(claude_desktop_root if claude_desktop_root is not None else desktop_directory(self.roots.get('claude')))
+        self.claude_interactions=ClaudeInteractionIndex(Path.home()/'Library/Application Support/YukioPlayer/answers'
+            if desktop_directory(self.roots.get('claude')) is not None else None)
+        self.claude_runtime=ClaudeRuntimeIndex(self.roots['claude'].parent/'sessions' if 'claude' in self.roots else None)
 
     def permitted(self,path,client,source):
         root=self.roots.get(client)

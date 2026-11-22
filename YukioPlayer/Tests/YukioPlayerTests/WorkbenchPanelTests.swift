@@ -5,6 +5,168 @@ import YukioCore
 @testable import YukioPlayer
 
 @Suite @MainActor struct WorkbenchPanelTests {
+    @Test func missingOrUnknownDisplayPreferenceKeepsExistingQuickViewBehavior() {
+        #expect(WorkbenchDisplayMode(preference: "fullScreen") == .window)
+        #expect(WorkbenchDisplayMode(preference: nil) == .quickLook)
+        #expect(WorkbenchDisplayMode(preference: "unknown-future-value") == .quickLook)
+        for mode in WorkbenchDisplayMode.allCases {
+            #expect(WorkbenchDisplayMode(preference: mode.rawValue) == mode)
+        }
+    }
+
+    @Test func displayChoicesAreLocalizedAndSendTheSelectedMode() throws {
+        _ = NSApplication.shared
+        let panel = SettingsPanelController()
+        defer { panel.close() }
+        let root = try #require(panel.window?.contentView)
+        let popup = try #require(find(root, "workbenchDisplayPicker", as: NSSegmentedControl.self))
+        let hint = try #require(find(root, "workbenchDisplayHint", as: NSTextField.self))
+        var received: WorkbenchDisplayMode?
+        panel.onChange = { if case .workbenchDisplayMode(let mode) = $0 { received = mode } }
+        for language in [UILanguage.chinese, .english] {
+            panel.presentationLanguage = language
+            for mode in WorkbenchDisplayMode.allCases {
+                var value = snapshot
+                value.workbenchDisplayMode = mode
+                panel.apply(value)
+                #expect(popup.trackingMode == .selectOne)
+                let segments = Array(0..<popup.segmentCount)
+                #expect(segments.map { popup.label(forSegment: $0) ?? "" } == (language == .chinese
+                    ? ["常驻窗口", "快速查看"] : ["Keep open", "Quick view"]))
+                #expect(segments.filter { popup.isSelected(forSegment: $0) } == [popup.selectedSegment])
+                #expect(WorkbenchDisplayMode.allCases[popup.selectedSegment] == mode)
+                #expect(!hint.stringValue.isEmpty)
+                if language == .english { #expect(hint.stringValue.range(of: "[\\p{Han}]", options: .regularExpression) == nil) }
+                received = nil
+                _ = popup.sendAction(popup.action, to: popup.target)
+                #expect(received == mode)
+            }
+        }
+    }
+
+    @Test func changingWindowHostKeepsTheEmbeddedContentAndNormalWindowControls() throws {
+        _ = NSApplication.shared
+        let runtime = Runtime()
+        let panel = WorkbenchPanelController(runtime: runtime)
+        defer { panel.shutdown(); panel.close() }
+        panel.apply(snapshot)
+        panel.showSettings()
+        let content = try #require(panel.window?.contentView)
+        let settings = panel.settings.embeddedView()
+        for mode in [WorkbenchDisplayMode.window, .quickLook, .window, .quickLook] {
+            var value = snapshot
+            value.workbenchDisplayMode = mode
+            panel.apply(value)
+            let host = try #require(panel.window)
+            #expect(host.contentView === content)
+            #expect(settings.window === host && panel.showingSettings)
+            #expect(host.styleMask.contains(.nonactivatingPanel) == (mode == .quickLook))
+            #expect(host.styleMask.contains(.miniaturizable) == (mode != .quickLook))
+            if mode == .window {
+                #expect(host.standardWindowButton(.zoomButton) != nil)
+                #expect(!host.styleMask.contains(.fullScreen))
+            }
+            #expect(host.level == (mode == .quickLook ? .floating : .normal))
+            #expect(host.collectionBehavior.contains(.fullScreenPrimary) == (mode != .quickLook))
+            #expect(host.collectionBehavior.contains(.canJoinAllSpaces) == (mode == .quickLook))
+        }
+        #expect(runtime.starts == 0)
+    }
+
+    @Test func thePageCanOnlyNameAClientAndAPlainSessionToOpen() {
+        let page = URL(string: "http://127.0.0.1:8767/?lang=zh")
+        let id = "0A1B2C3D-0000-4000-8000-00000000ABCD"
+        func parse(_ body: Any, _ url: URL? = page, main: Bool = true) -> WorkbenchChatTarget? {
+            WorkbenchChatTarget.parse(body, frameURL: url, isMainFrame: main, port: 8767)
+        }
+        #expect(parse(["client": "claude", "session": id]) == WorkbenchChatTarget(client: .claude, session: id.lowercased()))
+        #expect(parse(["client": "codex", "session": id])?.client == .codex)
+        #expect(parse(["client": "deepcode", "session": id]) == nil)
+        #expect(parse(["client": "claude", "session": id + "/../x"]) == nil)
+        #expect(parse(["client": "claude", "session": "local_" + id]) == nil)
+        #expect(parse(["client": "claude", "session": id, "url": "claude://anything"]) == nil)
+        #expect(parse(["client": "claude", "session": 7]) == nil)
+        #expect(parse("claude://code/continue?session=local_x") == nil)
+        #expect(parse(["client": "claude", "session": id], main: false) == nil)
+        #expect(parse(["client": "claude", "session": id], URL(string: "https://example.com/")) == nil)
+        #expect(parse(["client": "claude", "session": id], URL(string: "http://127.0.0.1:9999/")) == nil)
+        #expect(parse(["client": "claude", "session": id], nil) == nil)
+    }
+
+    @Test func openingAChatReportsWhetherTheAppCouldJump() {
+        _ = NSApplication.shared
+        let panel = WorkbenchPanelController(runtime: Runtime())
+        defer { panel.shutdown(); panel.close() }
+        var value = snapshot
+        value.workbenchDisplayMode = .window
+        panel.apply(value)
+        let page = URL(string: "http://127.0.0.1:8767/")
+        let body: [String: Any] = ["client": "claude", "session": "0a1b2c3d-0000-4000-8000-00000000abcd"]
+        #expect(!panel.openChat(requestedBy: body, frameURL: page, isMainFrame: true))
+        var asked: [WorkbenchChatTarget] = []
+        var answer = true
+        panel.onOpenChat = { asked.append($0); return answer }
+        #expect(panel.openChat(requestedBy: body, frameURL: page, isMainFrame: true))
+        answer = false
+        #expect(!panel.openChat(requestedBy: body, frameURL: page, isMainFrame: true))
+        #expect(!panel.openChat(requestedBy: ["client": "claude"], frameURL: page, isMainFrame: true))
+        #expect(asked == Array(repeating: WorkbenchChatTarget(client: .claude, session: "0a1b2c3d-0000-4000-8000-00000000abcd"), count: 2))
+    }
+
+    /// The shipped page code, in the real page view, reaches the app and reads its answer.
+    @Test func theShippedPageScriptReachesTheAppThroughTheRealPageView() async throws {
+        _ = NSApplication.shared
+        let panel = WorkbenchPanelController(runtime: Runtime())
+        defer { panel.shutdown(); panel.close() }
+        var value = snapshot
+        value.workbenchDisplayMode = .window
+        panel.apply(value)
+        var asked: [WorkbenchChatTarget] = []
+        var answer = true
+        panel.onOpenChat = { asked.append($0); return answer }
+        let web = panel.makeWebView()
+        final class Loaded: NSObject, WKNavigationDelegate {
+            var done: CheckedContinuation<Void, Never>?
+            func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) { done?.resume(); done = nil }
+        }
+        let loaded = Loaded()
+        web.navigationDelegate = loaded
+        await withCheckedContinuation { continuation in
+            loaded.done = continuation
+            web.loadHTMLString("<!doctype html><p id=alert hidden></p>", baseURL: URL(string: "http://127.0.0.1:8767/"))
+        }
+        let session = "0a1b2c3d-0000-4000-8000-00000000abcd"
+        let key = try #require(String(data: JSONSerialization.data(withJSONObject: ["source", 1, session, "", 0]), encoding: .utf8))
+            .data(using: .utf8)!.base64EncodedString()
+            .replacingOccurrences(of: "+", with: "-").replacingOccurrences(of: "/", with: "_").replacingOccurrences(of: "=", with: "")
+        let script = try String(contentsOf: URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+            .appendingPathComponent("../../../tools/activity-workbench/dist/glance.js").standardizedFileURL, encoding: .utf8)
+        func part(_ head: String) throws -> String {
+            let start = try #require(script.range(of: "\n" + head))
+            let end = try #require(script.range(of: "\n}\n", range: start.upperBound..<script.endIndex))
+            return String(script[start.lowerBound..<end.upperBound])
+        }
+        let page = try """
+            var synthetic=false,current={client:'claude',key:'\(key)'};
+            const $=id=>document.getElementById(id),tr=value=>value;
+            function note(text){$('alert').textContent=text;$('alert').hidden=!text;}
+            \(part("function openChatTarget("))\(part("async function openCurrentChat("))
+            """
+        _ = try await web.callAsyncJavaScript(page + "globalThis.pressOpenChat=openCurrentChat;return 1", contentWorld: .page)
+        func press() async throws -> Bool {
+            let hidden = try await web.callAsyncJavaScript("await pressOpenChat();return document.getElementById('alert').hidden", contentWorld: .page)
+            return try #require(hidden as? Bool)
+        }
+        #expect(try await press())
+        answer = false
+        #expect(try await !press())
+        #expect(asked == Array(repeating: WorkbenchChatTarget(client: .claude, session: session), count: 2))
+        let handled = try await web.callAsyncJavaScript(
+            "return await webkit.messageHandlers.yukioOpenChat.postMessage({client:'claude',session:'x'})", contentWorld: .page)
+        #expect(handled as? Bool == false)
+        #expect(asked.count == 2)
+    }
+
     @Test func onlyExactOfficialSetupLinksCanLeaveWorkbench() throws {
         for value in ["https://learn.chatgpt.com/docs/codex/cli", "https://code.claude.com/docs/en/setup"] {
             #expect(WorkbenchPanelController.isAssistantSetupLink(try #require(URL(string: value))))

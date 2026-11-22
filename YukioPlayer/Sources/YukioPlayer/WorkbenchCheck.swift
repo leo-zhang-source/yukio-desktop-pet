@@ -6,6 +6,10 @@ import YukioCore
 /// test page, never a real conversation or model request.
 func runWorkbenchPanelCheck(path: String) {
     let arguments = CommandLine.arguments
+    if arguments.contains("--workbench-display-check") {
+        runWorkbenchDisplayCheck(path: path)
+        return
+    }
     if let i = arguments.firstIndex(of: "--workbench-check-resources"), i + 1 < arguments.count,
        let j = arguments.firstIndex(of: "--workbench-check-data"), j + 1 < arguments.count {
         runWorkbenchConnectionCheck(path: path, resources: URL(fileURLWithPath: arguments[i + 1]),
@@ -53,6 +57,109 @@ func runWorkbenchPanelCheck(path: String) {
     }
     withExtendedLifetime(controller) { app.run() }
     exit(results.count == 7 && results.values.allSatisfy { $0 } ? 0 : 1)
+}
+
+/// Real AppKit full-screen transitions and local outside-click delivery, with
+/// synthetic page content and an isolated preference domain. No recorder starts.
+private func runWorkbenchDisplayCheck(path: String) {
+    final class DisplayRuntime: WorkbenchStarting {
+        var starts = 0, stops = 0
+        func start(_ completion: @escaping (Result<URL, Error>) -> Void) {
+            starts += 1
+            completion(.success(URL(string: "http://127.0.0.1:1/display-check")!))
+        }
+        func stop() { stops += 1 }
+    }
+    let app = NSApplication.shared
+    app.setActivationPolicy(.accessory)
+    let runtime = DisplayRuntime()
+    let controller = WorkbenchPanelController(runtime: runtime, preferredLanguages: ["zh"])
+    let domain = "local.yukio.display-check.\(UUID().uuidString)"
+    let defaults = UserDefaults(suiteName: domain)!
+    var snapshot = SettingsSnapshot(status: "显示方式检查 · 人工样例", following: true, hidden: false, provider: .auto,
+        chats: [], showBubble: true, showCards: true, showQuestionCard: true, scale: 1, language: .chinese, demoPlaying: false)
+    controller.onChange = { change in
+        guard case .workbenchDisplayMode(let mode) = change else { return }
+        defaults.set(mode.rawValue, forKey: WorkbenchDisplayMode.preferenceKey)
+        snapshot.workbenchDisplayMode = mode
+        controller.apply(snapshot)
+    }
+    var results: [String: Bool] = [:]
+    func select(_ mode: WorkbenchDisplayMode) {
+        controller.showSettings()
+        func find(_ view: NSView) -> NSSegmentedControl? {
+            if view.accessibilityIdentifier() == "workbenchDisplayPicker" { return view as? NSSegmentedControl }
+            return view.subviews.compactMap { find($0) }.first
+        }
+        guard let root = controller.window?.contentView, let popup = find(root),
+              let index = WorkbenchDisplayMode.allCases.firstIndex(of: mode) else {
+            results["settings_mode_control"] = false
+            return
+        }
+        popup.selectedSegment = index
+        _ = popup.sendAction(popup.action, to: popup.target)
+    }
+    func waitFor(_ condition: @escaping () -> Bool) async -> Bool {
+        let deadline = Date().addingTimeInterval(12)
+        while !condition(), Date() < deadline { try? await Task.sleep(nanoseconds: 100_000_000) }
+        return condition()
+    }
+    func clickOutside() {
+        guard let window = controller.window,
+              let event = NSEvent.mouseEvent(with: .leftMouseDown,
+                location: NSPoint(x: window.frame.maxX + 30, y: window.frame.maxY + 30),
+                modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
+                windowNumber: 0, context: nil, eventNumber: 0, clickCount: 1, pressure: 1) else { return }
+        app.postEvent(event, atStart: false)
+    }
+    controller.show(snapshot: snapshot, near: .zero)
+    Task { @MainActor in
+        let web = controller.webView
+        web?.loadHTMLString("<html><body><h1>Workbench display check</h1><textarea id='draft'>保留草稿</textarea></body></html>", baseURL: nil)
+        _ = await waitFor { web?.isLoading == false }
+        select(.window)
+        results["window_mode_keeps_page"] = controller.webView === web && controller.window?.level == .normal
+        controller.showWork()
+        clickOutside()
+        try? await Task.sleep(nanoseconds: 200_000_000)
+        results["normal_window_survives_outside_click"] = controller.window?.isVisible == true
+        controller.window?.miniaturize(nil)
+        results["normal_window_minimizes"] = await waitFor { controller.window?.isMiniaturized == true }
+        controller.show(snapshot: snapshot, near: .zero)
+        results["reopen_restores_minimized_window"] = await waitFor { controller.window?.isVisible == true && controller.window?.isMiniaturized == false }
+        select(.quickLook)
+        results["mode_switch_keeps_page"] = controller.webView === web
+        if let value = try? await web?.evaluateJavaScript("document.querySelector('#draft').value") {
+            results["mode_switch_keeps_draft"] = value as? String == "保留草稿"
+        } else { results["mode_switch_keeps_draft"] = false }
+        // Changing language must not accidentally re-enable dismissal in normal mode.
+        select(.window)
+        controller.setLanguage(.english)
+        clickOutside()
+        try? await Task.sleep(nanoseconds: 200_000_000)
+        results["language_change_respects_mode"] = controller.window?.isVisible == true
+        select(.quickLook)
+        clickOutside()
+        results["quick_view_dismisses_on_outside_click"] = await waitFor { controller.window?.isVisible == false && controller.webView == nil }
+        results["dismiss_keeps_recorder"] = runtime.stops == 0
+        snapshot.workbenchDisplayMode = WorkbenchDisplayMode(preference: UserDefaults(suiteName: domain)?.string(forKey: WorkbenchDisplayMode.preferenceKey))
+        controller.show(snapshot: snapshot, near: .zero)
+        results["reopen_uses_saved_mode"] = controller.displayMode == .quickLook && controller.window?.isVisible == true
+        if let data = try? JSONSerialization.data(withJSONObject: results, options: [.prettyPrinted, .sortedKeys]) {
+            try? data.write(to: URL(fileURLWithPath: path), options: .atomic)
+        }
+        defaults.removePersistentDomain(forName: domain)
+        let passed = results.count == 10 && results.values.allSatisfy { $0 }
+        if passed && CommandLine.arguments.contains("--workbench-display-hold") {
+            snapshot.workbenchDisplayMode = .window
+            controller.show(snapshot: snapshot, near: .zero)
+            controller.showSettings()
+            return
+        }
+        controller.shutdown(); controller.close()
+        exit(passed ? 0 : 1)
+    }
+    withExtendedLifetime(controller) { app.run() }
 }
 
 /// Explicit, isolated package check: use only a new empty profile and synthetic

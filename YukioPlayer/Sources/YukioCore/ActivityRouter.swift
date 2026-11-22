@@ -144,6 +144,7 @@ final class SessionModel {
 
     struct OpenCall {
         let id: String
+        let relatedCallID: String?
         let generation: String
         let state: PetState
         let at: Double
@@ -151,6 +152,8 @@ final class SessionModel {
         let detail: String?
         /// 问话类调用（AskUserQuestion）抄下来的那道题；别的调用是 nil。
         let question: PetQuestion?
+        let persistentQuestion: Bool
+        let questionIndex: Int
     }
 
     /// 这条聊天的转录会话 ID，也就是 sessions 字典里的键。判断"这条是不是正开在眼前"要用。
@@ -168,10 +171,17 @@ final class SessionModel {
     var lastToolState: PetState?
     var lastToolEndedAt: Double?
     var finalAnswerAt: Double?
+    var deferredEnd: (at: Double, ts: Double)?
+    var clientStatus: String?
+    var clientStatusTs: Double = -.infinity
+    var clientCheckedAt: Double = -.infinity
     /// 勾选卡：任务刚结束时举起，举到用户点击为止（见 ActivityRouter.dismissCompletion）。
     var sign: Sign = .none
     /// 牌子举起来的时刻：晾太久（signYieldMs）就先让位给还在干活的聊天。
     var signRaisedAt: Double?
+    /// 这一轮是以“必须等你回答才能继续”的提问收尾的（问题原文，可能为空串）：举的是问题牌。
+    /// 看见不等于回答，所以聊天开在眼前也不自动放下；你回一句（新一轮开始）或点她才放。
+    var endQuestion: String?
     /// 最近一次失败（工具报错或本轮因错误中止）的时间。
     var failedAt: Double?
     /// 失败的那次工具调用的说明；API 报错时为 nil。
@@ -186,6 +196,8 @@ final class SessionModel {
     /// 已结束的调用 ID（处理“结束先于开始”的乱序和重复事件）。有上限。
     private var endedIDs: [String] = []
     private var endedSet: Set<String> = []
+    private var answeredQuestionIDs: [String] = []
+    private var answeredQuestionSet: Set<String> = []
 
     init(id: String, source: String, now: Double, rawID: String? = nil) {
         self.id = id
@@ -200,10 +212,11 @@ final class SessionModel {
         taskStartedTs = ts
         latestWorkTs = ts
         taskEndedAt = nil
-        open.removeAll()
+        open.removeAll { !$0.persistentQuestion }
         lastToolState = nil
         lastToolEndedAt = nil
         finalAnswerAt = nil
+        deferredEnd = nil
         failedAt = nil
         failedDetail = nil
         lastDetail.removeAll()
@@ -211,15 +224,18 @@ final class SessionModel {
         endedSet.removeAll()
         sign = .none
         signRaisedAt = nil
+        endQuestion = nil
     }
 
     func endTask(now: Double, ts: Double, keepAnswer: Bool) {
+        deferredEnd = nil
         taskActive = false
         taskEndedAt = now
         taskEndedTs = max(taskEndedTs, ts)
-        open.removeAll()
+        open.removeAll { !$0.persistentQuestion }
         lastToolEndedAt = nil
         failedAt = nil
+        endQuestion = nil
         if !keepAnswer {
             finalAnswerAt = nil
             sign = .none
@@ -256,7 +272,19 @@ final class SessionModel {
         }
     }
 
-    func wasEnded(_ id: String) -> Bool { endedSet.contains(id) }
+    func markQuestionAnswered(_ id: String) {
+        guard answeredQuestionSet.insert(id).inserted else { return }
+        answeredQuestionIDs.append(id)
+        if answeredQuestionIDs.count > 4096 { answeredQuestionSet.remove(answeredQuestionIDs.removeFirst()) }
+    }
+
+    func wasEnded(_ id: String) -> Bool { endedSet.contains(id) || answeredQuestionSet.contains(id) }
+
+    var pendingQuestion: OpenCall? {
+        guard let last = open.last(where: { $0.state == .question_for_user }) else { return nil }
+        guard let call = last.relatedCallID, last.persistentQuestion else { return last }
+        return open.filter { $0.relatedCallID == call && $0.persistentQuestion }.min { $0.questionIndex < $1.questionIndex }
+    }
 }
 
 /// 把事件流变成“当前该显示什么”，并施加防抖与最短保持。
@@ -293,7 +321,7 @@ public final class ActivityRouter {
 
     /// Record that this finished turn was seen, even during respondHoldMs or while pinned elsewhere.
     private func acknowledgeVisibleCompletions() {
-        for s in sessions.values where isChatVisible(s.id) {
+        for s in sessions.values where isChatVisible(s.id) && s.endQuestion == nil {
             if !s.taskActive, s.finalAnswerAt != nil, s.taskEndedAt != nil { s.sign = .dismissed }
         }
     }
@@ -324,7 +352,8 @@ public final class ActivityRouter {
 
     public func ingest(_ e: PetEvent, now: Double) {
         if e.kind == .sourceLost {
-            for s in sessions.values where s.source == e.source && s.taskActive {
+            for s in sessions.values where s.source == e.source && (e.session == "*" || e.session.isEmpty || s.rawID == e.session) {
+                s.open.removeAll()
                 s.endTask(now: now, ts: e.ts, keepAnswer: false)
             }
             return
@@ -357,7 +386,15 @@ public final class ActivityRouter {
 
         case .taskEnd:
             guard s.taskActive, e.ts >= s.taskStartedTs, e.ts >= s.latestWorkTs else { return }
+            if AgentProvider.owner(ofSource: s.source) == .claude,
+               s.open.contains(where: { $0.state == .question_for_user }) {
+                if s.open.filter({ $0.state == .question_for_user }).allSatisfy({ $0.relatedCallID != nil }) {
+                    s.deferredEnd = (now, e.ts)
+                }
+                return
+            }
             s.endTask(now: now, ts: e.ts, keepAnswer: true)
+            if e.activity == .question_for_user { s.endQuestion = e.detail ?? "" }
 
         case .taskAbort:
             guard e.ts >= s.taskStartedTs, e.ts >= s.latestWorkTs else { return }
@@ -372,33 +409,51 @@ public final class ActivityRouter {
             s.failedDetail = nil
 
         case .activityStart:
+            let persistentQuestion = e.persistentQuestion == true && AgentProvider.owner(ofSource: e.source) == .gpt
+                && e.activity == .question_for_user && e.question != nil
             // 早于当前任务或已结束任务的迟到事件不能复活旧活动。
-            if e.ts < s.taskStartedTs || e.ts < s.taskEndedTs { return }
+            if !persistentQuestion && (e.ts < s.taskStartedTs || e.ts < s.taskEndedTs) { return }
             if let id = e.eventID, s.wasEnded(id) || s.open.contains(where: { $0.id == id }) { return }
-            ensureActive(s, now: now, ts: e.ts)
-            s.latestWorkTs = max(s.latestWorkTs, e.ts)
+            if !persistentQuestion { ensureActive(s, now: now, ts: e.ts) }
+            if e.relatedCallID == nil && !persistentQuestion { s.latestWorkTs = max(s.latestWorkTs, e.ts) }
             let state = e.activity ?? s.lastToolState ?? .default_work
             let id = e.eventID ?? nextAnonymousID()
-            s.open.append(.init(id: id, generation: UUID().uuidString, state: state, at: now,
-                                eventTimestamp: e.ts, detail: e.detail, question: e.question))
+            s.open.append(.init(id: id, relatedCallID: e.relatedCallID, generation: UUID().uuidString, state: state, at: now,
+                                eventTimestamp: e.ts, detail: e.detail, question: e.question,
+                                persistentQuestion: persistentQuestion, questionIndex: e.questionIndex ?? 0))
             if let detail = e.detail { s.lastDetail[state] = detail }
             s.finalAnswerAt = nil
             s.failedAt = nil
 
         case .activityEnd, .activityFailed:
-            guard e.ts >= s.taskStartedTs, e.ts >= s.taskEndedTs else { return }
+            if e.persistentQuestion == true, AgentProvider.owner(ofSource: e.source) == .gpt, let id = e.eventID {
+                s.markQuestionAnswered(id)
+            }
+            let matchingQuestion = s.open.contains { ($0.id == e.eventID || $0.relatedCallID == e.eventID) && $0.persistentQuestion }
+            guard matchingQuestion || (e.ts >= s.taskStartedTs && e.ts >= s.taskEndedTs) else { return }
             let failed = e.kind == .activityFailed
             let call: SessionModel.OpenCall?
             if let id = e.eventID {
                 if let open = s.open.first(where: { $0.id == id }), e.ts < open.eventTimestamp { return }
-                call = s.open.firstIndex(where: { $0.id == id }).map { s.open.remove(at: $0) }
-                s.markEnded(id)
+                let matches = s.open.filter { ($0.id == id || $0.relatedCallID == id) && (e.questionIndex == nil || $0.questionIndex == e.questionIndex) }
+                call = matches.last
+                for match in matches {
+                    s.markEnded(match.id)
+                    if match.persistentQuestion { s.markQuestionAnswered(match.id) }
+                }
+                let ids = Set(matches.map(\.id))
+                s.open.removeAll { ids.contains($0.id) }
+                if e.questionIndex == nil { s.markEnded(id) }
             } else {
                 call = s.open.popLast()
             }
             // 重复的结束（两个适配器都报告）找不到未结束调用，不会再次触发沮丧。
-            guard let call, s.taskActive else { return }
-            s.latestWorkTs = max(s.latestWorkTs, e.ts)
+            guard let call else { return }
+            if !s.taskActive {
+                if call.persistentQuestion && displayed == .question_for_user { commit(desiredState(now: now), now: now) }
+                return
+            }
+            if e.relatedCallID == nil && (call.relatedCallID == nil || e.eventID != call.id) { s.latestWorkTs = max(s.latestWorkTs, e.ts) }
             s.lastEventAt = max(s.lastEventAt, now)
             // A received answer ends the question pose immediately. It must not
             // linger as the most recently completed tool during the grace period.
@@ -408,6 +463,10 @@ public final class ActivityRouter {
             if failed {
                 s.failedAt = now
                 s.failedDetail = call.detail
+            }
+            if !s.open.contains(where: { $0.state == .question_for_user }),
+               let end = s.deferredEnd, end.ts >= s.latestWorkTs {
+                s.endTask(now: end.at, ts: end.ts, keepAnswer: true)
             }
             if call.state == .question_for_user && displayed == .question_for_user {
                 let want = desiredState(now: now)
@@ -419,6 +478,21 @@ public final class ActivityRouter {
             ensureActive(s, now: now, ts: e.ts)
             s.latestWorkTs = max(s.latestWorkTs, e.ts)
             s.finalAnswerAt = nil
+
+        case .clientState:
+            guard AgentProvider.owner(ofSource: e.source) == .claude else { return }
+            if e.detail == "offline" {
+                if s.taskActive { s.endTask(now: now, ts: e.ts, keepAnswer: false); s.taskEndedAt = nil }
+                s.clientStatus = nil
+            } else {
+                guard ["working", "waiting", "idle"].contains(e.detail ?? ""),
+                      let at = e.clientStateAt, at.isFinite, at <= e.ts, at >= s.clientStatusTs else { return }
+                s.clientStatus = e.detail; s.clientStatusTs = at; s.clientCheckedAt = now
+                if e.detail == "waiting", at > s.taskEndedTs, at >= s.latestWorkTs {
+                    ensureActive(s, now: now, ts: at)
+                }
+            }
+            return // Presence is not a newer transcript event or a new task.
 
         case .finalAnswer:
             if e.ts < s.latestWorkTs || e.ts <= s.taskEndedTs { return }
@@ -461,15 +535,22 @@ public final class ActivityRouter {
 
     func isLive(_ s: SessionModel, now: Double) -> Bool {
         guard s.taskActive else { return false }
+        // A validated live client can wait silently for hours. Without that
+        // evidence, abandoned historical questions retain the normal timeout.
+        if AgentProvider.owner(ofSource: s.source) == .claude,
+           now - s.clientCheckedAt < 6000, ["working", "waiting"].contains(s.clientStatus ?? "") { return true }
         let quiet = now - s.lastEventAt
         return quiet <= (s.open.isEmpty ? config.staleNoToolMs : config.staleOpenToolMs)
     }
 
     /// arming=false：只看不动，不会把勾选卡举起来（列聊天时用）。
     func desired(for s: SessionModel, now: Double, arming: Bool = true) -> PetState {
+        if s.open.contains(where: { $0.persistentQuestion }) { return .question_for_user }
         if s.taskActive {
             guard isLive(s, now: now) else { return .idle }
             if s.open.contains(where: { $0.state == .question_for_user }) { return .question_for_user }
+            if s.clientStatus == "waiting", s.clientStatusTs >= s.latestWorkTs,
+               now - s.clientCheckedAt < 6000 { return .question_for_user }
             if let last = s.open.last { return last.state }
             if s.finalAnswerAt != nil { return .respond }
             if let f = s.failedAt, now - f < config.failedHoldMs { return .failed }
@@ -485,12 +566,14 @@ public final class ActivityRouter {
             // 用户点击或让对应聊天显示在屏幕上后，把这一轮记为已读。
             // 举牌只发生在任务刚结束时，所以启动时回放到的旧记录不会举牌。
             // 那条聊天正开在眼前：答完的结果他自己看得见，不举牌；已经举着的也就此放下。
-            let inSight = isChatVisible(s.id)
+            // 以提问收尾的那一轮举问题牌：看见了不算答了，开在眼前也照举。
+            let raised: PetState = s.endQuestion == nil ? .task_complete : .question_for_user
+            let inSight = isChatVisible(s.id) && s.endQuestion == nil
             if s.sign == .raised {
                 if inSight {
                     if arming { s.sign = .dismissed }
                 } else {
-                    return .task_complete
+                    return raised
                 }
             } else if s.sign == .none && age < config.completeArmMs {
                 if inSight {
@@ -500,7 +583,7 @@ public final class ActivityRouter {
                         s.sign = .raised
                         s.signRaisedAt = now
                     }
-                    return .task_complete
+                    return raised
                 }
             }
         }
@@ -517,7 +600,7 @@ public final class ActivityRouter {
 
     /// 这条聊天在等你拿主意（AskUserQuestion 还没结束）。
     func waitingForUser(_ s: SessionModel, now: Double) -> Bool {
-        isLive(s, now: now) && s.open.contains(where: { $0.state == .question_for_user })
+        s.open.contains(where: { $0.persistentQuestion }) || (isLive(s, now: now) && s.open.contains(where: { $0.state == .question_for_user }))
     }
 
     /// 整轮出错停在那儿（工具出错时任务还在跑，不算）。
@@ -537,7 +620,8 @@ public final class ActivityRouter {
     private func attentionRank(_ s: SessionModel, now: Double) -> Int? {
         if waitingForUser(s, now: now) { return 0 }
         if failedPending(s, now: now) { return 1 }
-        if completionPending(s, now: now) && !signOverdue(s, now: now) { return 2 }
+        // 以提问收尾的和“等你回答”同档；晾过头了一样先让位。
+        if completionPending(s, now: now) && !signOverdue(s, now: now) { return s.endQuestion == nil ? 2 : 0 }
         return nil
     }
 
@@ -556,7 +640,7 @@ public final class ActivityRouter {
             let age = now - end
             guard age >= config.respondHoldMs, age < config.completeArmMs else { continue }
             // 那条聊天正开在眼前：人已经看见了，这一轮就不举牌（也不进身侧那叠卡）。
-            if isChatVisible(s.id) {
+            if isChatVisible(s.id) && s.endQuestion == nil {
                 s.sign = .dismissed
                 continue
             }
@@ -695,6 +779,14 @@ public final class ActivityRouter {
         return f
     }
 
+    /// 这一轮以提问收尾、正举着问题牌的会话 ID。和勾选卡一样：点她跳到这条聊天并放下牌子
+    /// （那一轮已经结束，没有哪次调用会替它收牌）。
+    public var handoffQuestionSession: String? {
+        guard displayed == .question_for_user, let f = focusedSession, let s = sessions[f],
+              s.sign == .raised, s.endQuestion != nil else { return nil }
+        return f
+    }
+
     /// 正立着问号卡的会话 ID：点击雪绪时跳到这条聊天去回答。没在问时为 nil。
     /// 和勾选卡不同，点了不收卡：问题还等着你答，卡片等 AskUserQuestion 结束自己收。
     public var askingSession: String? {
@@ -707,10 +799,11 @@ public final class ActivityRouter {
     /// 问不出问题正文的来源（Deep Code 只报一个「等你回答」的状态）没有这个，返回 nil。
     public var askingQuestion: PendingQuestion? {
         guard displayed == .question_for_user, let f = focusedSession, let s = sessions[f],
-              let call = s.open.last(where: { $0.state == .question_for_user }),
+              let call = s.pendingQuestion,
               let question = call.question else { return nil }
         return PendingQuestion(session: f, callID: call.id, question: question,
-                               source: s.source, generation: call.generation, targetSession: s.rawID)
+                               source: s.source, generation: call.generation, targetSession: s.rawID,
+                               requestCallID: call.persistentQuestion ? call.relatedCallID : nil, questionIndex: call.questionIndex)
     }
 
     /// 等着你答的一道题：`callID` 是那次工具调用的 ID，换了一道题它就变，
@@ -722,14 +815,19 @@ public final class ActivityRouter {
         public let source: String
         public let generation: String
         public let targetSession: String
+        public let requestCallID: String
+        public let questionIndex: Int
 
-        public init(session: String, callID: String, question: PetQuestion, source: String = "", generation: String = "", targetSession: String? = nil) {
+        public init(session: String, callID: String, question: PetQuestion, source: String = "", generation: String = "", targetSession: String? = nil,
+                    requestCallID: String? = nil, questionIndex: Int = 0) {
             self.session = session
             self.callID = callID
             self.question = question
             self.source = source
             self.generation = generation
             self.targetSession = targetSession ?? session
+            self.requestCallID = requestCallID ?? callID
+            self.questionIndex = questionIndex
         }
     }
 
@@ -751,7 +849,8 @@ public final class ActivityRouter {
     public func acknowledgeQuestion(session: String, callID: String, now: Double) -> Bool {
         guard let s = sessions[session],
               let index = s.open.firstIndex(where: { $0.id == callID && $0.state == .question_for_user }) else { return false }
-        s.open.remove(at: index)
+        let removed = s.open.remove(at: index)
+        if removed.persistentQuestion { s.markQuestionAnswered(callID) }
         s.markEnded(callID)
         s.lastEventAt = max(s.lastEventAt, now)
         if s.lastToolState == .question_for_user {
@@ -820,7 +919,7 @@ public final class ActivityRouter {
     public func statusLine(now: Double) -> StatusLine? {
         guard let f = focusedSession, let s = sessions[f] else { return nil }
         // AskUserQuestion 等“等你回答”的调用显示空闲动作，但任务仍在进行。
-        let waitingForUser = s.taskActive && s.open.contains(where: { $0.state == .question_for_user })
+        let waitingForUser = waitingForUser(s, now: now)
         if displayed == .idle && !waitingForUser { return nil }
 
         let progress = s.todos.isEmpty ? nil : StatusLine.Progress(
@@ -834,7 +933,8 @@ public final class ActivityRouter {
             current = s.taskActive ? tr("Writing the answer", "整理回答") : tr("Answered", "已回答")
         case .idle, .question_for_user:
             // 问号卡也能点（跳到这条聊天去回答），和勾选卡一样在气泡里说一声，不然没人知道能点。
-            current = tr("Your turn · click to open", "\(s.open.last(where: { $0.state == .question_for_user })?.detail ?? "等你回答") · 点她跳过去")
+            let asked = s.endQuestion.flatMap { $0.isEmpty ? nil : $0 }
+            current = tr("\(asked ?? "Your turn") · click to open", "\(s.pendingQuestion?.detail ?? asked ?? "等你回答") · 点她跳过去")
         case .task_complete:
             current = tr("Done · click to open", "已完成 · 点她跳过去")
         case .thinking:
