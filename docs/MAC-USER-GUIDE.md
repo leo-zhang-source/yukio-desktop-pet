@@ -18,6 +18,8 @@ Yukio is a Mac desktop companion. It turns coding-agent activity into character 
 2. **Open the workbench:** menu-bar avatar → Activity workbench (or right-click the visible companion). Open Yukio settings to change the character, language and size.
 3. **Choose your experience:** Play demo shows animations without an assistant account. For real activity, stop the demo, start a task in local Codex, Claude Code or Deep Code, and enable Follow activity.
 
+**Workbench display (Preview 5):** Open Settings → General → Workbench display, below Language. **Keep open** behaves like a normal movable, resizable, minimizable window and stays open when you click outside. Use its green window button to enter or leave full screen. **Quick view** is a floating window that dismisses when you click outside. Your choice is saved; switching modes preserves the page and draft. The default remains Quick view.
+
 <a id="first-run"></a>
 <a id="follow"></a>
 <a id="workbench"></a>
@@ -28,7 +30,7 @@ Yukio is a Mac desktop companion. It turns coding-agent activity into character 
 | --- | --- |
 | Play the demo, then drag the companion | Twelve animations, independent blinking and drag feedback; demo states are simulated |
 | Give your local assistant a small task | Animations following real activity, followed by a completion notice |
-| Right-click the companion and select that chat | Expand the Claude / Codex group, select a chat, and view current work, history and explanation evidence |
+| Right-click the companion and select that chat | Expand the Claude / Codex group, select a chat, and view current work, history and explanation evidence; **Open this chat**, beside the chat name, brings it up in Claude Desktop or Codex (Preview 5; Deep Code and terminal-only chats have no window to jump to) |
 
 <a id="explain"></a>
 **Optional: AI explanations.** Install and sign in on this Mac using the official [Codex](https://learn.chatgpt.com/docs/codex/cli) or [Claude Code](https://code.claude.com/docs/en/setup) instructions. At the top of the workbench, select your assistant under Explain with (saved immediately), then Enable explanations if needed.

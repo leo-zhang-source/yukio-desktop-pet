@@ -73,6 +73,19 @@ async function api(route,data){
  let value;try{value=await response.json();}catch{throw Error(tr('暂时没读到可显示的消息，请刷新页面或重新打开工作台。'));}
  if(!response.ok)throw Object.assign(Error(value.error||tr('暂时没读到新消息，原来的记录仍然保留。')),{reason:value.reason});return value;
 }
+// Only Yukio's own window offers this bridge; an ordinary browser tab has no
+// way to reach the assistant apps, so the button stays hidden there.
+function openChatTarget(value){
+ const host=globalThis.webkit?.messageHandlers?.yukioOpenChat;
+ if(!host||synthetic||!value||!['claude','codex'].includes(value.client))return null;
+ try{const key=value.key.replace(/-/g,'+').replace(/_/g,'/'),p=JSON.parse(atob(key+'='.repeat((4-key.length%4)%4)));
+  return Array.isArray(p)&&p.length===5&&/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(p[2])?{host,message:{client:value.client,session:p[2]}}:null;}catch{return null;}
+}
+async function openCurrentChat(){
+ const target=openChatTarget(current);if(!target)return;let opened=false;
+ try{opened=await target.host.postMessage(target.message)===true;}catch{}
+ note(opened?'':tr('没能直接打开这条聊天。它可能不在桌面版应用里（例如在终端里运行），请到原来的地方查看。'));
+}
 function note(text){$('alert').textContent=text;$('alert').hidden=!text;}
 function emptyHelp(clients){$('emptyClients').replaceChildren();for(const c of clients){const state=c.recorder?.state;const text=state==='source_unavailable'?tr('暂时没读到客户端留下的聊天'):state==='waiting'||state==='starting'?tr('正在等新聊天'):state==='active'?tr('已发现活动，正在整理'):state==='partial_history'||state==='degraded'?tr('有些记录暂时读不到'):tr('还没有可显示的新记录');$('emptyClients').append(make('p',names[c.id]+'：'+text+'。'));}}
 function age(stamp){if(synthetic)return tr('模拟时间');if(uiLanguage==='en'&&stamp){const seconds=Math.max(0,Math.round((Date.now()-stamp)/1000));const r=new Intl.RelativeTimeFormat('en',{numeric:'auto'});return seconds<60?'just now':seconds<3600?r.format(-Math.floor(seconds/60),'minute'):seconds<86400?r.format(-Math.floor(seconds/3600),'hour'):r.format(-Math.floor(seconds/86400),'day');}if(!stamp)return tr('时间未提供');const seconds=Math.max(0,Math.round((Date.now()-stamp)/1000));return seconds<60?tr('刚刚'):seconds<3600?Math.floor(seconds/60)+tr(' 分钟前'):seconds<86400?Math.floor(seconds/3600)+tr(' 小时前'):Math.floor(seconds/86400)+tr(' 天前');}
@@ -94,7 +107,7 @@ function showAnswer(result,refs,snapshot,revision){
  if(result.mode!=='model'){attemptMessage=result.message||tr('模型暂时没能解释，先保留已有说明。');render(current);return;}
  attemptMessage='';modelAnswer={result,refs,snapshot,revision};render(current);
 }
-function render(data){current=data;$('chatName').textContent=data.title;$('chatLocation').textContent=names[data.client]+tr(' · 当前查看');
+function render(data){current=data;$('chatName').textContent=data.title;$('openChat').hidden=!openChatTarget(data);$('chatLocation').textContent=names[data.client]+tr(' · 当前查看');
  // Navigation reads the latest lifecycle marker independently. The bounded
  // explanation excerpt may omit that marker in a long turn; it must not
  // replace the catalogue's state with a less complete observation.
@@ -223,7 +236,7 @@ async function automatic(){
   }
  }finally{if(autoRun===run){autoRun=null;modelPending=false;if(!pageClosed&&current)render(current);}understandingControls();}
 }
-$('chat').onchange=()=>choose($('chat').value);$('reload').onclick=()=>refresh(true);
+$('chat').onchange=()=>choose($('chat').value);$('reload').onclick=()=>refresh(true);$('openChat').onclick=openCurrentChat;
 $('chatSearch').oninput=()=>{chatSearch=$('chatSearch').value;renderChatNavigation();};
 $('chatBrowse').onclick=()=>toggleChatBrowser(true);$('chatNavClose').onclick=()=>toggleChatBrowser(false);$('chatBackdrop').onclick=()=>toggleChatBrowser(false);
 window.addEventListener('keydown',event=>{if(event.key==='Escape')toggleChatBrowser(false);});

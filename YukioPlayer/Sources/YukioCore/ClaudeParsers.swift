@@ -21,6 +21,8 @@ public final class ClaudeTranscriptParser {
         var responseID: String?
         var responseHasTools = false
         var answerEntrypoint: String?
+        /// The turn's closing next-step box asked something the chat cannot continue without.
+        var handoffQuestion: String?
         var background: [String: String] = [:]
         var backgroundLimited = false
         var stops: [String: (hasPendingWork: Bool, receivedAt: Double)] = [:]
@@ -87,6 +89,26 @@ public final class ClaudeTranscriptParser {
 
     public init() {}
 
+    private static func ended(_ turn: Turn, at: Double, session: String) -> [PetEvent] {
+        let question = turn.handoffQuestion; turn.handoffQuestion = nil
+        return [PetEvent(ts: at, source: Self.source, session: session, kind: .finalAnswer),
+                PetEvent(ts: at, source: Self.source, session: session, kind: .taskEnd,
+                         activity: question == nil ? nil : .question_for_user, detail: question)]
+    }
+
+    /// Claude Desktop closes a turn with a "next step" box (`mcp__ccd_turn__wrap_up`): a recap,
+    /// optionally one question with reply buttons, and `blocked: true` only when the work
+    /// cannot go on until the user answers. That flag is the client's own distinction between
+    /// a question and a next-step suggestion; the wording of the question is never interpreted.
+    /// Internal client format: anything unrecognized stays an ordinary completed turn.
+    static let nextStepTool = "mcp__ccd_turn__wrap_up"
+    static func blockingQuestion(nextStep input: [String: Any]) -> String? {
+        guard let flag = input["blocked"] as? NSNumber, CFGetTypeID(flag) == CFBooleanGetTypeID(), flag.boolValue,
+              let ask = (input["ask"] as? String)?.split(whereSeparator: \.isWhitespace).joined(separator: " "),
+              !ask.isEmpty else { return nil }
+        return String(ask.prefix(200))
+    }
+
     private func observeBackground(_ obj: [String: Any], turn: Turn) {
         guard let result = obj["toolUseResult"] as? [String: Any] else { return }
         if let id = result["backgroundTaskId"] as? String, !id.isEmpty, id.count <= 256 {
@@ -136,9 +158,7 @@ public final class ClaudeTranscriptParser {
             guard let answer = turn.answerID, obj["leafUuid"] as? String == answer,
                   turn.answerEntrypoint == "sdk-cli", !turn.pending else { return [] }
             turn.completedAnswerID = answer; turn.answerID = nil
-            return [PetEvent.Kind.finalAnswer, .taskEnd].map {
-                PetEvent(ts: turn.answerTimestamp, source: Self.source, session: session, kind: $0)
-            }
+            return Self.ended(turn, at: turn.answerTimestamp, session: session)
         }
         guard let ts = PetEvent.parseTimestamp(obj["timestamp"] as? String) else { return [] }
         guard ts >= turn.latestTimestamp else { return [] }
@@ -168,6 +188,7 @@ public final class ClaudeTranscriptParser {
                 turn.hookPromptID = turn.promptID
                 turn.responseID = nil
                 turn.responseHasTools = false
+                turn.handoffQuestion = nil
                 return [ev(kind, detail: Self.promptLine(text))]
             }
             if let blocks = content as? [[String: Any]] {
@@ -230,6 +251,8 @@ public final class ClaudeTranscriptParser {
                 case "tool_use":
                     let name = (b["name"] as? String) ?? ""
                     let input = (b["input"] as? [String: Any]) ?? [:]
+                    // The last box of the turn decides; a later plain recap withdraws the question.
+                    if name == Self.nextStepTool { turn.handoffQuestion = Self.blockingQuestion(nextStep: input) }
                     let activity: PetState?
                     switch ClaudeToolClassifier.classify(tool: name, input: input) {
                     case .activity(let s): activity = s
@@ -279,7 +302,7 @@ public final class ClaudeTranscriptParser {
             } ?? false
             guard stopped, !backgroundPending, !turn.pending else { return [ev(.thinking)] }
             turn.completedAnswerID = answer
-            return [ev(.finalAnswer), ev(.taskEnd)]
+            return Self.ended(turn, at: ts, session: session)
 
         case "api-request":
             // Only the observed desktop main-loop request shape is recognized;

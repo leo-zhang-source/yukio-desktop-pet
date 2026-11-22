@@ -527,3 +527,33 @@ test('a fresh empty workbench shows source status and rejects late empty respons
  f.pending.filter(r=>r.url==='/api/clients').at(-1).resolve({clients:[{id:'claude',recorder:{state:'source_unavailable'}}]});
  await second;assert.equal(f.elements.get('emptyClients').children.length,0);
 });
+function openChatKey(session){return Buffer.from(JSON.stringify(['source',1,session,'',0])).toString('base64').replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
+const realSession='0a1b2c3d-0000-4000-8000-00000000abcd';
+function withBridge(reply){const f=setup(),posted=[];f.context.webkit={messageHandlers:{yukioOpenChat:{postMessage:async message=>{posted.push(message);return reply.value;}}}};return {f,posted};}
+test('the open-chat button is absent in an ordinary browser tab',()=>{
+ const f=setup();f.context.data={...currentWork(),client:'claude',key:openChatKey(realSession)};f.run('render(data)');
+ assert.equal(f.run("$('openChat').hidden"),true);
+});
+test('inside Yukio the button appears only for chats that have an app to open',()=>{
+ const {f}=withBridge({value:true});
+ for(const [client,session,hidden] of [['claude',realSession,false],['codex',realSession,false],['deepcode',realSession,true],['claude','source-7',true],['claude','../'+realSession,true]]){
+  f.context.data={...currentWork(),client,key:openChatKey(session)};f.run('render(data)');
+  assert.equal(f.run("$('openChat').hidden"),hidden,client+' '+session);
+ }
+ f.context.data={...currentWork(),client:'claude',key:'not-a-key'};f.run('render(data)');assert.equal(f.run("$('openChat').hidden"),true);
+ f.context.data={...currentWork(),client:'claude',key:openChatKey(realSession)};f.run('synthetic=true;render(data)');assert.equal(f.run("$('openChat').hidden"),true);
+});
+test('pressing the button names only the client and session, and a refusal is explained',async()=>{
+ const reply={value:true},{f,posted}=withBridge(reply);
+ f.context.data={...currentWork(),client:'claude',key:openChatKey(realSession),title:'private title',goal:'private goal'};f.run('render(data)');
+ await f.run("$('openChat').onclick()");
+ assert.deepEqual(JSON.parse(JSON.stringify(posted)),[{client:'claude',session:realSession}]);assert.equal(f.run("$('alert').hidden"),true);
+ reply.value=false;await f.run("$('openChat').onclick()");
+ assert.equal(f.run("$('alert').hidden"),false);assert.match(f.run("$('alert').textContent"),/没能直接打开这条聊天/);
+ reply.value=true;await f.run("$('openChat').onclick()");assert.equal(f.run("$('alert').hidden"),true);
+});
+test('the open-chat wording has English text and the page carries the button',()=>{
+ const words=JSON.parse(fs.readFileSync(path.join(__dirname,'dist/en.json'),'utf8')),page=fs.readFileSync(path.join(__dirname,'dist/index.html'),'utf8');
+ assert.match(page,/<button id="openChat"[^>]*hidden>打开这条聊天/);
+ for(const text of ['打开这条聊天','在原来的应用里打开这条聊天','没能直接打开这条聊天。它可能不在桌面版应用里（例如在终端里运行），请到原来的地方查看。'])assert.doesNotMatch(words[text]||'中',/[\u4e00-\u9fff]/);
+});

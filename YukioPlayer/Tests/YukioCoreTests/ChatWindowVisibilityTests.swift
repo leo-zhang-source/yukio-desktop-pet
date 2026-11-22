@@ -35,6 +35,18 @@ import Testing
     }
 }
 
+/// Observed on a two-display Mac: the screenshot tool kept a display-sized surface at the
+/// menu-bar level for days, so every chat on the built-in display counted as covered.
+@Test func systemOverlayLayersDoNotCoverWhileOrdinaryAndLockLevelsDo() {
+    for layer in [20, 23, 24, 25, 101, 102, 200, 500] {
+        #expect(ChatWindowVisibility.isSystemOverlay(layer: layer), "\(layer)")
+    }
+    // Ordinary, floating, modal and utility windows; screen saver, lock screen, cursor levels.
+    for layer in [0, 3, 8, 19, 1000, 1500, 2_147_483_628, -2_147_483_601] {
+        #expect(!ChatWindowVisibility.isSystemOverlay(layer: layer), "\(layer)")
+    }
+}
+
 @Test func transparentDockDisplaySurfaceIsNotAnOpaqueWindow() {
     let display = CGRect(x: 0, y: 0, width: 1710, height: 1112)
     #expect(ChatWindowVisibility.isDesktopOverlay(isDock: true, layer: 20, bounds: display, screens: [display]))

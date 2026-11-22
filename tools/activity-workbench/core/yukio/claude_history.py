@@ -12,10 +12,22 @@ from .events import Kind
 from .parsers_claude import ClaudeTranscriptParser
 
 CAPACITY = 4096
+NEXT_STEP_TOOL = 'mcp__ccd_turn__wrap_up'
 
 
 def identifier(value):
     return value if isinstance(value, str) and value.strip() and len(value) <= 256 else None
+
+
+def blocked_on_user(block):
+    """The desktop client's own "work stops until the user answers" marker.
+
+    Only the client's flag is used; the wording is never interpreted, and the
+    question itself never enters rows or checkpoints.
+    """
+    data = block.get('input')
+    return (isinstance(data, dict) and data.get('blocked') is True
+            and isinstance(data.get('ask'), str) and bool(data['ask'].strip()))
 
 
 class ClaudeHistoryParser:
@@ -23,11 +35,13 @@ class ClaudeHistoryParser:
         self.fallback_session = fallback_session
         self.calls = OrderedDict()
         self.tracking_limited = False
+        self.blocked_handoff = False
         self.lifecycle = ClaudeTranscriptParser()
 
     def history_checkpoint(self):
         return dict(claude_history_version=2, fallback_session=self.fallback_session,
                     tracking_limited=self.tracking_limited, calls=list(self.calls.values()),
+                    blocked_handoff=self.blocked_handoff,
                     lifecycle=self.lifecycle.history_checkpoint())
 
     @classmethod
@@ -39,6 +53,10 @@ class ClaudeHistoryParser:
         if type(state.get('tracking_limited')) is not bool:
             raise ValueError('Invalid Claude history limit state')
         parser.tracking_limited = state['tracking_limited']
+        # Absent in checkpoints written before the end-of-turn question marker.
+        if type(state.get('blocked_handoff', False)) is not bool:
+            raise ValueError('Invalid Claude history handoff state')
+        parser.blocked_handoff = state.get('blocked_handoff', False)
         calls = state['calls']
         if not isinstance(calls, list) or len(calls) > CAPACITY:
             raise ValueError('Invalid Claude history checkpoint')
@@ -68,6 +86,7 @@ class ClaudeHistoryParser:
         except (ValueError, UnicodeError, RecursionError):
             self.calls.clear()
             self.lifecycle = ClaudeTranscriptParser()
+            self.blocked_handoff = False
             return dict(kind='invalid_record', evidence_class='observed', timestamp_available=False,
                         session_id=self.fallback_session)
         kind = identifier(obj.get('type')) or ''
@@ -84,6 +103,7 @@ class ClaudeHistoryParser:
             # independent metadata, but never carry a completion candidate
             # across an unreadable lifecycle record.
             self.lifecycle = ClaudeTranscriptParser()
+            self.blocked_handoff = False
             lifecycle_events = []
             row['lifecycle_unavailable'] = True
         for event in lifecycle_events:
@@ -91,6 +111,11 @@ class ClaudeHistoryParser:
             if marker:
                 row['turn_marker'] = marker
                 row['lifecycle_timestamp_ms'] = event.ts
+                # A turn that closes on the client's blocking question is over,
+                # but the chat is waiting for the user rather than finished.
+                if marker == 'turn_ended' and self.blocked_handoff:
+                    row['reported_blocked_on_user'] = True
+                self.blocked_handoff = False
         for field, name in (('uuid', 'reported_uuid'), ('parentUuid', 'reported_parent_uuid'), ('agentId', 'agent_id')):
             value = identifier(obj.get(field))
             if value is not None:
@@ -146,6 +171,8 @@ class ClaudeHistoryParser:
                 call = identifier(block.get('id')); name = identifier(block.get('name'))
                 if call: b['call_id'] = call
                 if name: b['tool_name'] = name
+                if name == NEXT_STEP_TOOL and sidechain is not True and 'agentId' not in obj:
+                    self.blocked_handoff = blocked_on_user(block)  # the last box of the turn decides
                 if self.tracking_limited:
                     b['association'] = 'tracking_limit_exceeded'
                 elif scope_known and call:

@@ -12,6 +12,7 @@ from handoff_view import HandoffView
 from task_summary import recap
 from plain_language import plain_words,readable_fragment
 from explanation import add_object_names
+from claude_desktop import ENDED_ON_QUESTION, ended_on_blocking_question
 from chat_catalog import activity_state, readable_title, opening_title, catalog_card, codex_project, claude_desktop_groups
 from localization import current_language
 
@@ -243,6 +244,8 @@ class GlanceView:
         elif latest_marker=='turn_cancelled' and not later_work:status='这一轮已取消'
         elif age is not None and age<90:status='刚有新活动';tone='fresh'
         else:status='暂时没有新消息'
+        ended_on_question=ended_on_blocking_question(markers[0][1] if markers else {},latest_marker,later_work)
+        if ended_on_question:status,tone,needs=ENDED_ON_QUESTION['status'],ENDED_ON_QUESTION['tone'],ENDED_ON_QUESTION['needs_you']
         # Do not keep an old waiting signal after a result, reply or closed turn.
         closed=max((seq for seq,r in selected if r.get('turn_marker',r.get('kind')) in ('turn_ended','turn_cancelled','context_boundary')),default=0)
         attention=waiting_request(context['operations'],current_start,closed)
@@ -266,7 +269,7 @@ class GlanceView:
             needs_you=needs,recent=meaningful,source_unavailable=source['unavailable'],source_missing=source['missing'],
             partial=warnings or source['missing']>0 or material['missing']>0 or len(rows)>=360 or context['window_limited'],
             snapshot=high,scope='最近保存的一段；不是全部任务。',recorder=read_status(self.history.databases[client],client),
-            results=results,fragment=fragment,proposals=proposals,turn_marker=latest_marker,
+            results=results,fragment=fragment,proposals=proposals,turn_marker=latest_marker,ended_on_question=ended_on_question,
             evidence={k:v for k,v in [('goal',user),('content',activity),('explanation',speech),('reason',reason),('fragment',fragment)] if v})
         detail.update(local_story(user,activity,reason,last_step,fragment))
         content_refs=[dict(title='具体活动',**activity)] if activity else []

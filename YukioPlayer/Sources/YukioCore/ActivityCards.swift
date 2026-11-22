@@ -109,7 +109,7 @@ extension ActivityRouter {
     func cardStatus(_ s: SessionModel, now: Double) -> ActivityCard.Status? {
         if waitingForUser(s, now: now) { return .waiting }
         if failedPending(s, now: now) { return .failed }
-        if completionPending(s, now: now) { return .ready }
+        if completionPending(s, now: now) { return s.endQuestion == nil ? .ready : .waiting }
         if isLive(s, now: now) { return .running }
         return nil
     }
@@ -117,7 +117,7 @@ extension ActivityRouter {
     func cardSubtitle(_ s: SessionModel, status: ActivityCard.Status, now: Double) -> String {
         switch status {
         case .waiting:
-            return s.open.last?.detail ?? tr("Needs your decision", "等你拿主意")
+            return s.open.last?.detail ?? s.endQuestion.flatMap { $0.isEmpty ? nil : $0 } ?? tr("Needs your decision", "等你拿主意")
         case .failed:
             return s.failedDetail.map { tr("Error: \($0)", "出错：\($0)") } ?? tr("Didn't finish this turn", "这一轮没做完")
         case .ready:

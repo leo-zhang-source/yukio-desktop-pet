@@ -385,6 +385,8 @@
   "最近聊天": "Recent chats",
   "有一段说明正在生成，请稍后再点。": "An explanation is being generated; please click again later.",
   "有一项请求等你处理": "One request needs your attention",
+  "等待你回答": "Waiting for your answer",
+  "Claude 在这一轮结束时提了一个问题，要等你回答才能继续。请回原聊天回答。": "Claude ended this turn with a question and cannot continue until you answer. Reply in the original chat.",
   "有些记录暂时读不到": "Some records are temporarily unreadable",
   "有公开汇报；结果仍以实际验收为准。": "A public report is available; the result still needs actual review.",
   "有新记录，点击刷新查看": "New records available; click to refresh and view",
@@ -971,5 +973,8 @@
   "有较新的要求尚未读到，请回原聊天查看。": "A newer request could not be read. Check the original chat.",
   "最近公开进展（助手陈述，未独立核验）": "Recent public progress (assistant report, not independently verified)",
   "较早的解读已过期 · 记录已有变化，现显示最新本机摘要；点击下方按钮重新解读。": "The earlier interpretation is out of date. Showing the latest local summary; use the button below to generate a new interpretation.",
-  "较早的说明已过期 · 当前显示最新本机记录": "The earlier explanation is out of date · Showing the latest local records"
+  "较早的说明已过期 · 当前显示最新本机记录": "The earlier explanation is out of date · Showing the latest local records",
+  "打开这条聊天": "Open this chat",
+  "在原来的应用里打开这条聊天": "Open this chat in its own app",
+  "没能直接打开这条聊天。它可能不在桌面版应用里（例如在终端里运行），请到原来的地方查看。": "This chat could not be opened directly. It may not live in a desktop app (for example, it runs in a terminal). Please look for it where it was started."
 }

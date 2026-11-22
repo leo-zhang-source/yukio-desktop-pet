@@ -7,7 +7,7 @@
 - [更新与回退](MANUAL-UPDATES.md#zh)
 - [后台回答连接](../YukioPlayer/Resources/BACKGROUND-ANSWERS.md#zh)
 
-- [5.4 Preview 4 · 更新 / Changes](releases/5.4-preview.4.md)
+- [5.4 Preview 5 · 更新 / Changes](releases/5.4-preview.5.md)
 - [长期维护 / Maintenance](remediation/stage5-maintenance/README.md)
 
 <details>

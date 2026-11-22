@@ -14,6 +14,15 @@ import sys
 import threading
 import time
 
+
+ENDED_ON_QUESTION=dict(status='等待你回答',tone='attention',needs_you='Claude 在这一轮结束时提了一个问题，要等你回答才能继续。请回原聊天回答。')
+
+
+def ended_on_blocking_question(marker_row, marker_kind, later):
+    """The latest turn closed on the client's own blocking question and nothing followed."""
+    return marker_kind=='turn_ended' and not later and marker_row.get('reported_blocked_on_user') is True
+
+
 MAX_FILE = 2 * 1024 * 1024
 MAX_TOTAL = 64 * 1024 * 1024
 MAX_FILES = 512

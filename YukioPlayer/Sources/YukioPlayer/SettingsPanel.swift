@@ -31,9 +31,11 @@ struct SettingsSnapshot {
     var hideWhenIdle: Bool = true
     var skin: PetSkin = .yukio
     var englishStatus: String? = nil
+    var workbenchDisplayMode: WorkbenchDisplayMode = .quickLook
 }
 
 enum SettingsChange {
+    case workbenchDisplayMode(WorkbenchDisplayMode)
     case skin(PetSkin)
     case hideWhenIdle(Bool)
     case quit
@@ -130,6 +132,9 @@ final class SettingsPanelController: NSWindowController, NSWindowDelegate, NSMen
     private let startupHint = NSTextField(wrappingLabelWithString: "")
     private let loginItemsButton = NSButton()
     private let languageTitle = NSTextField(labelWithString: "")
+    private let workbenchDisplayTitle = NSTextField(labelWithString: "")
+    private let workbenchDisplayPicker = NSSegmentedControl(labels: ["", ""], trackingMode: .selectOne, target: nil, action: nil)
+    private let workbenchDisplayHint = NSTextField(wrappingLabelWithString: "")
 
     private let followSwitch = NSSwitch()
     private let providerPopup = NSPopUpButton()
@@ -252,6 +257,11 @@ final class SettingsPanelController: NSWindowController, NSWindowDelegate, NSMen
         sync(languagePopup, items: [("English", UILanguage.english.rawValue),
                                     (tr("Chinese (Simplified)", "中文"), UILanguage.chinese.rawValue)])
         select(languagePopup, value: snapshot.language.rawValue)
+        for (index, mode) in WorkbenchDisplayMode.allCases.enumerated() {
+            workbenchDisplayPicker.setLabel(mode.title(chinese: displayLanguage == .chinese), forSegment: index)
+            if mode == snapshot.workbenchDisplayMode { workbenchDisplayPicker.selectedSegment = index }
+        }
+        workbenchDisplayHint.stringValue = snapshot.workbenchDisplayMode.detail(chinese: displayLanguage == .chinese)
         demoButton.title = snapshot.demoPlaying ? tr("Stop demo", "停止演示") : tr("Play demo", "播放演示")
         hideButton.title = snapshot.hidden ? tr("Show Yukio", "显示雪绪") : tr("Hide Yukio", "收起雪绪")
         updateSettingsLayout()
@@ -339,10 +349,14 @@ final class SettingsPanelController: NSWindowController, NSWindowDelegate, NSMen
         startupHint.font = .systemFont(ofSize: 13); startupHint.textColor = SettingsStyle.secondary
         startupHint.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         startupHint.setAccessibilityIdentifier("startupApprovalHint")
+        workbenchDisplayHint.font = .systemFont(ofSize: 13)
+        workbenchDisplayHint.textColor = SettingsStyle.secondary
+        workbenchDisplayHint.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        workbenchDisplayHint.setAccessibilityIdentifier("workbenchDisplayHint")
         categoryPanes = [
             settingsGroup(displayHeading, symbol: "person.crop.square", [row(title: skinTitle, control: skinPopup, stacked: true), row(title: scaleTitle, control: sliderGroup, stacked: true), divider(), row(title: idleHideTitle, control: idleHideSwitch), row(title: bubbleTitle, control: bubbleSwitch)]),
             settingsGroup(followingHeading, symbol: "bubble.left.and.bubble.right", [row(title: followTitle, control: followSwitch), row(title: providerTitle, control: providerPopup, stacked: true), row(title: chatTitle, control: chatPopup, stacked: true), divider(), row(title: cardsTitle, control: cardsSwitch), row(title: questionTitle, control: questionSwitch), browserChatButton]),
-            settingsGroup(interfaceHeading, symbol: "slider.horizontal.3", [row(title: languageTitle, control: languagePopup, stacked: true), divider(), row(title: startupTitle, control: startupSwitch), startupHint, loginItemsButton, row(title: updateTitle, control: updateSwitch), updateButton])
+            settingsGroup(interfaceHeading, symbol: "slider.horizontal.3", [row(title: languageTitle, control: languagePopup), row(title: workbenchDisplayTitle, control: workbenchDisplayPicker), workbenchDisplayHint, divider(), row(title: startupTitle, control: startupSwitch), startupHint, loginItemsButton, row(title: updateTitle, control: updateSwitch), updateButton], spacing: 6)
         ]
         categoryHost.orientation = .vertical; categoryHost.alignment = .leading; categoryHost.spacing = 16
         stack.addArrangedSubview(categoryHost)
@@ -377,7 +391,7 @@ final class SettingsPanelController: NSWindowController, NSWindowDelegate, NSMen
         return line
     }
 
-    private func settingsGroup(_ heading: NSTextField, symbol: String, _ controls: [NSView]) -> NSStackView {
+    private func settingsGroup(_ heading: NSTextField, symbol: String, _ controls: [NSView], spacing: CGFloat = 12) -> NSStackView {
         let icon = NSImageView(image: NSImage(systemSymbolName: symbol, accessibilityDescription: nil) ?? NSImage())
         icon.contentTintColor = SettingsStyle.pine; icon.setAccessibilityElement(false)
         icon.widthAnchor.constraint(equalToConstant: 22).isActive = true
@@ -388,7 +402,7 @@ final class SettingsPanelController: NSWindowController, NSWindowDelegate, NSMen
         header.heightAnchor.constraint(equalToConstant: 54).isActive = true
         header.wantsLayer = true; header.layer?.backgroundColor = SettingsStyle.sage.cgColor
         let body = NSStackView(views: controls)
-        body.orientation = .vertical; body.alignment = .leading; body.spacing = 12
+        body.orientation = .vertical; body.alignment = .leading; body.spacing = spacing
         body.setHuggingPriority(.required, for: .vertical)
         body.edgeInsets = NSEdgeInsets(top: 16, left: SettingsStyle.inset, bottom: 20, right: SettingsStyle.inset)
         for view in controls { view.widthAnchor.constraint(equalTo: body.widthAnchor, constant: -2 * SettingsStyle.inset).isActive = true }
@@ -475,6 +489,9 @@ final class SettingsPanelController: NSWindowController, NSWindowDelegate, NSMen
         skinPopup.menu?.delegate = self
         languagePopup.target = self
         languagePopup.action = #selector(languageChanged)
+        workbenchDisplayPicker.target = self
+        workbenchDisplayPicker.action = #selector(workbenchDisplayChanged)
+        workbenchDisplayPicker.setAccessibilityIdentifier("workbenchDisplayPicker")
         hideButton.bezelStyle = .rounded
         // 空格键：设置窗口在最前面时按一下就收起／显示。
         hideButton.keyEquivalent = " "
@@ -560,6 +577,8 @@ final class SettingsPanelController: NSWindowController, NSWindowDelegate, NSMen
         skinPopup.setAccessibilityLabel(skinTitle.stringValue)
         scaleTitle.stringValue = tr("Size", "大小")
         languageTitle.stringValue = tr("Language", "语言")
+        workbenchDisplayTitle.stringValue = tr("Workbench display", "工作台显示方式")
+        workbenchDisplayPicker.setAccessibilityLabel(workbenchDisplayTitle.stringValue)
         for (control, title) in [(followSwitch as NSView, followTitle), (providerPopup, providerTitle), (chatPopup, chatTitle), (bubbleSwitch, bubbleTitle), (cardsSwitch, cardsTitle), (questionSwitch, questionTitle), (scaleSlider, scaleTitle), (languagePopup, languageTitle)] {
             control.setAccessibilityLabel(title.stringValue)
         }
@@ -700,6 +719,12 @@ final class SettingsPanelController: NSWindowController, NSWindowDelegate, NSMen
     @objc private func languageChanged() {
         guard !updating else { return }
         onChange?(.language(UILanguage(code: languagePopup.selectedItem?.representedObject as? String)))
+    }
+
+    @objc private func workbenchDisplayChanged() {
+        let index = workbenchDisplayPicker.selectedSegment
+        guard !updating, WorkbenchDisplayMode.allCases.indices.contains(index) else { return }
+        onChange?(.workbenchDisplayMode(WorkbenchDisplayMode.allCases[index]))
     }
 
     @objc private func toggleHidden() { onChange?(.toggleHidden) }

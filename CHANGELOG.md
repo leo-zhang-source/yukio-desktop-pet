@@ -1,5 +1,23 @@
 # Changelog / 更新记录
 
+## Mac 5.4 Preview 5 · build 66.8 — 2026-11-21
+
+- 双屏自动放牌、Claude 阻塞问题归类、工作台常驻/快速查看与原生全屏、打开对应聊天入口。
+- Fix multi-display completion signs; distinguish Claude blocking questions; add workbench display modes, native fullscreen and Open this chat.
+- [发布说明 / Release notes](docs/releases/5.4-preview.5.md) · [实际验收范围 / Validation](docs/remediation/RELEASE-54-PREVIEW5.md)。
+
+## Mac 5.4 Preview 4 · build 66 — 2026-11-13
+
+- Claude 当前进展与完成判定、旧解释覆盖新内容的修复；包含本地 64–65 修复。
+- Fix Claude completion detection and stale workbench content, including local builds 64–65.
+- [发布说明 / Release notes](docs/releases/5.4-preview.4.md)。
+
+## Mac 5.4 Preview 3 · build 63 — 2026-11-11
+
+- 汇集维护机制、聊天整理、Claude 身份、解释来源保存、Codex 短解释与 Python 3.12.16。
+- Consolidate maintenance safeguards, chat identity/navigation, saved explanation providers and Codex short explanations; update Python to 3.12.16.
+- [发布说明 / Release notes](docs/releases/5.4-preview.3.md)。
+
 ## Mac 5.4 Preview 2 · build 56 — 2026-11-04
 
 - 修复首次入口、助手就绪检查、空白聊天状态，以及 Tahoe 安装窗口；同步双语首页与包内指南。

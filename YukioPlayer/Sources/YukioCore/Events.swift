@@ -53,6 +53,8 @@ public struct PetEvent: Codable, Equatable, Sendable {
         /// 用户发出新请求，任务开始。detail 为请求的第一行。
         case taskStart = "task_start"
         /// 任务正常结束（已给出回答）。
+        /// activity 为 question_for_user 时，这一轮是以“必须等你回答才能继续”的提问收尾的，
+        /// 问题原文在 detail：举问题牌而不是完成牌。只是顺带提的下一步建议不带这个标记。
         case taskEnd = "task_end"
         /// 任务被中断／取消／会话关闭。
         case taskAbort = "task_abort"

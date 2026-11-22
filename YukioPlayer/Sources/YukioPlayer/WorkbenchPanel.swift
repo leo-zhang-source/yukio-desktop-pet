@@ -7,10 +7,42 @@ protocol WorkbenchStarting: AnyObject {
     func stop()
 }
 
+/// A chat the workbench page asked Yukio to bring up in its own app.
+struct WorkbenchChatTarget: Equatable {
+    enum Client: String { case claude, codex }
+    let client: Client
+    /// The transcript's own session ID. Only a plain UUID is accepted from the page.
+    let session: String
+
+    /// The page may only name a client and a UUID. Anything else, or a request
+    /// from a frame that is not our own local page, is ignored.
+    static func parse(_ body: Any, frameURL: URL?, isMainFrame: Bool, port: Int) -> WorkbenchChatTarget? {
+        guard isMainFrame, let frameURL, WorkbenchPanelController.isLocal(frameURL, port: port),
+              let fields = body as? [String: Any], fields.count == 2,
+              let name = fields["client"] as? String, let client = Client(rawValue: name),
+              let session = fields["session"] as? String, session.utf8.count == 36,
+              UUID(uuidString: session) != nil else { return nil }
+        return WorkbenchChatTarget(client: client, session: session.lowercased())
+    }
+}
+
+/// The web view keeps its message handler alive; this keeps it from keeping the panel alive.
+private final class WorkbenchChatBridge: NSObject, WKScriptMessageHandlerWithReply {
+    weak var owner: WorkbenchPanelController?
+    func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage,
+                               replyHandler: @escaping (Any?, String?) -> Void) {
+        replyHandler(owner?.openChat(requestedBy: message.body, frameURL: message.frameInfo.request.url,
+                                     isMainFrame: message.frameInfo.isMainFrame) ?? false, nil)
+    }
+}
+
 /// The former settings entry now hosts the workbench and the existing native settings.
 /// The native settings callback stays unchanged; preferences never pass through the page.
 final class WorkbenchPanelController: NSWindowController, NSWindowDelegate, WKNavigationDelegate {
     var onChange: ((SettingsChange) -> Void)?
+    /// Opens the named chat in its own app; false when there is nothing to jump to.
+    var onOpenChat: ((WorkbenchChatTarget) -> Bool)?
+    static let openChatMessage = "yukioOpenChat"
     private let runtime: WorkbenchStarting
     let settings = SettingsPanelController()
     private let outsideClickMonitor = SettingsOutsideClickMonitor()
@@ -28,6 +60,8 @@ final class WorkbenchPanelController: NSWindowController, NSWindowDelegate, WKNa
     private(set) var diagnosticText = ""
     private var opening = UUID()
     private(set) var uiLanguage: String
+    private var changingFullScreen = false
+    private(set) var displayMode: WorkbenchDisplayMode = .quickLook
 
     static func preferredLanguage(_ languages: [String], appPreference: String? = nil) -> String {
         if let appPreference { return UILanguage(code: appPreference).rawValue }
@@ -46,15 +80,8 @@ final class WorkbenchPanelController: NSWindowController, NSWindowDelegate, WKNa
     init(runtime: WorkbenchStarting = WorkbenchRuntime(), preferredLanguages: [String] = Locale.preferredLanguages) {
         self.runtime = runtime
         self.uiLanguage = Self.preferredLanguage(preferredLanguages)
-        let panel = NSPanel(contentRect: NSRect(x: 0, y: 0, width: 1100, height: 760),
-                            styleMask: [.titled, .closable, .resizable, .nonactivatingPanel],
-                            backing: .buffered, defer: false)
+        let panel = Self.makeWindow(quickLook: true)
         panel.title = uiLanguage == "zh" ? "Yukio · 活动工作台" : "Yukio · Activity workbench"
-        panel.level = .floating
-        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-        panel.hidesOnDeactivate = false; panel.isReleasedWhenClosed = false
-        panel.minSize = NSSize(width: 760, height: 520)
-        panel.appearance = NSAppearance(named: .aqua)
         super.init(window: panel)
         settings.presentationLanguage = UILanguage(code: uiLanguage)
         workButton.title = localized("活动工作台", "Activity workbench")
@@ -66,6 +93,29 @@ final class WorkbenchPanelController: NSWindowController, NSWindowDelegate, WKNa
         buildUI()
     }
     required init?(coder: NSCoder) { fatalError("not used") }
+
+    private static func makeWindow(quickLook: Bool) -> NSWindow {
+        let rect = NSRect(x: 0, y: 0, width: 1100, height: 760)
+        let window: NSWindow
+        if quickLook {
+            let panel = NSPanel(contentRect: rect, styleMask: [.titled, .closable, .resizable, .nonactivatingPanel],
+                                backing: .buffered, defer: false)
+            panel.hidesOnDeactivate = false
+            panel.level = .floating
+            panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+            window = panel
+        } else {
+            window = NSWindow(contentRect: rect, styleMask: [.titled, .closable, .resizable, .miniaturizable],
+                              backing: .buffered, defer: false)
+            window.level = .normal
+            window.collectionBehavior = [.fullScreenPrimary]
+        }
+        window.isReleasedWhenClosed = false
+        window.minSize = NSSize(width: 760, height: 520)
+        window.appearance = NSAppearance(named: .aqua)
+        window.tabbingMode = .disallowed
+        return window
+    }
 
     private func buildUI() {
         guard let root = window?.contentView else { return }
@@ -107,7 +157,7 @@ final class WorkbenchPanelController: NSWindowController, NSWindowDelegate, WKNa
     func show(snapshot: SettingsSnapshot, near anchor: NSRect) {
         apply(snapshot)
         guard let window else { return }
-        if !window.isVisible {
+        if !window.isVisible && !window.isMiniaturized {
             let visible = (NSScreen.screens.first { $0.visibleFrame.intersects(anchor) } ?? NSScreen.main)?.visibleFrame
             if let visible {
                 let width = min(window.frame.width, visible.width - 24), height = min(window.frame.height, visible.height - 24)
@@ -116,13 +166,92 @@ final class WorkbenchPanelController: NSWindowController, NSWindowDelegate, WKNa
                 window.setFrame(NSRect(x: x, y: y, width: width, height: height), display: false)
             }
         }
-        showWindow(nil); window.makeKeyAndOrderFront(nil); window.orderFrontRegardless()
-        outsideClickMonitor.start(window: window, isInteracting: { [weak self] in self?.settings.isTrackingPopup ?? false },
-                                  dismiss: { [weak self] in self?.close() })
+        if window.isMiniaturized { window.deminiaturize(nil) }
+        bringForward()
         showWork()
+        reconcilePresentation()
     }
 
-    func apply(_ snapshot: SettingsSnapshot) { settings.apply(snapshot) }
+    func apply(_ snapshot: SettingsSnapshot) {
+        settings.apply(snapshot)
+        guard displayMode != snapshot.workbenchDisplayMode else { return }
+        displayMode = snapshot.workbenchDisplayMode
+        // Finish any popup menu tracking before moving its content to a new host.
+        if settings.isTrackingPopup {
+            DispatchQueue.main.async { [weak self] in self?.reconcilePresentation() }
+        } else {
+            reconcilePresentation()
+        }
+    }
+
+    private func bringForward() {
+        guard let window else { return }
+        if displayMode != .quickLook { NSApp.activate(ignoringOtherApps: true) }
+        showWindow(nil)
+        window.makeKeyAndOrderFront(nil)
+        if displayMode == .quickLook { window.orderFrontRegardless() }
+    }
+
+    private func updateOutsideClickMonitor() {
+        outsideClickMonitor.stop()
+        guard let window, window.styleMask.contains(.nonactivatingPanel), window.isVisible else { return }
+        outsideClickMonitor.start(window: window, isInteracting: { [weak self] in self?.settings.isTrackingPopup ?? false },
+                                  dismiss: { [weak self] in self?.close() })
+    }
+
+    private func reconcilePresentation() {
+        updateOutsideClickMonitor()
+        guard let current = window, !changingFullScreen else { return }
+        let quickLook = displayMode == .quickLook
+        if quickLook && current.styleMask.contains(.fullScreen) {
+            // Restore the normal frame before moving the shared content into the panel.
+            changingFullScreen = true
+            current.toggleFullScreen(nil)
+            return
+        }
+        if current.styleMask.contains(.nonactivatingPanel) != quickLook {
+            // Keep the page, selection, draft and settings view alive. AppKit's
+            // nonactivating panel and a normal window use distinct hosts.
+            let next = Self.makeWindow(quickLook: quickLook)
+            next.title = current.title
+            next.setFrame(current.frame, display: false)
+            let visible = current.isVisible
+            let content = current.contentView
+            let responder = current.firstResponder
+            current.delegate = nil
+            current.contentView = nil
+            current.close()
+            window = next
+            next.delegate = self
+            next.contentView = content
+            if visible {
+                bringForward()
+                if let responder { next.makeFirstResponder(responder) }
+            }
+        }
+        updateOutsideClickMonitor()
+    }
+
+    func windowWillEnterFullScreen(_ notification: Notification) { changingFullScreen = true }
+    func windowWillExitFullScreen(_ notification: Notification) { changingFullScreen = true }
+    func windowDidEnterFullScreen(_ notification: Notification) { finishFullScreenTransition() }
+    func windowDidExitFullScreen(_ notification: Notification) { finishFullScreenTransition() }
+    func windowDidFailToEnterFullScreen(_ window: NSWindow) { finishFullScreenTransition() }
+
+    func windowDidFailToExitFullScreen(_ window: NSWindow) {
+        changingFullScreen = false
+        if displayMode == .quickLook {
+            displayMode = .window
+            onChange?(.workbenchDisplayMode(.window))
+        }
+    }
+
+    private func finishFullScreenTransition() {
+        changingFullScreen = false
+        // AppKit finishes restoring the window after the delegate callback returns.
+        DispatchQueue.main.async { [weak self] in self?.reconcilePresentation() }
+    }
+
     func setLanguage(_ language: UILanguage) {
         guard uiLanguage != language.rawValue else { return }
         let wasShowingSettings = showingSettings
@@ -137,10 +266,7 @@ final class WorkbenchPanelController: NSWindowController, NSWindowDelegate, WKNa
         settingsButton.toolTip = localized("雪绪的大小、显示、聊天、换装与其他设置", "Yukio’s size, appearance, chats, outfits and other settings")
         if wasShowingSettings { showSettings() }
         else if window?.isVisible == true { showWork() }
-        if let window, window.isVisible {
-            outsideClickMonitor.start(window: window, isInteracting: { [weak self] in self?.settings.isTrackingPopup ?? false },
-                                      dismiss: { [weak self] in self?.close() })
-        }
+        updateOutsideClickMonitor()
     }
     func showStartupError(_ error: Error) { settings.showStartupError(error) }
 
@@ -176,9 +302,7 @@ final class WorkbenchPanelController: NSWindowController, NSWindowDelegate, WKNa
             switch result {
             case .success(let url):
                 self.serviceURL = url
-                let configuration = WKWebViewConfiguration()
-                configuration.websiteDataStore = .nonPersistent()
-                let web = WKWebView(frame: .zero, configuration: configuration)
+                let web = self.makeWebView()
                 web.navigationDelegate = self; self.webView = web; self.fill(web)
                 web.load(URLRequest(url: self.localizedURL(Self.restoreSelection(self.selectionURL, at: url))))
             case .failure(let error):
@@ -186,6 +310,15 @@ final class WorkbenchPanelController: NSWindowController, NSWindowDelegate, WKNa
                 self.showConnectionFailure(failure.message(english: self.uiLanguage == "en"), code: failure.code)
             }
         }
+    }
+
+    /// The page view, with the one message the page may send to the app.
+    func makeWebView() -> WKWebView {
+        let configuration = WKWebViewConfiguration()
+        configuration.websiteDataStore = .nonPersistent()
+        let bridge = WorkbenchChatBridge(); bridge.owner = self
+        configuration.userContentController.addScriptMessageHandler(bridge, contentWorld: .page, name: Self.openChatMessage)
+        return WKWebView(frame: .zero, configuration: configuration)
     }
 
     @objc private func retry() {
@@ -222,9 +355,21 @@ final class WorkbenchPanelController: NSWindowController, NSWindowDelegate, WKNa
         }
         webView = nil
     }
-    override func close() { dismissContent(); super.close() }
+    override func close() {
+        dismissContent(); super.close()
+    }
     func windowWillClose(_ notification: Notification) { dismissContent() }
     func shutdown() { dismissContent(); runtime.stop() }
+
+    /// The page's "open this chat" button. Quick view steps aside for the chat it
+    /// just opened; a kept-open window stays where the user put it.
+    func openChat(requestedBy body: Any, frameURL: URL?, isMainFrame: Bool) -> Bool {
+        guard let target = WorkbenchChatTarget.parse(body, frameURL: frameURL, isMainFrame: isMainFrame,
+                                                     port: serviceURL?.port ?? 8767),
+              onOpenChat?(target) == true else { return false }
+        if displayMode == .quickLook { DispatchQueue.main.async { [weak self] in self?.close() } }
+        return true
+    }
 
     static func isLocal(_ url: URL, port: Int = 8767) -> Bool {
         url.scheme == "http" && url.host == "127.0.0.1" && url.port == port && url.user == nil && url.password == nil

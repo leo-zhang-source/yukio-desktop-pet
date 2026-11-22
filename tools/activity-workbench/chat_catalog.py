@@ -9,6 +9,7 @@ from contextlib import closing
 from pathlib import Path
 from source_context import clean, user_text
 from localization import current_language, english_text
+from claude_desktop import ENDED_ON_QUESTION, ended_on_blocking_question
 
 
 def claude_desktop_groups(history,reader,groups):
@@ -74,9 +75,11 @@ def catalog_card(history, reader, client, group, clock):
     elif marker_kind=='turn_cancelled' and not later:status='这一轮已取消'
     latest=meaningful[0][1] if meaningful else {}
     tone='attention' if latest.get('reported_await_user_response') is True and marker_kind not in ('turn_ended','turn_cancelled') else 'quiet'
+    ended_on_question=ended_on_blocking_question(marker_row,marker_kind,later)
+    if ended_on_question:status,tone=ENDED_ON_QUESTION['status'],ENDED_ON_QUESTION['tone']
     card=dict(client=client,key=group['key'],session_id=parts[2],title=readable_title(title),
               title_source='客户端聊天名称' if has_client_title else ('开场要求' if title else '名称待确认'),status=status,tone=tone,last_activity_ms=stamp,
-              source_unavailable=not available,has_content=has_content,turn_marker=marker_kind,age_seconds=age,
+              source_unavailable=not available,has_content=has_content,turn_marker=marker_kind,ended_on_question=ended_on_question,age_seconds=age,
               recorder=read_status(history.databases[client],client))
     card['activity_state']=activity_state(card)
     if group.get('desktop_chat'):

@@ -10,7 +10,7 @@ Mac 桌面伙伴：用角色动作呈现工作状态，用自然语言解释进�
 
 [English](README.md) · **简体中文**
 
-**[下载 Mac 预览版](https://github.com/leo-zhang-source/yukio-desktop-pet/releases/tag/v5.4-preview.4)** · [快速上手](docs/MAC-USER-GUIDE.zh-CN.md) · [在线动画演示](https://is.gd/yukioapp)
+**[下载 Mac 预览版](https://github.com/leo-zhang-source/yukio-desktop-pet/releases/tag/v5.4-preview.5)** · [快速上手](docs/MAC-USER-GUIDE.zh-CN.md) · [在线动画演示](https://is.gd/yukioapp)
 
 </div>
 
@@ -41,7 +41,7 @@ AI 同时处理多个任务时，用户往往需要反复切换聊天，才能�
 
 ## 下载与使用范围
 
-面向 **Apple 芯片 Mac，macOS 13+**，支持中英文。本次提供 **5.4 Preview 4（66）**，修复 Claude 完成状态与工作台内容滞后的问题。本次完成状态与内容更新的专项独立 Mac 虚拟机检查通过；完整首次使用验收尚未完成；Windows 与云端 Cowork 暂缓。
+面向 **Apple 芯片 Mac，macOS 13+**，支持中英文。本次提供 **5.4 Preview 5（66.8）**，修复双屏自动放牌，区分 Claude 待回答问题，加入工作台显示方式和“打开这条聊天”。本次完成状态与内容更新的专项独立 Mac 虚拟机检查通过；完整首次使用验收尚未完成；Windows 与云端 Cowork 暂缓。
 
 当前包尚未公证，首次打开方法见[安装说明](docs/MAC-HELP.zh-CN.md#install)。旧版需手动安装一次；更新请看[当前方法](docs/MANUAL-UPDATES.md#zh)。
 
@@ -51,4 +51,4 @@ AI 同时处理多个任务时，用户往往需要反复切换聊天，才能�
 
 原生 **Swift / AppKit** 桌面角色，搭配 **Python / JavaScript** 活动工作台；动画采用透明图层、局部运动与独立眨眼。
 
-[本次更新](docs/releases/5.4-preview.4.md) · [使用与排错](docs/MAC-HELP.zh-CN.md) · [文档导航](docs/README.zh-CN.md) · [源码与构建](docs/remediation/MAC-BUILD.md) · [开发与验收记录](DEVELOPMENT.md) · [反馈问题](https://github.com/leo-zhang-source/yukio-desktop-pet/issues)
+[本次更新](docs/releases/5.4-preview.5.md) · [使用与排错](docs/MAC-HELP.zh-CN.md) · [文档导航](docs/README.zh-CN.md) · [源码与构建](docs/remediation/MAC-BUILD.md) · [开发与验收记录](DEVELOPMENT.md) · [反馈问题](https://github.com/leo-zhang-source/yukio-desktop-pet/issues)

@@ -1,7 +1,7 @@
 {
   "version": "5.4",
-  "build": "66",
-  "upgrade_baseline_build": "63",
+  "build": "66.8",
+  "upgrade_baseline_build": "66.7",
   "workbench_version": "0.4.17",
   "architecture": "arm64",
   "minimum_macos": "13.0",
@@ -15,5 +15,5 @@
   },
   "release_repository": "leo-zhang-source/yukio-desktop-pet",
   "release_channel": "preview",
-  "release_tag": "v5.4-preview.4"
+  "release_tag": "v5.4-preview.5"
 }

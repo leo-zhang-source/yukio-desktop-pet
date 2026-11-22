@@ -634,8 +634,18 @@ func runOpenChat() -> Never {
         let pid = app.processIdentifier
         let single = !app.isHidden && snapshot.visibleSingleWindow(pid: pid)
         print("应用 \(bundle) 屏幕内窗口 \(snapshot.mainWindows(pid: pid).count) 单窗口聊天区可见 \(single)")
-        let docs = BrowserOpenChat.read(processID: pid, snapshot: snapshot, gptTitles: titles)
-        for doc in docs { print("已认出聊天 \(doc.provider.rawValue) / \(doc.id)") }
+        BrowserOpenChat.notes = []
+        let docs = BrowserOpenChat.read(processID: pid, snapshot: snapshot, nativeGPT: bundle == "com.openai.codex",
+            nativeClaude: bundle == "com.anthropic.claudefordesktop", gptTitles: titles)
+        for note in BrowserOpenChat.notes { print("  \(note)") }
+        let aliases = docs.contains { $0.provider == .claude } ? ClaudeSessionLinks().transcriptAliases() : [:]
+        for doc in docs {
+            let followed = router.sessionSummaries(now: nowMs()).first {
+                doc.matches(session: router.sourceSessionID($0.id),
+                    provider: AgentProvider.owner(ofSource: router.sourceOfSession($0.id) ?? ""), aliases: aliases)
+            }
+            print("已认出聊天 \(doc.provider.rawValue) / \(doc.id) → \(followed.map { "对应跟随中的会话 \($0.id)" } ?? "没有对应的跟随会话")")
+        }
         if bundle == "com.openai.codex", single,
            let session = reader.focusedSession(processID: pid, now: Date().timeIntervalSince1970 * 1000, visibleSingleWindow: true) {
             print("已认出 App 聊天 \(session)")
@@ -803,6 +813,11 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var hideWhenIdle: Bool {
         get { defaults.object(forKey: "hideWhenIdle") as? Bool ?? true }
         set { defaults.set(newValue, forKey: "hideWhenIdle") }
+    }
+
+    private var workbenchDisplayMode: WorkbenchDisplayMode {
+        get { WorkbenchDisplayMode(preference: defaults.string(forKey: WorkbenchDisplayMode.preferenceKey)) }
+        set { defaults.set(newValue.rawValue, forKey: WorkbenchDisplayMode.preferenceKey) }
     }
 
     private var shownState: PetState = .idle
@@ -1095,6 +1110,10 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
             if openChat(session: session) { router.dismissCompletion(now: now) }
             return
         }
+        if shownState == .question_for_user, let session = router.handoffQuestionSession {
+            if openChat(session: session) { router.dismissCompletion(now: now) }
+            return
+        }
         if shownState == .question_for_user, let pending = router.askingQuestion {
             if questionPresentation.isDismissed(.init(pending)) {
                 questionPresentation.reopen(.init(pending))
@@ -1131,6 +1150,18 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
             activate(Self.claudeBundleID)
         }
         return true
+    }
+
+    /// 工作台页面上的“打开这条聊天”。和点牌子不同：这里认不出桌面版里的那条聊天时不把应用
+    /// 拉到前面充数（那样会停在别的聊天上），而是如实告诉页面没跳成。
+    private func openWorkbenchChat(_ target: WorkbenchChatTarget) -> Bool {
+        let url: URL?
+        switch target.client {
+        case .claude: url = links.chatURL(forTranscriptSession: target.session)
+        case .codex: url = URL(string: "codex://threads/\(target.session)")
+        }
+        guard let url, NSWorkspace.shared.urlForApplication(toOpen: url) != nil else { return false }
+        return NSWorkspace.shared.open(url)
     }
 
     /// 举着的牌子能不能点回那条聊天（Deep Code 没有窗口可跳）。
@@ -1263,7 +1294,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 guard let self else { return }
                 self.openChatBusy = false
                 let valid = nowMs() >= started && nowMs() - started < 4000
-                    && BrowserOpenChat.Snapshot.capture().windows == snapshot.windows
+                    && BrowserOpenChat.Snapshot.capture().sameContent(as: snapshot)
                 self.router.openChatSession = nil
                 self.router.visibleChatSessions = valid ? visible : []
                 self.openChatObservedAt = valid ? started : -.infinity
@@ -2028,7 +2059,8 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
                                 automaticUpdates: softwareUpdates.automaticallyChecks,
                                 hideWhenIdle: hideWhenIdle,
                                 skin: skin,
-                                englishStatus: englishStatus)
+                                englishStatus: englishStatus,
+                                workbenchDisplayMode: workbenchDisplayMode)
     }
 
     private func showSettings() {
@@ -2039,6 +2071,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
             let choice = WorkbenchPanelController.preferredLanguage(Locale.preferredLanguages, appPreference: defaults.string(forKey: "language"))
             controller = WorkbenchPanelController(preferredLanguages: [choice])
             controller.onChange = { [weak self] change in self?.applySettings(change) }
+            controller.onOpenChat = { [weak self] target in self?.openWorkbenchChat(target) ?? false }
             settingsWindow = controller
         }
         controller.show(snapshot: currentSettingsSnapshot(), near: panel.frame)
@@ -2098,6 +2131,8 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private func applySettings(_ change: SettingsChange) {
         switch change {
+        case .workbenchDisplayMode(let mode):
+            workbenchDisplayMode = mode
         case .hideWhenIdle(let value):
             hideWhenIdle = value
             revealedWhileIdle = false
@@ -2182,7 +2217,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let chats = simulation == nil ? router.sessionSummaries(now: nowMs(), quietWithinMs: Self.chatListWindowMs,
                                                                 limit: Self.chatListLimit) : []
         menu.addItem(info(tr("Yukio", "雪绪") + " · " + (swing != nil ? L10n.heldName : L10n.stateName(shownState))))
-        if simulation == nil, following, let done = router.completedSession {
+        if simulation == nil, following, let done = router.completedSession ?? router.handoffQuestionSession {
             if canOpenChat(session: done) {
                 menu.addItem(action(tr("Open this chat and lower the sign", "打开这条聊天并放下牌子"), #selector(menuOpenChat)))
             }
@@ -2416,6 +2451,11 @@ app.run()
 
 #if DEBUG
 extension AppController {
+    func workbenchDisplayForCheck(selecting mode: WorkbenchDisplayMode? = nil) -> WorkbenchDisplayMode {
+        if let mode { applySettings(.workbenchDisplayMode(mode)) }
+        return currentSettingsSnapshot().workbenchDisplayMode
+    }
+
     func initialSettingsForCheck() -> (language: UILanguage, provider: AgentProvider, following: Bool, cards: Bool) {
         (L10n.language, feeds.provider, following, showCards)
     }

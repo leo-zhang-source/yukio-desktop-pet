@@ -172,6 +172,9 @@ final class SessionModel {
     var sign: Sign = .none
     /// 牌子举起来的时刻：晾太久（signYieldMs）就先让位给还在干活的聊天。
     var signRaisedAt: Double?
+    /// 这一轮是以“必须等你回答才能继续”的提问收尾的（问题原文，可能为空串）：举的是问题牌。
+    /// 看见不等于回答，所以聊天开在眼前也不自动放下；你回一句（新一轮开始）或点她才放。
+    var endQuestion: String?
     /// 最近一次失败（工具报错或本轮因错误中止）的时间。
     var failedAt: Double?
     /// 失败的那次工具调用的说明；API 报错时为 nil。
@@ -211,6 +214,7 @@ final class SessionModel {
         endedSet.removeAll()
         sign = .none
         signRaisedAt = nil
+        endQuestion = nil
     }
 
     func endTask(now: Double, ts: Double, keepAnswer: Bool) {
@@ -220,6 +224,7 @@ final class SessionModel {
         open.removeAll()
         lastToolEndedAt = nil
         failedAt = nil
+        endQuestion = nil
         if !keepAnswer {
             finalAnswerAt = nil
             sign = .none
@@ -293,7 +298,7 @@ public final class ActivityRouter {
 
     /// Record that this finished turn was seen, even during respondHoldMs or while pinned elsewhere.
     private func acknowledgeVisibleCompletions() {
-        for s in sessions.values where isChatVisible(s.id) {
+        for s in sessions.values where isChatVisible(s.id) && s.endQuestion == nil {
             if !s.taskActive, s.finalAnswerAt != nil, s.taskEndedAt != nil { s.sign = .dismissed }
         }
     }
@@ -358,6 +363,7 @@ public final class ActivityRouter {
         case .taskEnd:
             guard s.taskActive, e.ts >= s.taskStartedTs, e.ts >= s.latestWorkTs else { return }
             s.endTask(now: now, ts: e.ts, keepAnswer: true)
+            if e.activity == .question_for_user { s.endQuestion = e.detail ?? "" }
 
         case .taskAbort:
             guard e.ts >= s.taskStartedTs, e.ts >= s.latestWorkTs else { return }
@@ -485,12 +491,14 @@ public final class ActivityRouter {
             // 用户点击或让对应聊天显示在屏幕上后，把这一轮记为已读。
             // 举牌只发生在任务刚结束时，所以启动时回放到的旧记录不会举牌。
             // 那条聊天正开在眼前：答完的结果他自己看得见，不举牌；已经举着的也就此放下。
-            let inSight = isChatVisible(s.id)
+            // 以提问收尾的那一轮举问题牌：看见了不算答了，开在眼前也照举。
+            let raised: PetState = s.endQuestion == nil ? .task_complete : .question_for_user
+            let inSight = isChatVisible(s.id) && s.endQuestion == nil
             if s.sign == .raised {
                 if inSight {
                     if arming { s.sign = .dismissed }
                 } else {
-                    return .task_complete
+                    return raised
                 }
             } else if s.sign == .none && age < config.completeArmMs {
                 if inSight {
@@ -500,7 +508,7 @@ public final class ActivityRouter {
                         s.sign = .raised
                         s.signRaisedAt = now
                     }
-                    return .task_complete
+                    return raised
                 }
             }
         }
@@ -537,7 +545,8 @@ public final class ActivityRouter {
     private func attentionRank(_ s: SessionModel, now: Double) -> Int? {
         if waitingForUser(s, now: now) { return 0 }
         if failedPending(s, now: now) { return 1 }
-        if completionPending(s, now: now) && !signOverdue(s, now: now) { return 2 }
+        // 以提问收尾的和“等你回答”同档；晾过头了一样先让位。
+        if completionPending(s, now: now) && !signOverdue(s, now: now) { return s.endQuestion == nil ? 2 : 0 }
         return nil
     }
 
@@ -556,7 +565,7 @@ public final class ActivityRouter {
             let age = now - end
             guard age >= config.respondHoldMs, age < config.completeArmMs else { continue }
             // 那条聊天正开在眼前：人已经看见了，这一轮就不举牌（也不进身侧那叠卡）。
-            if isChatVisible(s.id) {
+            if isChatVisible(s.id) && s.endQuestion == nil {
                 s.sign = .dismissed
                 continue
             }
@@ -692,6 +701,14 @@ public final class ActivityRouter {
     /// 正举着勾选卡的会话 ID：点击雪绪时跳到这条聊天。没举牌时为 nil。
     public var completedSession: String? {
         guard displayed == .task_complete, let f = focusedSession, sessions[f]?.sign == .raised else { return nil }
+        return f
+    }
+
+    /// 这一轮以提问收尾、正举着问题牌的会话 ID。和勾选卡一样：点她跳到这条聊天并放下牌子
+    /// （那一轮已经结束，没有哪次调用会替它收牌）。
+    public var handoffQuestionSession: String? {
+        guard displayed == .question_for_user, let f = focusedSession, let s = sessions[f],
+              s.sign == .raised, s.endQuestion != nil else { return nil }
         return f
     }
 
@@ -834,7 +851,8 @@ public final class ActivityRouter {
             current = s.taskActive ? tr("Writing the answer", "整理回答") : tr("Answered", "已回答")
         case .idle, .question_for_user:
             // 问号卡也能点（跳到这条聊天去回答），和勾选卡一样在气泡里说一声，不然没人知道能点。
-            current = tr("Your turn · click to open", "\(s.open.last(where: { $0.state == .question_for_user })?.detail ?? "等你回答") · 点她跳过去")
+            let asked = s.endQuestion.flatMap { $0.isEmpty ? nil : $0 }
+            current = tr("\(asked ?? "Your turn") · click to open", "\(s.open.last(where: { $0.state == .question_for_user })?.detail ?? asked ?? "等你回答") · 点她跳过去")
         case .task_complete:
             current = tr("Done · click to open", "已完成 · 点她跳过去")
         case .thinking:
