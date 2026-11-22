@@ -5,6 +5,17 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
     <title>Yukio updates</title>
     <item>
       <title>Yukio 5.4</title>
+      <link>https://github.com/leo-zhang-source/yukio-desktop-pet/releases/tag/v5.4-preview.5</link>
+      <description sparkle:format="markdown" xml:lang="en">Mac 5.4 Preview 5 (66.8): fixes multi-display completion signs; distinguishes Claude blocking questions from next-step suggestions; adds Keep open / Quick view, native fullscreen and Open this chat. Built from the installed 66.7 product line; lifecycle candidates remain separate. Actual chat switching, foreground interaction and full independent first-run acceptance remain pending. Apple silicon, ad-hoc signed, not notarized. Windows and cloud Cowork deferred.
+</description>
+      <description sparkle:format="markdown" xml:lang="zh">Mac 5.4 Preview 5（66.8）：修复双屏自动放牌，区分 Claude 待回答问题与下一步建议；加入工作台常驻窗口／快速查看、原生全屏和打开聊天。基于现用 66.7 产品线，未验收的生命周期候选单独保留。实际聊天跳转、前台交互和完整独立首次使用验收仍待完成。Apple 芯片专用，临时签名、未公证；Windows 与云端 Cowork 暂缓。
+</description>
+      <sparkle:minimumSystemVersion>13.0.0</sparkle:minimumSystemVersion>
+      <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
+      <enclosure url="https://github.com/leo-zhang-source/yukio-desktop-pet/releases/download/v5.4-preview.5/Yukio-5.4-preview.5-macOS-arm64.zip" length="76974844" type="application/octet-stream" sparkle:version="66.8" sparkle:shortVersionString="5.4" sparkle:edSignature="DDDAdczH50UGLuuyow0RTiPSAXpK3Op7MPwgj/wdLGztPh8rGOIOHLKvTE/OKHrEtRQXSI5rsjqooCw8fi47Ag=="></enclosure>
+    </item>
+    <item>
+      <title>Yukio 5.4</title>
       <link>https://github.com/leo-zhang-source/yukio-desktop-pet/releases/tag/v5.4-preview.4</link>
       <description sparkle:format="markdown" xml:lang="en">Mac 5.4 Preview 4 (66): fixes Claude completion detection and stale workbench content. New local evidence replaces outdated explanations while new explanations load. Full independent first-use and multi-client acceptance remain incomplete. Apple silicon; ad-hoc signed, not notarized. Windows and cloud Cowork deferred.
 </description>
@@ -38,6 +49,6 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
     </item>
   </channel>
 </rss><!-- sparkle-signatures:
-edSignature: 4pM+XDpibw4HRpshMoCrKm3sGBgKwXkJpeqTV79rb6N9szNxmefvTyw6hHs2wGiSb6Sx0FoMkZNDLGjCSys0Bw==
-length: 4867
+edSignature: qlvI0PIHGOZKYUT1XRimo6g5a9rzfjPm+4ITqgalLv29Se9FNF59AzRjv+bzZ+3AEIAd1A/gDTaz5syMTSMQAQ==
+length: 6579
 -->
